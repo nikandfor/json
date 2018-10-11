@@ -318,6 +318,16 @@ func TestErrorExtended(t *testing.T) {
 {"first":[1,2,"three",[4]],"second":{"a":1,"b":2}q}
 _________________________________________________^_
 `},
+		{pos: 0, skip: 0, data: `   {
+			"first" : [  
+				1 , 2	,	"three" , [ 4 ] ] , 
+			"second" : { "a" : 1,
+						"b":2}q}  
+				`,
+			err: `parse error at pos 0: expected value
+   {\n\t\t\t"first" : [  \n\t\t\t\t1 , 2\t,\t"three" , [ 4 ...
+^_____________________________________________________________
+`},
 	}
 
 	for id, tc := range cases {

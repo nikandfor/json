@@ -53,9 +53,31 @@ func (e Error) Format(s fmt.State, c rune) {
 	if !s.Flag('+') {
 		return
 	}
-	fmt.Fprintf(s, "\n%s\n", e.b)
-	//	fmt.Fprintf(s, "%d ^ %d = %d [%d]\n", e.p-1, len(e.b)-e.p, len(e.b), len(pad))
-	fmt.Fprintf(s, "%s%c%s\n", pad[:e.p], '^', pad[:len(e.b)-e.p-1])
+	w := len(pad) / 2
+	b := e.b
+	p := e.p
+
+	if p > w {
+		d := p - w
+		p = w
+		b = b[d:]
+		copy(b, []byte("..."))
+	}
+	if len(b)-p-1 > w {
+		d := len(b) - p - 1 - w
+		b = b[:len(b)-d]
+		copy(b[len(b)-3:], []byte("..."))
+	}
+
+	nn := bytes.Count(b[:p], []byte{'\n'})
+	nt := bytes.Count(b[:p], []byte{'\t'})
+	b = bytes.Replace(b, []byte{'\n'}, []byte{'\\', 'n'}, -1)
+	b = bytes.Replace(b, []byte{'\t'}, []byte{'\\', 't'}, -1)
+	p += nn + nt
+
+	fmt.Fprintf(s, "\n%s\n", b)
+	//	fmt.Fprintf(s, "%d ^ %d = %d [%d]\n", p, len(b)-p-1, len(b), len(pad))
+	fmt.Fprintf(s, "%s%c%s\n", pad[:p], '^', pad[:len(b)-p-1])
 }
 
 type Value struct {
