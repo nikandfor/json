@@ -1,10 +1,15 @@
 package json
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"reflect"
 	"strings"
 )
+
+func Unmarshal(data []byte, v interface{}) error {
+	return Wrap(data).Unmarshal(v)
+}
 
 func (v *Value) Unmarshal(r interface{}) error {
 	if u, ok := r.(json.Unmarshaler); ok {
@@ -63,6 +68,24 @@ func (v *Value) unmarshal(rv reflect.Value) error {
 		}
 		rv.SetString(r)
 	case reflect.Slice:
+		if tp, err := v.Type(); err == nil && tp == String && rv.Type().Elem().Kind() == reflect.Uint8 {
+			str := v.Bytes()
+			n := base64.StdEncoding.DecodedLen(len(str))
+			if n < rv.Cap() {
+				rv.Set(rv.Slice(0, n))
+			} else {
+				rv.Set(rv.Slice(0, rv.Cap()))
+				for rv.Len() < n {
+					rv.Set(reflect.Append(rv, reflect.Zero(rv.Type().Elem())))
+				}
+			}
+			_, err := base64.StdEncoding.Decode(rv.Interface().([]byte), str)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+
 		i, err := v.ArrayIter()
 		if err != nil {
 			return err
@@ -155,8 +178,8 @@ func (v *Value) unmarshal(rv reflect.Value) error {
 }
 
 var (
-	zeroVal           reflect.Value
-	structFieldsCache map[reflect.Type]map[string]int
+	structFieldsCache     map[reflect.Type]map[string]int
+	structFieldNamesCache map[reflect.Type][]string
 )
 
 func getStructField(tv reflect.Value, f string) (v_ int, ok_ bool) {
@@ -181,6 +204,19 @@ func getStructField(tv reflect.Value, f string) (v_ int, ok_ bool) {
 	return fi, true
 }
 
+func getStructName(t reflect.Type, i int) string {
+	if structFieldNamesCache == nil {
+		structFieldNamesCache = make(map[reflect.Type][]string)
+	}
+	sub, ok := structFieldNamesCache[t]
+	if !ok {
+		sub = buildFieldNamesCache(t)
+		structFieldNamesCache[t] = sub
+	}
+
+	return sub[i]
+}
+
 func buildFieldsCache(t reflect.Type) map[string]int {
 	r := make(map[string]int)
 	for i := 0; i < t.NumField(); i++ {
@@ -198,6 +234,24 @@ func buildFieldsCache(t reflect.Type) map[string]int {
 			continue
 		}
 		r[name] = ft.Index[0]
+	}
+	return r
+}
+
+func buildFieldNamesCache(t reflect.Type) []string {
+	r := make([]string, t.NumField())
+	for i := 0; i < t.NumField(); i++ {
+		ft := t.Field(i)
+		name := ft.Name
+		tag, ok := ft.Tag.Lookup("json")
+		if ok {
+			if tag == "-" {
+				continue
+			}
+			tags := strings.Split(tag, ",")
+			name = tags[0]
+		}
+		r[i] = name
 	}
 	return r
 }
