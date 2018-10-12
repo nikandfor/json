@@ -108,15 +108,16 @@ func (v *Value) Get(ks ...interface{}) (*Value, error) {
 	}
 	var err error
 	b := v.buf
-	i := 0
+	var i, end int = 0, len(b)
 	for _, k := range ks {
+		i = skipSpaces(b, i)
 		switch k := k.(type) {
 		case int:
-			b, err = getFromArray(b, k, i)
+			i, end, err = getFromArray(b[:end], k, i)
 		case string:
-			b, err = getFromObject(b, []byte(k), i)
+			i, end, err = getFromObject(b[:end], []byte(k), i)
 		case []byte:
-			b, err = getFromObject(b, k, i)
+			i, end, err = getFromObject(b[:end], k, i)
 		default:
 			panic(k)
 		}
@@ -125,7 +126,7 @@ func (v *Value) Get(ks ...interface{}) (*Value, error) {
 		}
 	}
 
-	return &Value{buf: b, parsed: true}, nil
+	return &Value{buf: b[i:end], parsed: true}, nil
 }
 
 func (v *Value) MustGet(ks ...interface{}) *Value {
@@ -136,54 +137,43 @@ func (v *Value) MustGet(ks ...interface{}) *Value {
 	return v
 }
 
-func skipSpaces(b []byte, s int) int {
-	for i, c := range b[s:] {
-		switch c {
-		case ' ', '\n', '\t', '\v', '\r':
-			continue
-		default:
-			return s + i
-		}
-	}
-	return s + len(b)
-}
-
-func getFromArray(b []byte, k int, i int) ([]byte, error) {
+func getFromArray(b []byte, k int, i int) (st_ int, i_ int, e_ error) {
 	if b[i] != '[' {
-		return nil, NewError(i, ErrUnexpectedChar)
+		return i, len(b), NewError(i, ErrUnexpectedChar)
 	}
 	i++
 	var err error
 	var start int
 	for j := 0; ; j++ {
+		i = skipSpaces(b, i)
 		if i == len(b) {
-			return nil, NewError(i, ErrUnexpectedEnd)
+			return i, len(b), NewError(i, ErrUnexpectedEnd)
 		}
 		if b[i] == ']' {
-			return nil, NewError(i, ErrOutOfRange)
+			return i, len(b), NewError(i, ErrOutOfRange)
 		}
 		if j != 0 {
 			if b[i] != ',' {
-				return nil, NewError(i, ErrUnexpectedChar)
+				return i, len(b), NewError(i, ErrUnexpectedChar)
 			}
 			i++
+			i = skipSpaces(b, i)
 		}
 		start = i
 		i, err = skipValue(b, i)
 		if err != nil {
-			return nil, err
+			return i, len(b), err
 		}
 		if j == k {
 			break
 		}
 	}
-	b = b[start:i]
-	return b, nil
+	return start, i, nil
 }
 
-func getFromObject(b []byte, k []byte, i int) (r_ []byte, e_ error) {
+func getFromObject(b []byte, k []byte, i int) (st_ int, i_ int, e_ error) {
 	if b[i] != '{' {
-		return nil, NewError(i, ErrUnexpectedChar)
+		return i, len(b), NewError(i, ErrUnexpectedChar)
 	}
 	i++
 	var err error
@@ -191,42 +181,45 @@ func getFromObject(b []byte, k []byte, i int) (r_ []byte, e_ error) {
 	var start int
 	first := true
 	for {
+		i = skipSpaces(b, i)
 		if i == len(b) {
-			return nil, NewError(i, ErrUnexpectedEnd)
+			return i, len(b), NewError(i, ErrUnexpectedEnd)
 		}
 		if b[i] == '}' {
-			return nil, NewError(i, ErrNoSuchKey)
+			return i, len(b), NewError(i, ErrNoSuchKey)
 		}
 		if !first {
 			if b[i] != ',' {
-				return nil, NewError(i, ErrUnexpectedChar)
+				return i, len(b), NewError(i, ErrUnexpectedChar)
 			}
 			i++
+			i = skipSpaces(b, i)
 		} else {
 			first = false
 		}
 		eq, i, err = checkKey(b, k, i)
 		if err != nil {
-			return nil, err
+			return i, len(b), err
 		}
+		i = skipSpaces(b, i)
 		if i == len(b) {
-			return nil, NewError(i, ErrUnexpectedEnd)
+			return i, len(b), NewError(i, ErrUnexpectedEnd)
 		}
 		if b[i] != ':' {
-			return nil, NewError(i, ErrUnexpectedChar)
+			return i, len(b), NewError(i, ErrUnexpectedChar)
 		}
 		i++
+		i = skipSpaces(b, i)
 		start = i
 		i, err = skipValue(b, i)
 		if err != nil {
-			return nil, err
+			return i, len(b), err
 		}
 		if eq {
 			break
 		}
 	}
-	b = b[start:i]
-	return b, nil
+	return start, i, nil
 }
 
 func checkKey(b, k []byte, i int) (bool, int, error) {
@@ -263,6 +256,21 @@ func checkKey(b, k []byte, i int) (bool, int, error) {
 	return eq, i, nil
 }
 
+func skipSpaces(b []byte, s int) int {
+	if s == len(b) {
+		return s
+	}
+	for i, c := range b[s:] {
+		switch c {
+		case ' ', '\n', '\t', '\v', '\r':
+			continue
+		default:
+			return s + i
+		}
+	}
+	return s + len(b)
+}
+
 func skipString(b []byte, s int) (int, error) {
 	if b[s] != '"' {
 		return s, NewError(s, ErrUnexpectedChar)
@@ -289,6 +297,7 @@ func skipArray(b []byte, i int) (int, error) {
 	var err error
 	first := true
 	for {
+		i = skipSpaces(b, i)
 		if i == len(b) {
 			return i, NewError(i, ErrUnexpectedEnd)
 		}
@@ -318,6 +327,7 @@ func skipObject(b []byte, i int) (int, error) {
 	var err error
 	first := true
 	for {
+		i = skipSpaces(b, i)
 		if i == len(b) {
 			return i, NewError(i, ErrUnexpectedEnd)
 		}
@@ -329,6 +339,7 @@ func skipObject(b []byte, i int) (int, error) {
 				return i, NewError(i, ErrUnexpectedChar)
 			}
 			i++
+			i = skipSpaces(b, i)
 		} else {
 			first = false
 		}
@@ -336,6 +347,7 @@ func skipObject(b []byte, i int) (int, error) {
 		if err != nil {
 			return i, err
 		}
+		i = skipSpaces(b, i)
 		if i == len(b) {
 			return i, NewError(i, ErrUnexpectedEnd)
 		}
@@ -397,10 +409,10 @@ func skipNumber(b []byte, s int) (int, error) {
 }
 
 func skipValue(b []byte, i int) (int, error) {
+	i = skipSpaces(b, i)
 	if i == len(b) {
 		return i, NewError(i, ErrExpectedValue)
 	}
-	//	log.Printf("skipStart: %c", b[0])
 	switch b[i] {
 	case '[':
 		return skipArray(b, i)

@@ -249,6 +249,7 @@ func TestGetOK(t *testing.T) {
 		{data: `{"a":1,"b":2,"c":3}`, res: `3`, keys: []interface{}{"c"}},
 		{data: `{"a":1,"b":[0,1,2,3],"c":4}`, res: `2`, keys: []interface{}{[]byte("b"), 2}},
 		{data: `{"a":1,"b":[0,1,true,3],"c":4}`, res: `true`, keys: []interface{}{"b", 2}},
+		{data: ` { "a" : 1 , "b" : [ 1 , false , { } , null ], "c" : [ 0 , 1 , true , 3 ] , "d" : 4 } `, res: `null`, keys: []interface{}{"b", 3}},
 	}
 
 	for _, tc := range cases {
@@ -302,7 +303,7 @@ func TestErrorExtended(t *testing.T) {
 		skipadd bool
 	}{
 		{pos: 0, skip: 0, data: `[1,2,3]`, err: "<nil>", skipadd: true},
-		{pos: -3, skip: -3, data: `[1,2,3 3]`, err: "parse error at pos 6: unexpected char\n[1,2,3 3]\n______^__\n"},
+		{pos: -2, skip: -2, data: `[1,2,3 3]`, err: "parse error at pos 7: unexpected char\n[1,2,3 3]\n_______^_\n"},
 		{pos: 0, skip: 0, data: `tru`, err: "parse error at pos 0: unexpected char\ntru\n^__\n"},
 		{pos: -1, skip: -1, data: `[1,2,3}`, err: "parse error at pos 6: unexpected char\n[1,2,3}\n______^\n"},
 		{pos: 3, skip: 3, data: `[1,q,3]`, err: "parse error at pos 3: expected value\n[1,q,3]\n___^___\n"},
@@ -318,15 +319,15 @@ func TestErrorExtended(t *testing.T) {
 {"first":[1,2,"three",[4]],"second":{"a":1,"b":2}q}
 _________________________________________________^_
 `},
-		{pos: 0, skip: 0, data: `   {
+		{pos: 92, skip: 92, data: `   {
 			"first" : [  
 				1 , 2	,	"three" , [ 4 ] ] , 
 			"second" : { "a" : 1,
 						"b":2}q}  
 				`,
-			err: `parse error at pos 0: expected value
-   {\n\t\t\t"first" : [  \n\t\t\t\t1 , 2\t,\t"three" , [ 4 ...
-^_____________________________________________________________
+			err: `parse error at pos 92: unexpected char
+... 4 ] ] , \n\t\t\t"second" : { "a" : 1,\n\t\t\t\t\t\t"b":2}q}  \n\t\t\t\t
+_____________________________________________________________^_____________
 `},
 	}
 
