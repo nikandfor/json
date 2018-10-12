@@ -92,7 +92,7 @@ func TestUnmarshalStructNested(t *testing.T) {
 		S  string
 		Sp *string
 		B  []byte
-		Bp []byte
+		Bp *[]byte
 		A  B
 		Ap *B
 	}
@@ -101,6 +101,7 @@ func TestUnmarshalStructNested(t *testing.T) {
 
 	ival := 2
 	sval := "sp_val"
+	bval := []byte{3, 2, 1}
 	err := WrapString(`{"i":1,"ip":2,"s":"s_val","sp":"sp_val","b":[1,2,3],"bp":[3,2,1],"a":{"e":4,"d":"d_val"},"ap":null}`).Unmarshal(&a)
 	if assert.NoError(t, err) {
 		assert.Equal(t, A{
@@ -109,7 +110,7 @@ func TestUnmarshalStructNested(t *testing.T) {
 			S:  "s_val",
 			Sp: &sval,
 			B:  []byte{1, 2, 3},
-			Bp: []byte{3, 2, 1},
+			Bp: &bval,
 			A:  B{E: 4, D: "d_val"},
 			Ap: nil,
 		}, a)

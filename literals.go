@@ -12,7 +12,7 @@ func (v *Value) Buffer() []byte {
 func (v *Value) String() string {
 	b := v.buf[v.i:v.end]
 	if !v.parsed {
-		_, err := skipValue(b, 0)
+		_, err := skipValue(v.buf, 0)
 		if err != nil {
 			return string(b)
 		}
@@ -27,7 +27,7 @@ func (v *Value) String() string {
 func (v *Value) CheckString() (string, error) {
 	b := v.buf[v.i:v.end]
 	if !v.parsed {
-		_, err := skipValue(b, 0)
+		_, err := skipValue(v.buf, 0)
 		if err != nil {
 			return "", err
 		}
@@ -41,6 +41,44 @@ func (v *Value) CheckString() (string, error) {
 
 func (v *Value) MustCheckString() string {
 	r, err := v.CheckString()
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
+
+func (v *Value) Bytes() []byte {
+	b := v.buf[v.i:v.end]
+	if !v.parsed {
+		_, err := skipValue(v.buf, 0)
+		if err != nil {
+			return b
+		}
+		v.parsed = true
+	}
+	if b[0] == '"' {
+		return b[1 : len(b)-1]
+	}
+	return b
+}
+
+func (v *Value) CheckBytes() ([]byte, error) {
+	b := v.buf[v.i:v.end]
+	if !v.parsed {
+		_, err := skipValue(v.buf, 0)
+		if err != nil {
+			return nil, err
+		}
+		v.parsed = true
+	}
+	if b[0] == '"' {
+		return b[1 : len(b)-1], nil
+	}
+	return nil, NewError(v.buf, v.i, ErrConversion)
+}
+
+func (v *Value) MustCheckBytes() []byte {
+	r, err := v.CheckBytes()
 	if err != nil {
 		panic(err)
 	}
@@ -85,11 +123,11 @@ func (v *Value) Int64() (int64, error) {
 	}
 	for _, c := range buf {
 		if c < '0' || c > '9' {
-			return r, ErrUnexpectedChar
+			return r, NewError(v.buf, v.i, ErrUnexpectedChar)
 		}
 		r = r*10 + (int64)(c-'0')
 		if r < 0 {
-			return r, ErrOverflow
+			return r, NewError(v.buf, v.i, ErrOverflow)
 		}
 	}
 
@@ -118,12 +156,12 @@ func (v *Value) Uint64() (uint64, error) {
 	}
 	for _, c := range buf {
 		if c < '0' || c > '9' {
-			return r, ErrUnexpectedChar
+			return r, NewError(v.buf, v.i, ErrUnexpectedChar)
 		}
 		rp := r
 		r = r*10 + (uint64)(c-'0')
 		if r < rp {
-			return r, ErrOverflow
+			return r, NewError(v.buf, v.i, ErrOverflow)
 		}
 	}
 

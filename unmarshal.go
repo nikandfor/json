@@ -103,7 +103,6 @@ func (v *Value) unmarshal(rv reflect.Value) error {
 		}
 
 	case reflect.Struct:
-		tp := rv.Type()
 		rv.Set(reflect.Zero(rv.Type()))
 
 		i, err := v.ObjectIter()
@@ -113,20 +112,16 @@ func (v *Value) unmarshal(rv reflect.Value) error {
 
 		for i.HasNext() {
 			k, val := i.Next()
-			kk := k.MustCheckString()
 
-			ft, ok := tp.FieldByName(kk)
+			fv, ok := getStructField(rv, k.MustCheckString())
+
 			if !ok {
-				ft, ok = tp.FieldByName(strings.Title(kk))
+				continue
 			}
-			if ok {
-				fv := rv.Field(ft.Index[0])
-				err = val.unmarshal(fv)
-				if err != nil {
-					return err
-				}
-			} else {
-				panic("slow path needed")
+
+			err = val.unmarshal(fv)
+			if err != nil {
+				return err
 			}
 		}
 
@@ -134,4 +129,52 @@ func (v *Value) unmarshal(rv reflect.Value) error {
 		panic(rv)
 	}
 	return nil
+}
+
+var (
+	zeroVal           reflect.Value
+	structFieldsCache map[reflect.Type]map[string]int
+)
+
+func getStructField(tv reflect.Value, f string) (v_ reflect.Value, ok_ bool) {
+	t := tv.Type()
+
+	if structFieldsCache == nil {
+		structFieldsCache = make(map[reflect.Type]map[string]int)
+	}
+	sub, ok := structFieldsCache[t]
+	if !ok {
+		sub = buildFieldsCache(t)
+		structFieldsCache[t] = sub
+	}
+
+	fi, ok := sub[f]
+	if !ok {
+		fi, ok = sub[strings.Title(f)]
+	}
+	if !ok {
+		return zeroVal, false
+	}
+	return tv.Field(fi), true
+}
+
+func buildFieldsCache(t reflect.Type) map[string]int {
+	r := make(map[string]int)
+	for i := 0; i < t.NumField(); i++ {
+		ft := t.Field(i)
+		name := ft.Name
+		tag, ok := ft.Tag.Lookup("json")
+		if ok {
+			if tag == "-" {
+				continue
+			}
+			tags := strings.Split(tag, ",")
+			name = tags[0]
+		}
+		if _, ok := r[name]; ok || name == "" {
+			continue
+		}
+		r[name] = ft.Index[0]
+	}
+	return r
 }
