@@ -17,7 +17,14 @@ func (v *Value) Unmarshal(r interface{}) error {
 func (v *Value) unmarshal(rv reflect.Value) error {
 	for rv.Kind() == reflect.Ptr {
 		ok, err := v.IsNull()
-		if err == nil && ok {
+		isNil := err == nil && ok
+
+		if isNil && rv.IsNil() {
+			return nil
+		}
+
+		if isNil {
+			rv = rv.Elem()
 			rv.Set(reflect.Zero(rv.Type()))
 			return nil
 		}
@@ -56,28 +63,35 @@ func (v *Value) unmarshal(rv reflect.Value) error {
 		}
 		rv.SetString(r)
 	case reflect.Slice:
-		elt := rv.Type().Elem()
-
-		res := reflect.MakeSlice(rv.Type(), 0, 0)
-
 		i, err := v.ArrayIter()
 		if err != nil {
 			return err
 		}
+		j := 0
 		for i.HasNext() {
 			n := i.Next()
-			re := reflect.New(elt)
-			err := n.unmarshal(re)
+
+			if j < rv.Len() {
+				err = n.unmarshal(rv.Index(j))
+			} else if j < rv.Cap() {
+				rv.Set(rv.Slice(0, j+1))
+				err = n.unmarshal(rv.Index(j))
+			} else {
+				rv.Set(reflect.Append(rv, reflect.Zero(rv.Type().Elem())))
+				err = n.unmarshal(rv.Index(j))
+			}
 			if err != nil {
 				return err
 			}
-			res = reflect.Append(res, re.Elem())
+			j++
 		}
 
-		if res.Len() != 0 {
-			rv.Set(res)
-		} else {
-			rv.Set(reflect.Zero(rv.Type()))
+		if j < rv.Len() {
+			rv.Set(rv.Slice(0, j))
+		}
+
+		if rv.IsNil() {
+			rv.Set(reflect.MakeSlice(rv.Type(), 0, 0))
 		}
 
 	case reflect.Array:
@@ -103,7 +117,8 @@ func (v *Value) unmarshal(rv reflect.Value) error {
 		}
 
 	case reflect.Struct:
-		rv.Set(reflect.Zero(rv.Type()))
+		//	rv.Set(reflect.Zero(rv.Type()))
+		vis := make([]bool, rv.NumField())
 
 		i, err := v.ObjectIter()
 		if err != nil {
@@ -113,15 +128,23 @@ func (v *Value) unmarshal(rv reflect.Value) error {
 		for i.HasNext() {
 			k, val := i.Next()
 
-			fv, ok := getStructField(rv, k.MustCheckString())
+			fi, ok := getStructField(rv, k.MustCheckString())
 
 			if !ok {
 				continue
 			}
 
-			err = val.unmarshal(fv)
+			err = val.unmarshal(rv.Field(fi))
 			if err != nil {
 				return err
+			}
+
+			vis[fi] = true
+		}
+
+		for i, vis := range vis {
+			if !vis {
+				rv.Field(i).Set(reflect.Zero(rv.Field(i).Type()))
 			}
 		}
 
@@ -136,7 +159,7 @@ var (
 	structFieldsCache map[reflect.Type]map[string]int
 )
 
-func getStructField(tv reflect.Value, f string) (v_ reflect.Value, ok_ bool) {
+func getStructField(tv reflect.Value, f string) (v_ int, ok_ bool) {
 	t := tv.Type()
 
 	if structFieldsCache == nil {
@@ -153,9 +176,9 @@ func getStructField(tv reflect.Value, f string) (v_ reflect.Value, ok_ bool) {
 		fi, ok = sub[strings.Title(f)]
 	}
 	if !ok {
-		return zeroVal, false
+		return 0, false
 	}
-	return tv.Field(fi), true
+	return fi, true
 }
 
 func buildFieldsCache(t reflect.Type) map[string]int {
