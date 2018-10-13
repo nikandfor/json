@@ -3,7 +3,6 @@ package json
 type ArrayIter struct {
 	v    Value
 	last int
-	err  error
 }
 
 func (v *Value) ArrayIter() (*ArrayIter, error) {
@@ -13,6 +12,14 @@ func (v *Value) ArrayIter() (*ArrayIter, error) {
 	}
 	if tp != Array {
 		return nil, NewError(v.buf, v.i, ErrConversion)
+	}
+	if !v.parsed {
+		end, err := skipValue(v.buf, v.i)
+		if err != nil {
+			return nil, err
+		}
+		v.end = end
+		v.parsed = true
 	}
 
 	return &ArrayIter{v: *v, last: v.i}, nil
@@ -42,23 +49,14 @@ func (it *ArrayIter) HasNext() bool {
 func (it *ArrayIter) Next() *Value {
 	i := it.last
 	b := it.v.buf
-	end, err := skipValue(b, i)
-	if err != nil {
-		it.err = err
-		return nil
-	}
+	end, _ := skipValue(b, i)
 	it.last = end
 	return &Value{buf: b, i: i, end: end}
-}
-
-func (it *ArrayIter) Err() error {
-	return it.err
 }
 
 type ObjectIter struct {
 	v    Value
 	last int
-	err  error
 }
 
 func (v *Value) ObjectIter() (*ObjectIter, error) {
@@ -68,6 +66,14 @@ func (v *Value) ObjectIter() (*ObjectIter, error) {
 	}
 	if tp != Object {
 		return nil, NewError(v.buf, v.i, ErrConversion)
+	}
+	if !v.parsed {
+		end, err := skipValue(v.buf, v.i)
+		if err != nil {
+			return nil, err
+		}
+		v.end = end
+		v.parsed = true
 	}
 
 	return &ObjectIter{v: *v, last: v.i}, nil
@@ -98,11 +104,7 @@ func (it *ObjectIter) Next() (k, v *Value) {
 	i := it.last
 	b := it.v.buf
 
-	end, err := skipValue(b, i)
-	if err != nil {
-		it.err = err
-		return
-	}
+	end, _ := skipValue(b, i)
 
 	k = &Value{buf: b, i: i, end: end}
 
@@ -111,11 +113,7 @@ func (it *ObjectIter) Next() (k, v *Value) {
 	i++ // ,
 	i = skipSpaces(b, i)
 
-	end, err = skipValue(b, i)
-	if err != nil {
-		it.err = err
-		return
-	}
+	end, _ = skipValue(b, i)
 
 	v = &Value{buf: b, i: i, end: end}
 
@@ -123,8 +121,4 @@ func (it *ObjectIter) Next() (k, v *Value) {
 	it.last = i
 
 	return
-}
-
-func (it *ObjectIter) Err() error {
-	return it.err
 }

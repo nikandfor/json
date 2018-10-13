@@ -1,13 +1,26 @@
 package json
 
-import (
-	"bytes"
-)
-
 type Value struct {
 	buf    []byte
 	i, end int
 	parsed bool
+}
+
+func Parse(b []byte) (*Value, error) {
+	i := skipSpaces(b, 0)
+	end, err := skipValue(b, i)
+	if err != nil {
+		return nil, err
+	}
+	tail := skipSpaces(b, end)
+	if tail != len(b) {
+		return nil, ErrUnexpectedChar
+	}
+	return &Value{buf: b, i: i, end: end, parsed: true}, nil
+}
+
+func ParseString(s string) (*Value, error) {
+	return Parse([]byte(s))
 }
 
 func Wrap(b []byte) *Value {
@@ -227,6 +240,9 @@ func skipObject(b []byte, i int) (int, error) {
 		} else {
 			first = false
 		}
+		if i == len(b) {
+			return i, NewError(b, i, ErrUnexpectedEnd)
+		}
 		i, err = skipString(b, i)
 		if err != nil {
 			return i, err
@@ -246,8 +262,8 @@ func skipObject(b []byte, i int) (int, error) {
 	}
 }
 
-func skipNumber(b []byte, s int) (int, error) {
-	var off int = len(b)
+func skipNumber(b []byte, s int) (i_ int, err error) {
+	var off int = len(b) - s
 	expSign := true
 	expPoint := true
 	expE := false
@@ -292,7 +308,7 @@ func skipNumber(b []byte, s int) (int, error) {
 	return s + off, nil
 }
 
-func skipValue(b []byte, i int) (int, error) {
+func skipValue(b []byte, i int) (i_ int, err error) {
 	i = skipSpaces(b, i)
 	if i == len(b) {
 		return i, NewError(b, i, ErrExpectedValue)
@@ -305,21 +321,33 @@ func skipValue(b []byte, i int) (int, error) {
 	case '"':
 		return skipString(b, i)
 	case 't':
-		if bytes.HasPrefix(b[i:], []byte("true")) {
+		if cmp(b[i:], []byte("true")) {
 			return i + 4, nil
 		}
 		return i, NewError(b, i, ErrUnexpectedChar)
 	case 'f':
-		if bytes.HasPrefix(b[i:], []byte("false")) {
+		if cmp(b[i:], []byte("false")) {
 			return i + 5, nil
 		}
 		return i, NewError(b, i, ErrUnexpectedChar)
 	case 'n':
-		if bytes.HasPrefix(b[i:], []byte("null")) {
+		if cmp(b[i:], []byte("null")) {
 			return i + 4, nil
 		}
 		return i, NewError(b, i, ErrUnexpectedChar)
 	default:
 		return skipNumber(b, i)
 	}
+}
+
+func cmp(b, v []byte) bool {
+	if len(b) < len(v) {
+		return false
+	}
+	for i, c := range v {
+		if b[i] != c {
+			return false
+		}
+	}
+	return true
 }

@@ -1,7 +1,6 @@
 package json
 
 import (
-	"bytes"
 	"strconv"
 )
 
@@ -189,20 +188,27 @@ func (v *Value) MustFloat64() float64 {
 }
 
 func (v *Value) Bool() (bool, error) {
-	if bytes.Equal(v.buf[v.i:v.end], []byte("true")) {
-		return true, nil
+	if !v.parsed {
+		end, err := skipValue(v.buf, v.i)
+		if err != nil {
+			return false, err
+		}
+		v.end = end
+		v.parsed = true
 	}
-	if bytes.Equal(v.buf[v.i:v.end], []byte("false")) {
-		return false, nil
-	}
-	return false, NewError(v.buf, v.i, ErrConversion)
+	return v.buf[v.i] == 't', nil
 }
 
 func (v *Value) IsNull() (bool, error) {
-	if bytes.Equal(v.buf[v.i:v.end], []byte("null")) {
-		return true, nil
+	if !v.parsed {
+		end, err := skipValue(v.buf, v.i)
+		if err != nil {
+			return false, err
+		}
+		v.end = end
+		v.parsed = true
 	}
-	return false, NewError(v.buf, v.i, ErrConversion)
+	return v.buf[v.i] == 'n', nil
 }
 
 func (v *Value) MustBool() bool {

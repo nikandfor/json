@@ -108,9 +108,6 @@ func (v *Value) unmarshalStruct(rv reflect.Value) error {
 
 	for i.HasNext() {
 		k, val := i.Next()
-		if k == nil {
-			return i.Err()
-		}
 
 		f, ok := m.m[string(k.MustCheckBytes())]
 		if !ok {
@@ -266,9 +263,6 @@ func (v *Value) unmarshalArray(rv reflect.Value) error {
 	j := 0
 	for i.HasNext() {
 		n := i.Next()
-		if n == nil {
-			return i.Err()
-		}
 
 		if j < rv.Len() {
 			err = n.unmarshal(rv.Index(j))

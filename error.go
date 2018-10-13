@@ -1,7 +1,6 @@
 package json
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 )
@@ -68,13 +67,76 @@ func (e Error) Format(s fmt.State, c rune) {
 		copy(b[len(b)-3:], []byte("..."))
 	}
 
-	nn := bytes.Count(b[:p], []byte{'\n'})
-	nt := bytes.Count(b[:p], []byte{'\t'})
-	b = bytes.Replace(b, []byte{'\n'}, []byte{'\\', 'n'}, -1)
-	b = bytes.Replace(b, []byte{'\t'}, []byte{'\\', 't'}, -1)
-	p += nn + nt
+	//	nn := bytes.Count(b[:p], []byte{'\n'})
+	//	nt := bytes.Count(b[:p], []byte{'\t'})
+	//	b = bytes.Replace(b, []byte{'\n'}, []byte{'\\', 'n'}, -1)
+	//	b = bytes.Replace(b, []byte{'\t'}, []byte{'\\', 't'}, -1)
+	//	p += nn + nt
+	b, ss := escapeString(b, p)
+	p += ss
+
+	one := 1
+	if p == len(b) {
+		one = 0
+	}
 
 	fmt.Fprintf(s, "\n%s\n", b)
-	//	fmt.Fprintf(s, "%d ^ %d = %d [%d]\n", p, len(b)-p-1, len(b), len(pad))
-	fmt.Fprintf(s, "%s%c%s\n", pad[:p], '^', pad[:len(b)-p-1])
+	//	fmt.Fprintf(s, "%d ^ %d = %d [%d]\n", p, len(b)-p-one, len(b), len(pad))
+	fmt.Fprintf(s, "%s%c%s\n", pad[:p], '^', pad[:len(b)-p-one])
+}
+
+func escapeString(b []byte, p int) ([]byte, int) {
+	var r int
+	for i, c := range b {
+		if c >= 0x20 && c < 0x80 {
+			continue
+		}
+		r = i
+		break
+	}
+	if r == 0 {
+		return b, 0
+	}
+	res := make([]byte, r+(len(b)-r)*2)
+	w := copy(res, b[:r])
+	ss := 0
+	for _, c := range b[r:] {
+		if c >= 0x20 && c < 0x80 {
+			res[w] = c
+			w++
+			continue
+		}
+		switch c {
+		case '\t':
+			res[w] = '\\'
+			res[w+1] = 't'
+			w += 2
+		case '\n':
+			res[w] = '\\'
+			res[w+1] = 'n'
+			w += 2
+		case '\r':
+			res[w] = '\\'
+			res[w+1] = 'r'
+			w += 2
+		case '\b':
+			res[w] = '\\'
+			res[w+1] = 'b'
+			w += 2
+		case '\f':
+			res[w] = '\\'
+			res[w+1] = 'f'
+			w += 2
+		default:
+			res[w] = '\\'
+			res[w+1] = '*'
+			w += 2
+		}
+		if w-ss < p {
+			ss++
+		}
+	}
+	res = res[:w]
+
+	return res, ss
 }

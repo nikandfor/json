@@ -72,7 +72,11 @@ func TestSkipString(t *testing.T) {
 
 		off, err := skipString(data, 0)
 		assert.NoError(t, err, "error; for %v (%s)", tc, data)
-		assert.Equal(t, len(data)-1, off, "offset; for %v (%s)", tc, data)
+		assert.Equal(t, len(data)-1, off, "offset; for %v '%s'", tc, data)
+
+		if t.Failed() {
+			break
+		}
 	}
 }
 
