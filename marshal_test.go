@@ -7,6 +7,8 @@ import (
 )
 
 func TestMarshal(t *testing.T) {
+	t.Skip("enable me")
+
 	type B struct {
 		E int
 		D string
@@ -39,6 +41,8 @@ func TestMarshal(t *testing.T) {
 }
 
 func TestMarshalTags(t *testing.T) {
+	t.Skip("enable me")
+
 	type B struct {
 		E int    `json:"e"`
 		D string `json:"d"`

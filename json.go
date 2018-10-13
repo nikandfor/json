@@ -7,11 +7,11 @@ import (
 type Value struct {
 	buf    []byte
 	i, end int
-	parsed bool
 }
 
 func Wrap(b []byte) *Value {
-	return &Value{buf: b, end: len(b)}
+	i := skipSpaces(b, 0)
+	return &Value{buf: b, i: i, end: len(b)}
 }
 
 func WrapString(s string) *Value {
@@ -24,16 +24,15 @@ func (v *Value) Get(ks ...interface{}) (*Value, error) {
 	}
 	var err error
 	var i, end int = v.i, v.end
-	b := v.buf[i:end]
 	for _, k := range ks {
-		i = skipSpaces(b, i)
+		i = skipSpaces(v.buf, i)
 		switch k := k.(type) {
 		case int:
-			i, end, err = getFromArray(b[:end], k, i)
+			i, end, err = getFromArray(v.buf[:end], k, i)
 		case string:
-			i, end, err = getFromObject(b[:end], []byte(k), i)
+			i, end, err = getFromObject(v.buf[:end], []byte(k), i)
 		case []byte:
-			i, end, err = getFromObject(b[:end], k, i)
+			i, end, err = getFromObject(v.buf[:end], k, i)
 		default:
 			panic(k)
 		}
@@ -42,7 +41,7 @@ func (v *Value) Get(ks ...interface{}) (*Value, error) {
 		}
 	}
 
-	return &Value{buf: b, i: i, end: end, parsed: true}, nil
+	return &Value{buf: v.buf, i: i, end: end}, nil
 }
 
 func (v *Value) MustGet(ks ...interface{}) *Value {
@@ -170,39 +169,6 @@ func checkKey(b, k []byte, i int) (bool, int, error) {
 		eq = false
 	}
 	return eq, i, nil
-}
-
-func skipSpaces(b []byte, s int) int {
-	if s == len(b) {
-		return s
-	}
-	for i, c := range b[s:] {
-		switch c {
-		case ' ', '\n', '\t', '\v', '\r':
-			continue
-		default:
-			return s + i
-		}
-	}
-	return s + len(b)
-}
-
-func skipString(b []byte, s int) (int, error) {
-	if b[s] != '"' {
-		return s, NewError(b, s, ErrUnexpectedChar)
-	}
-	esc := false
-	for i, c := range b[s+1:] {
-		if c == '\\' && !esc {
-			esc = true
-			continue
-		}
-		if c == '"' && !esc {
-			return s + i + 2, nil
-		}
-		esc = false
-	}
-	return s + len(b), NewError(b, s+len(b), ErrUnexpectedEnd)
 }
 
 func skipArray(b []byte, i int) (int, error) {

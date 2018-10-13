@@ -3,6 +3,7 @@ package json
 type ArrayIter struct {
 	v    Value
 	last int
+	err  error
 }
 
 func (v *Value) ArrayIter() (*ArrayIter, error) {
@@ -41,14 +42,23 @@ func (it *ArrayIter) HasNext() bool {
 func (it *ArrayIter) Next() *Value {
 	i := it.last
 	b := it.v.buf
-	end, _ := skipValue(b, i)
+	end, err := skipValue(b, i)
+	if err != nil {
+		it.err = err
+		return nil
+	}
 	it.last = end
-	return &Value{buf: b, i: i, end: end, parsed: it.v.parsed}
+	return &Value{buf: b, i: i, end: end}
+}
+
+func (it *ArrayIter) Err() error {
+	return it.err
 }
 
 type ObjectIter struct {
 	v    Value
 	last int
+	err  error
 }
 
 func (v *Value) ObjectIter() (*ObjectIter, error) {
@@ -88,21 +98,33 @@ func (it *ObjectIter) Next() (k, v *Value) {
 	i := it.last
 	b := it.v.buf
 
-	end, _ := skipValue(b, i)
+	end, err := skipValue(b, i)
+	if err != nil {
+		it.err = err
+		return
+	}
 
-	k = &Value{buf: b, i: i, end: end, parsed: it.v.parsed}
+	k = &Value{buf: b, i: i, end: end}
 
 	i = end
 	i = skipSpaces(b, i)
 	i++ // ,
 	i = skipSpaces(b, i)
 
-	end, _ = skipValue(b, i)
+	end, err = skipValue(b, i)
+	if err != nil {
+		it.err = err
+		return
+	}
 
-	v = &Value{buf: b, i: i, end: end, parsed: it.v.parsed}
+	v = &Value{buf: b, i: i, end: end}
 
 	i = end
 	it.last = i
 
 	return
+}
+
+func (it *ObjectIter) Err() error {
+	return it.err
 }

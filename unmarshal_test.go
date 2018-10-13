@@ -1,6 +1,7 @@
 package json
 
 import (
+	"encoding/base64"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,9 +35,8 @@ func TestUnmarshalLiteralPtr(t *testing.T) {
 	}
 }
 
-func TestUnmarshalSlice(t *testing.T) {
+func TestUnmarshalSliceOfInts(t *testing.T) {
 	a := []int{3, 2}
-
 	err := WrapString("null").Unmarshal(&a)
 	if assert.NoError(t, err) {
 		assert.Equal(t, []int(nil), a)
@@ -57,6 +57,32 @@ func TestUnmarshalSlice(t *testing.T) {
 	err = WrapString("[1,2,3]").Unmarshal(&a)
 	if assert.NoError(t, err) {
 		assert.Equal(t, []int{1, 2, 3}, a)
+	}
+}
+
+func TestUnmarshalStringIntoSliceOfBytes(t *testing.T) {
+	a := []byte{3, 2}
+	err := WrapString("null").Unmarshal(&a)
+	if assert.NoError(t, err) {
+		assert.Equal(t, []byte(nil), a)
+	}
+
+	a = []byte(nil)
+	err = WrapString(`""`).Unmarshal(&a)
+	if assert.NoError(t, err) {
+		assert.Equal(t, []byte{}, a)
+	}
+
+	a = []byte{3, 2}
+	err = WrapString(`""`).Unmarshal(&a)
+	if assert.NoError(t, err) {
+		assert.Equal(t, []byte{}, a)
+	}
+
+	a = []byte{3, 2}
+	err = WrapString(`"` + base64.StdEncoding.EncodeToString([]byte("qwe")) + `"`).Unmarshal(&a)
+	if assert.NoError(t, err) {
+		assert.Equal(t, []byte("qwe"), a)
 	}
 }
 
@@ -110,7 +136,7 @@ func TestUnmarshalStruct(t *testing.T) {
 		D string
 	}
 
-	var b B
+	b := B{E: 3, D: "d_not_empty"}
 	err := WrapString(`{}`).Unmarshal(&b)
 	if assert.NoError(t, err) {
 		assert.Equal(t, B{}, b)

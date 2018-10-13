@@ -380,7 +380,7 @@ func BenchmarkParseIntMy(b *testing.B) {
 
 	var v int
 	buf := []byte("123456789012345")
-	j := Value{buf: buf}
+	j := Wrap(buf)
 
 	for i := 0; i < b.N; i++ {
 		v, _ = j.Int()

@@ -12,20 +12,10 @@ const (
 )
 
 func (v *Value) Type() (Type, error) {
-	i := v.i
-	b := v.buf
-	if !v.parsed {
-		_, err := skipValue(b, 0)
-		if err != nil {
-			return 0, err
-		}
-		v.parsed = true
+	if v.i == v.end {
+		return Null, ErrExpectedValue
 	}
-	i = skipSpaces(b, i)
-	if i == len(b) {
-		return Null, NewError(b, i, ErrExpectedValue)
-	}
-	switch b[i] {
+	switch v.buf[v.i] {
 	case '[':
 		return Array, nil
 	case '{':

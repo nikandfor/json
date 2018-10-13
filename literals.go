@@ -10,33 +10,25 @@ func (v *Value) Buffer() []byte {
 }
 
 func (v *Value) String() string {
-	b := v.buf[v.i:v.end]
-	if !v.parsed {
-		_, err := skipValue(v.buf, 0)
-		if err != nil {
-			return string(b)
-		}
-		v.parsed = true
+	end, err := skipString(v.buf, v.i)
+	if err != nil {
+		return string(v.Buffer())
 	}
-	if b[0] == '"' {
-		return string(b[1 : len(b)-1])
+	if end != v.end {
+		return string(v.Buffer())
 	}
-	return string(b)
+	return string(v.buf[v.i+1 : end-1])
 }
 
 func (v *Value) CheckString() (string, error) {
-	b := v.buf[v.i:v.end]
-	if !v.parsed {
-		_, err := skipValue(v.buf, 0)
-		if err != nil {
-			return "", err
-		}
-		v.parsed = true
+	end, err := skipString(v.buf, v.i)
+	if err != nil {
+		return "", err
 	}
-	if b[0] == '"' {
-		return string(b[1 : len(b)-1]), nil
+	if end != v.end {
+		return "", ErrConversion
 	}
-	return "", NewError(v.buf, v.i, ErrConversion)
+	return string(v.buf[v.i+1 : end-1]), nil
 }
 
 func (v *Value) MustCheckString() string {
@@ -48,33 +40,22 @@ func (v *Value) MustCheckString() string {
 }
 
 func (v *Value) Bytes() []byte {
-	b := v.buf[v.i:v.end]
-	if !v.parsed {
-		_, err := skipValue(v.buf, 0)
-		if err != nil {
-			return b
-		}
-		v.parsed = true
+	end, err := skipString(v.buf, v.i)
+	if err != nil || end != v.end {
+		return v.Buffer()
 	}
-	if b[0] == '"' {
-		return b[1 : len(b)-1]
-	}
-	return b
+	return v.buf[v.i+1 : end-1]
 }
 
 func (v *Value) CheckBytes() ([]byte, error) {
-	b := v.buf[v.i:v.end]
-	if !v.parsed {
-		_, err := skipValue(v.buf, 0)
-		if err != nil {
-			return nil, err
-		}
-		v.parsed = true
+	end, err := skipString(v.buf, v.i)
+	if err != nil {
+		return nil, err
 	}
-	if b[0] == '"' {
-		return b[1 : len(b)-1], nil
+	if end != v.end {
+		return nil, ErrConversion
 	}
-	return nil, NewError(v.buf, v.i, ErrConversion)
+	return v.buf[v.i+1 : end-1], nil
 }
 
 func (v *Value) MustCheckBytes() []byte {
@@ -214,15 +195,15 @@ func (v *Value) MustBool() bool {
 }
 
 func (v *Value) CastBool() (bool, error) {
-	b := v.buf[v.i:v.end]
-	if !v.parsed {
-		_, err := skipValue(b, 0)
-		if err != nil {
-			return false, err
-		}
-		v.parsed = true
+	end, err := skipValue(v.buf, v.i)
+	if err != nil {
+		return false, err
 	}
-	switch b[0] {
+	if end != v.end {
+		return false, ErrConversion
+	}
+
+	switch v.buf[v.i] {
 	case '[':
 		return true, nil
 	case '{':
