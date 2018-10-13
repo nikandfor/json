@@ -11,6 +11,7 @@ import (
 	nikjson "github.com/nikandfor/json"
 )
 
+// encode/json
 func BenchmarkDecodeStdStructMedium(b *testing.B) {
 	b.ReportAllocs()
 	var data MediumPayload
@@ -28,6 +29,7 @@ func BenchmarkEncodeStdStructMedium(b *testing.B) {
 	}
 }
 
+// jsoniter
 func BenchmarkDecodeJsoniterStructMedium(b *testing.B) {
 	b.ReportAllocs()
 	var data MediumPayload
@@ -45,6 +47,7 @@ func BenchmarkEncodeJsoniterStructMedium(b *testing.B) {
 	}
 }
 
+// easyjson
 func BenchmarkDecodeEasyJsonMedium(b *testing.B) {
 	b.ReportAllocs()
 	var data MediumPayload
@@ -68,6 +71,7 @@ func BenchmarkEncodeEasyJsonMedium(b *testing.B) {
 	}
 }
 
+// nikandfor
 func BenchmarkDecodeNikandjsonV0StructMedium(b *testing.B) {
 	b.ReportAllocs()
 	var data MediumPayload
@@ -84,15 +88,6 @@ func BenchmarkDecodeNikandjsonStructMedium(b *testing.B) {
 	}
 }
 
-func BenchmarkEncodeNikandjsonV0StructMedium(b *testing.B) {
-	var data MediumPayload
-	nikjson.UnmarshalV0(mediumFixture, &data)
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		nikjson.MarshalV0(data)
-	}
-}
-
 func BenchmarkDecodeNikandjsonIterStructMedium(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -100,5 +95,22 @@ func BenchmarkDecodeNikandjsonIterStructMedium(b *testing.B) {
 		for it.HasNext() {
 			_, _ = it.Next()
 		}
+	}
+}
+
+func BenchmarkDecodeNikandjsonGetStructMedium(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		v := nikjson.Wrap(mediumFixture)
+		_, _ = v.Get("person", "gravatar", "avatars", 0, "url")
+	}
+}
+
+func BenchmarkEncodeNikandjsonV0StructMedium(b *testing.B) {
+	var data MediumPayload
+	nikjson.UnmarshalV0(mediumFixture, &data)
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		nikjson.MarshalV0(data)
 	}
 }
