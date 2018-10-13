@@ -7,11 +7,12 @@ import (
 type Value struct {
 	buf    []byte
 	i, end int
+	parsed bool
 }
 
 func Wrap(b []byte) *Value {
 	i := skipSpaces(b, 0)
-	return &Value{buf: b, i: i, end: len(b)}
+	return &Value{buf: b, i: i, end: len(b), parsed: false}
 }
 
 func WrapString(s string) *Value {
@@ -23,16 +24,16 @@ func (v *Value) Get(ks ...interface{}) (*Value, error) {
 		return v, nil
 	}
 	var err error
-	var i, end int = v.i, v.end
+	i := v.i
 	for _, k := range ks {
 		i = skipSpaces(v.buf, i)
 		switch k := k.(type) {
 		case int:
-			i, end, err = getFromArray(v.buf[:end], k, i)
+			i, err = getFromArray(v.buf, k, i)
 		case string:
-			i, end, err = getFromObject(v.buf[:end], []byte(k), i)
+			i, err = getFromObject(v.buf, []byte(k), i)
 		case []byte:
-			i, end, err = getFromObject(v.buf[:end], k, i)
+			i, err = getFromObject(v.buf, k, i)
 		default:
 			panic(k)
 		}
@@ -41,7 +42,12 @@ func (v *Value) Get(ks ...interface{}) (*Value, error) {
 		}
 	}
 
-	return &Value{buf: v.buf, i: i, end: end}, nil
+	end, err := skipValue(v.buf, i)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Value{buf: v.buf, i: i, end: end, parsed: true}, nil
 }
 
 func (v *Value) MustGet(ks ...interface{}) *Value {
@@ -52,60 +58,57 @@ func (v *Value) MustGet(ks ...interface{}) *Value {
 	return v
 }
 
-func getFromArray(b []byte, k int, i int) (st_ int, i_ int, e_ error) {
+func getFromArray(b []byte, k int, i int) (i_ int, e_ error) {
 	if b[i] != '[' {
-		return i, len(b), NewError(b, i, ErrUnexpectedChar)
+		return i, NewError(b, i, ErrUnexpectedChar)
 	}
 	i++
 	var err error
-	var start int
 	for j := 0; ; j++ {
 		i = skipSpaces(b, i)
 		if i == len(b) {
-			return i, len(b), NewError(b, i, ErrUnexpectedEnd)
+			return i, NewError(b, i, ErrUnexpectedEnd)
 		}
 		if b[i] == ']' {
-			return i, len(b), NewError(b, i, ErrOutOfRange)
+			return i, NewError(b, i, ErrOutOfRange)
 		}
 		if j != 0 {
 			if b[i] != ',' {
-				return i, len(b), NewError(b, i, ErrUnexpectedChar)
+				return i, NewError(b, i, ErrUnexpectedChar)
 			}
 			i++
 			i = skipSpaces(b, i)
 		}
-		start = i
-		i, err = skipValue(b, i)
-		if err != nil {
-			return i, len(b), err
-		}
 		if j == k {
 			break
 		}
+		i, err = skipValue(b, i)
+		if err != nil {
+			return i, err
+		}
 	}
-	return start, i, nil
+	return i, nil
 }
 
-func getFromObject(b []byte, k []byte, i int) (st_ int, i_ int, e_ error) {
+func getFromObject(b []byte, k []byte, i int) (i_ int, e_ error) {
 	if b[i] != '{' {
-		return i, len(b), NewError(b, i, ErrUnexpectedChar)
+		return i, NewError(b, i, ErrUnexpectedChar)
 	}
 	i++
 	var err error
 	var eq bool
-	var start int
 	first := true
 	for {
 		i = skipSpaces(b, i)
 		if i == len(b) {
-			return i, len(b), NewError(b, i, ErrUnexpectedEnd)
+			return i, NewError(b, i, ErrUnexpectedEnd)
 		}
 		if b[i] == '}' {
-			return i, len(b), NewError(b, i, ErrNoSuchKey)
+			return i, NewError(b, i, ErrNoSuchKey)
 		}
 		if !first {
 			if b[i] != ',' {
-				return i, len(b), NewError(b, i, ErrUnexpectedChar)
+				return i, NewError(b, i, ErrUnexpectedChar)
 			}
 			i++
 			i = skipSpaces(b, i)
@@ -114,27 +117,26 @@ func getFromObject(b []byte, k []byte, i int) (st_ int, i_ int, e_ error) {
 		}
 		eq, i, err = checkKey(b, k, i)
 		if err != nil {
-			return i, len(b), err
+			return i, err
 		}
 		i = skipSpaces(b, i)
 		if i == len(b) {
-			return i, len(b), NewError(b, i, ErrUnexpectedEnd)
+			return i, NewError(b, i, ErrUnexpectedEnd)
 		}
 		if b[i] != ':' {
-			return i, len(b), NewError(b, i, ErrUnexpectedChar)
+			return i, NewError(b, i, ErrUnexpectedChar)
 		}
 		i++
 		i = skipSpaces(b, i)
-		start = i
-		i, err = skipValue(b, i)
-		if err != nil {
-			return i, len(b), err
-		}
 		if eq {
 			break
 		}
+		i, err = skipValue(b, i)
+		if err != nil {
+			return i, err
+		}
 	}
-	return start, i, nil
+	return i, nil
 }
 
 func checkKey(b, k []byte, i int) (bool, int, error) {
