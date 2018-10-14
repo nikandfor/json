@@ -2,23 +2,6 @@ package json
 
 ////go:noescape
 
-func skipSpaces(b []byte, s int) int {
-	if s == len(b) {
-		return s
-	}
-	for i, c := range b[s:] {
-		switch c {
-		case ' ', '\t', '\n':
-			continue
-		default:
-			return s + i
-		}
-	}
-	return len(b)
-}
-
-////go:noescape
-
 func skipString(b []byte, s int) (int, error) {
 	if b[s] != '"' {
 		return s, NewError(b, s, ErrUnexpectedChar)
