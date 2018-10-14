@@ -1,0 +1,83 @@
+package json
+
+import "log"
+
+type ArrayIter struct {
+	*Reader
+}
+
+func (r *Reader) ArrayIter() *ArrayIter {
+	if r.Type() != '[' {
+		return nil
+	}
+	r.i++
+	return &ArrayIter{r}
+}
+
+func (r *ArrayIter) HasNext() bool {
+	if r == nil {
+		return false
+	}
+	log.Printf("HasNxt: %d+%d '%s'", r.ref, r.i, r.b)
+start:
+	for r.i < r.end {
+		c := r.b[r.i]
+		switch c {
+		case ' ', '\t', '\n':
+			r.i++
+			continue
+		}
+		switch c {
+		case ']':
+			r.i++
+			return false
+		case ',':
+			r.i++
+		}
+		return true
+	}
+	if r.more() {
+		goto start
+	}
+	return false
+}
+
+type ObjectIter struct {
+	*Reader
+}
+
+func (r *Reader) ObjectIter() *ObjectIter {
+	if r.Type() != '{' {
+		return nil
+	}
+	r.i++
+	return &ObjectIter{r}
+}
+
+func (r *ObjectIter) HasNext() bool {
+	if r == nil {
+		return false
+	}
+	log.Printf("HasNxt: %d+%d '%s'", r.ref, r.i, r.b)
+start:
+	for r.i < r.end {
+		c := r.b[r.i]
+		switch c {
+		case ' ', '\t', '\n':
+			r.i++
+			continue
+		}
+		switch c {
+		case ']':
+			r.i++
+			return false
+		case ',':
+			r.i++
+		}
+		return true
+	}
+	if r.more() {
+		goto start
+	}
+	return false
+}
