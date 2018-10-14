@@ -1,7 +1,5 @@
 package json
 
-import "log"
-
 type ArrayIter struct {
 	*Reader
 }
@@ -18,7 +16,7 @@ func (r *ArrayIter) HasNext() bool {
 	if r == nil {
 		return false
 	}
-	log.Printf("HasNxt: %d+%d '%s'", r.ref, r.i, r.b)
+	//	log.Printf("HasNxt: %d+%d '%s'", r.ref, r.i, r.b)
 start:
 	for r.i < r.end {
 		c := r.b[r.i]
@@ -33,6 +31,7 @@ start:
 			return false
 		case ',':
 			r.i++
+			continue
 		}
 		return true
 	}
@@ -58,7 +57,7 @@ func (r *ObjectIter) HasNext() bool {
 	if r == nil {
 		return false
 	}
-	log.Printf("HasNxt: %d+%d '%s'", r.ref, r.i, r.b)
+	//	log.Printf("HasNxt: %d+%d '%s'", r.ref, r.i, r.b)
 start:
 	for r.i < r.end {
 		c := r.b[r.i]
@@ -68,11 +67,12 @@ start:
 			continue
 		}
 		switch c {
-		case ']':
+		case '}':
 			r.i++
 			return false
 		case ',':
 			r.i++
+			continue
 		}
 		return true
 	}

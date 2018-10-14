@@ -86,7 +86,7 @@ func (r *Reader) more() bool {
 }
 
 func (r *Reader) Skip() {
-	log.Printf("Skip _: %2v + %2v '%s'", r.ref, r.i, r.b)
+	//	log.Printf("Skip _: %2v + %2v '%s'", r.ref, r.i, r.b)
 	var d int
 start:
 	for r.i < r.end {
@@ -96,7 +96,7 @@ start:
 			r.i++
 			continue
 		}
-		log.Printf("skip _: %2v + %2v '%c' %d", r.ref, r.i, c, d)
+		//	log.Printf("skip _: %2v + %2v '%c' %d", r.ref, r.i, c, d)
 		switch c {
 		case '"':
 			r.skipString()
@@ -143,7 +143,7 @@ loop:
 			if len(next) > 10 {
 				next = next[:10]
 			}
-			log.Printf("get   : '%v' from %d+%d '%s'", k, r.ref, r.i, next)
+			//	log.Printf("get   : '%v' from %d+%d '%s'", k, r.ref, r.i, next)
 		}
 		var key []byte
 		switch k := k.(type) {
@@ -166,7 +166,7 @@ loop:
 		}
 		for it := r.ObjectIter(); it.HasNext(); {
 			ok := r.compareKey(key)
-			log.Printf("compr: %v", ok)
+			//	log.Printf("compr: %v", ok)
 			r.i++
 			if ok {
 				continue loop
@@ -258,17 +258,17 @@ start:
 }
 
 func (r *Reader) compareKey(k []byte) (r_ bool) {
-	log.Printf("compKy: '%s' to %d+%d/%d '%s'", k, r.ref, r.i, r.end, r.b)
-	defer func() {
-		log.Printf("compK1: '%s' to %d+%d/%d '%s'", k, r.ref, r.i, r.end, r.b)
-	}()
+	//	log.Printf("compKy: '%s' to %d+%d/%d '%s'", k, r.ref, r.i, r.end, r.b)
+	//	defer func() {
+	//		log.Printf("compK1: '%s' to %d+%d/%d '%s'", k, r.ref, r.i, r.end, r.b)
+	//	}()
 	r.i++
 	j := 0
 	r_ = true
 start:
 	for r.i < r.end {
 		c := r.b[r.i]
-		log.Printf("compK_: '%s' to %d+%d/%d '%c'", k, r.ref, r.i, r.end, c)
+		//	log.Printf("compK_: '%s' to %d+%d/%d '%c'", k, r.ref, r.i, r.end, c)
 		r.i++
 		if c == '"' {
 			if j < len(k) {
@@ -337,7 +337,7 @@ start:
 		goto start
 	}
 
-	return nil
+	return r.decoded
 }
 
 func (r *Reader) Err() error {
