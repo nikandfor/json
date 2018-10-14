@@ -13,33 +13,6 @@ func Unmarshal(data []byte, v interface{}) error {
 }
 
 func (v *Value) Unmarshal(r interface{}) error {
-	/*
-		switch r := r.(type) {
-		case *string:
-			s, err := v.CheckString()
-			if err != nil {
-				return err
-			}
-			*r = s
-				case *int, *int64, *int32, *int16, *int8:
-					s, err := v.Int64()
-					if err != nil {
-						return err
-					}
-					switch r := r.(type) {
-					case *int:
-						*r = int(s)
-					case *int64:
-						*r = s
-					case *int32:
-						*r = int32(s)
-					case *int16:
-						*r = int16(s)
-					case *int8:
-						*r = int8(s)
-					}
-		}
-	*/
 	rv := reflect.ValueOf(r)
 	return v.unmarshal(rv)
 }
