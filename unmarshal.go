@@ -317,12 +317,12 @@ func (r *Reader) unmarshalArray(rv reflect.Value) error {
 	return nil
 }
 
-type StructMap struct {
-	s []StructField
-	m map[string]StructField
+type structMap struct {
+	s []structField
+	m map[string]structField
 }
 
-type StructField struct {
+type structField struct {
 	I         int
 	Kind      reflect.Kind
 	Ptr       uintptr
@@ -338,10 +338,10 @@ type sliceHeader struct {
 
 var (
 	mapMu      sync.Mutex
-	structMaps = map[reflect.Type]*StructMap{}
+	structMaps = map[reflect.Type]*structMap{}
 )
 
-func getStructMap(t reflect.Type) *StructMap {
+func getStructMap(t reflect.Type) *structMap {
 	mapMu.Lock()
 	m, ok := structMaps[t]
 	if ok {
@@ -350,14 +350,14 @@ func getStructMap(t reflect.Type) *StructMap {
 	}
 	defer mapMu.Unlock()
 
-	m = &StructMap{
-		m: make(map[string]StructField),
+	m = &structMap{
+		m: make(map[string]structField),
 	}
 
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 
-		sf := StructField{
+		sf := structField{
 			I:    i,
 			Kind: f.Type.Kind(),
 			Ptr:  f.Offset,

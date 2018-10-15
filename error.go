@@ -15,8 +15,8 @@ type Error struct {
 	err error
 }
 
-func NewError(b []byte, s int, e error) Error {
-	return Error{b: b, p: s, err: e}
+func NewError(b []byte, p int, e error) Error {
+	return Error{b: b, p: p, err: e}
 }
 
 func (e Error) Error() string {
