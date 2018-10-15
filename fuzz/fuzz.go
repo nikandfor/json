@@ -1,4 +1,4 @@
-package fuzz
+package nikandjson
 
 import "github.com/nikandfor/json"
 
