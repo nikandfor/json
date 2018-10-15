@@ -31,6 +31,8 @@ func (t Type) String() string {
 type Reader struct {
 	b           []byte
 	ref, i, end int
+	locked      bool
+	locki       int
 
 	d       []Type
 	waitkey bool
@@ -72,19 +74,40 @@ func (r *Reader) more() bool {
 	if r.r == nil {
 		return false
 	}
-	rest := r.end - r.i
-	//	log.Printf("more  : %d+%d/%d %d", r.ref, r.i, r.end, rest)
-	if rest > 0 {
-		r.ref += r.i
-		copy(r.b, r.b[r.i:r.end])
-		r.i = 0
+	keep := r.end - r.i
+	if r.locked {
+		keep = r.end - r.locki
+	}
+	//	log.Printf("more  : %d+%d/%d %d %d", r.ref, r.i, r.end, keep, r.locki)
+	if keep > 0 {
+		st := r.end - keep
+		r.ref += st
+		copy(r.b, r.b[st:r.end])
+		r.i -= st
+		r.locki -= st
 	} else {
 		r.ref += r.end
-		r.i = -rest
-		rest = 0
+		r.i -= r.end
+		keep = 0
 	}
-	n, err := r.r.Read(r.b[rest:])
-	r.end = rest + n
+
+	if keep == len(r.b) {
+		if l := len(r.b); l < cap(r.b) {
+			r.b = r.b[:cap(r.b)]
+		} else {
+			if l <= 1024 {
+				l *= 2
+			} else {
+				l += l / 3
+			}
+			c := make([]byte, l)
+			copy(c, r.b)
+			r.b = c
+		}
+	}
+
+	n, err := r.r.Read(r.b[keep:])
+	r.end = keep + n
 	if n != 0 && err == io.EOF {
 		err = nil
 	}
@@ -93,6 +116,15 @@ func (r *Reader) more() bool {
 		return false
 	}
 	return 0 < n
+}
+
+func (r *Reader) lock() {
+	r.locki = r.i
+	r.locked = true
+}
+
+func (r *Reader) unlock() {
+	r.locked = false
 }
 
 func (r *Reader) Skip() {
@@ -159,9 +191,10 @@ start:
 }
 
 func (r *Reader) NextBytes() []byte {
-	i := r.i
+	r.lock()
 	r.Skip()
-	return r.b[i:r.i]
+	r.unlock()
+	return r.b[r.locki:r.i]
 }
 
 func (r *Reader) Get(ks ...interface{}) {
@@ -252,51 +285,25 @@ start:
 }
 
 func (r *Reader) NextString() []byte {
-	r.decoded = r.decoded[:0]
-	i := r.i
-	i++
-	s := i
-	esc := false
-start:
-	for i < r.end {
-		c := r.b[i]
-		i++
-		if c == '\\' {
-			if esc {
-				esc = false
-				continue
-			}
-			esc = true
-		} else if c == '"' {
-			if esc {
-				esc = false
-				continue
-			}
-			r.i = i
-			if len(r.decoded) == 0 {
-				return r.b[s : i-1]
-			}
-			r.decoded = append(r.decoded, r.b[s:i-1]...)
-			return r.decoded
-		}
+	if r.Type() != String {
+		r.err = ErrError
+		return nil
 	}
-	r.i = i
-	r.decoded = append(r.decoded, r.b[s:i]...)
-	if r.more() {
-		s = r.i
-		i = r.i
-		goto start
-	}
-	return nil
+	r.lock()
+	r.skipString()
+	r.unlock()
+	return r.b[r.locki+1 : r.i-1]
 }
 
 func (r *Reader) skipString() {
+	//	log.Printf("Skip stri %d+%d/%d", r.ref, r.i, r.end)
 	esc := true
 start:
 	i := r.i
 loop:
 	for i < r.end {
 		c := r.b[i]
+		//	log.Printf("skip str0 %d+%d/%d '%c'", r.ref, r.i, r.end, c)
 		switch {
 		case c == '\\':
 			i++
