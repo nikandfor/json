@@ -106,9 +106,9 @@ func (r *Reader) Bool() (bool, error) {
 
 	c := r.b[r.i]
 	if c == 't' {
-		r.skip([]byte("true"))
+		r.skip3('r', 'u', 'e')
 	} else {
-		r.skip([]byte("false"))
+		r.skip4('a', 'l', 's', 'e')
 	}
 
 	return c == 't', r.Err()

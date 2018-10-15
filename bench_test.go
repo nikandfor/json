@@ -103,12 +103,14 @@ func BenchmarkSkipMedium(b *testing.B) {
 	}
 }
 
-func BenchmarkSkip(b *testing.B) {
+func BenchmarkSkip3(b *testing.B) {
+	b.ReportAllocs()
 	data := []byte("truetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetruetrue")
 	r := &Reader{b: data, end: len(data)}
 	for i := 0; i < b.N; i++ {
 		for r.i < r.end {
-			r.skip([]byte{'t', 'r', 'u', 'e'})
+			r.i++
+			r.skip3('r', 'u', 'e')
 		}
 	}
 }

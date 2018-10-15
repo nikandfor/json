@@ -47,7 +47,7 @@ type Reader struct {
 }
 
 func Wrap(b []byte) *Reader {
-	if false {
+	if false && len(b) < 300 {
 		log.Printf("Wrap      : '%s'", b)
 		pad := []byte("_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_")
 		if len(b) <= len(pad) {
@@ -178,15 +178,16 @@ start:
 			continue
 		case 't':
 			r.i = i
-			r.skip([]byte("true"))
+			r.skip3('r', 'u', 'e')
 			i = r.i
 		case 'f':
 			r.i = i
-			r.skip([]byte("false"))
+			r.skip4('a', 'l', 's', 'e')
 			i = r.i
 		case 'n':
 			r.i = i
-			r.skip([]byte("null"))
+			r.skip3('u', 'l', 'l')
+			//	r.skip([]byte("null"))
 			i = r.i
 		case '{', '[':
 			d++
@@ -195,7 +196,7 @@ start:
 			d--
 			i++
 		default:
-			if c >= '0' && c <= '9' || c == '.' || c == '-' || c == '+' {
+			if c >= '0' && c <= '9' || c == '.' || c == '-' || c == '+' || c == 'e' || c == 'E' {
 				i++
 				continue
 				//	r.i = i
@@ -206,6 +207,10 @@ start:
 				r.err = errInvalidChar
 				return
 			}
+		}
+		if r.err != nil {
+			r.i = i
+			return
 		}
 		if d == 0 {
 			r.i = i
@@ -415,28 +420,69 @@ start:
 	return false
 }
 
-func (r *Reader) skip(k []byte) {
-	j := 0
-start:
-	i := r.i
-	for i < r.end {
-		if j == len(k) {
-			r.i = i
+func (r *Reader) skip3(a, b, c byte) {
+	//	log.Printf("skip3 : %d+%d/%d '%s' %v", r.ref, r.i, r.end, r.b, r.err)
+	var i int
+	if r.i+3 >= r.end {
+		if !r.more() {
+			if r.err == nil {
+				goto fail
+			}
 			return
 		}
-		c := r.b[i]
-		if c != k[j] {
-			r.i = i
-			r.err = fmt.Errorf("broken literal %s", k)
-			return
-		}
-		j++
-		i++
 	}
+	i = r.i
+	i++
+	if a != r.b[i] {
+		goto fail
+	}
+	i++
+	if b != r.b[i] {
+		goto fail
+	}
+	i++
+	if c != r.b[i] {
+		goto fail
+	}
+	i++
 	r.i = i
-	if r.more() {
-		goto start
+	return
+fail:
+	r.err = fmt.Errorf("broken literal")
+}
+
+func (r *Reader) skip4(a, b, c, d byte) {
+	var i int
+	if r.i+4 >= r.end {
+		if !r.more() {
+			if r.err == nil {
+				goto fail
+			}
+			return
+		}
 	}
+	i = r.i
+	i++
+	if a != r.b[i] {
+		goto fail
+	}
+	i++
+	if b != r.b[i] {
+		goto fail
+	}
+	i++
+	if c != r.b[i] {
+		goto fail
+	}
+	i++
+	if d != r.b[i] {
+		goto fail
+	}
+	i++
+	r.i = i
+	return
+fail:
+	r.err = fmt.Errorf("broken literal")
 }
 
 func (r *Reader) NextNumber() []byte {
@@ -451,7 +497,7 @@ start:
 			continue
 		}
 		switch c {
-		case '+', '-', '.', 'e':
+		case '+', '-', '.', 'e', 'E':
 			i++
 			continue
 		}

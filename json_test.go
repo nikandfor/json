@@ -121,7 +121,7 @@ func TestSkipTopic(t *testing.T) {
 }
 
 func TestReader(t *testing.T) {
-	data := `{"a":{"b":[true,false,null],"c":false},"d":true,"e":null} {}`
+	data := `{"a":{"b":[1,2,3],"c":"c_val"},"d":1.2,"e":3e-5} {}`
 	t.Logf("data %d: '%s'", len(data), data)
 	t.Logf("____   : '%s'", string("_123456789_123456789_123456789_123456789_123456789_123456789_")[:len(data)])
 

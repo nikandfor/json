@@ -37,12 +37,12 @@ start:
 			}
 		case '"':
 			return true
-		case 't', 'f', 'n':
+		case 't', 'f', 'n', '.', '-', '+':
 			if prev != '{' {
 				return true
 			}
 		default:
-			if c >= '0' && c <= '9' || c == '.' || c == '-' || c == '+' {
+			if c >= '0' && c <= '9' {
 				if prev != '{' {
 					return true
 				}
