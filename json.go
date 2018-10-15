@@ -89,47 +89,59 @@ func (r *Reader) Skip() {
 	//	log.Printf("Skip _: %2v + %2v '%s'", r.ref, r.i, r.b)
 	var d int
 start:
-	for r.i < r.end {
-		c := r.b[r.i]
+	i := r.i
+	for i < r.end {
+		c := r.b[i]
 		switch c {
 		case ' ', '\t', '\n':
-			r.i++
+			i++
 			continue
 		}
 		//	log.Printf("skip _: %2v + %2v '%c' %d", r.ref, r.i, c, d)
 		switch c {
 		case '"':
+			r.i = i
 			r.skipString()
+			i = r.i
 		case ',':
-			r.i++
+			i++
 		case ':':
-			r.i++
+			i++
 		case 't':
+			r.i = i
 			r.skip([]byte("true"))
+			i = r.i
 		case 'f':
+			r.i = i
 			r.skip([]byte("false"))
+			i = r.i
 		case 'n':
+			r.i = i
 			r.skip([]byte("null"))
+			i = r.i
 		case '{', '[':
 			d++
-			r.i++
+			i++
 		case '}', ']':
 			d--
-			r.i++
-		case '+', '-', '.':
-			r.NextNumber()
+			i++
 		default:
-			if c >= '0' && c <= '9' {
+			if c >= '0' && c <= '9' || c == '.' || c == '-' || c == '+' {
+				r.i = i
 				r.NextNumber()
+				i = r.i
 			} else {
+				r.i = i
 				r.err = ErrError
 				return
 			}
 		}
 		if d == 0 {
+			r.i = i
 			return
 		}
 	}
+	r.i = i
 	if r.more() {
 		goto start
 	}
@@ -303,8 +315,8 @@ start:
 
 func (r *Reader) skip(k []byte) {
 	j := 0
-	i := r.i
 start:
+	i := r.i
 	for i < r.end {
 		if j == len(k) {
 			r.i = i
@@ -321,7 +333,6 @@ start:
 	}
 	r.i = i
 	if r.more() {
-		i = r.i
 		goto start
 	}
 }
