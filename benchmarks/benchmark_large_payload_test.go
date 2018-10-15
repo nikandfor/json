@@ -23,10 +23,9 @@ func BenchmarkJsoniterLarge(b *testing.B) {
 	iter := jsoniter.ParseBytes(jsoniter.ConfigDefault, LargeFixture)
 	b.ReportAllocs()
 	b.ResetTimer()
-	count := 0
 	for i := 0; i < b.N; i++ {
 		iter.ResetBytes(LargeFixture)
-		count = 0
+		count := 0
 		for field := iter.ReadObject(); field != ""; field = iter.ReadObject() {
 			if "topics" != field {
 				iter.Skip()
@@ -46,7 +45,6 @@ func BenchmarkJsoniterLarge(b *testing.B) {
 			break
 		}
 	}
-	b.Logf("count: %v", count)
 }
 
 func BenchmarkEncodingJsonLarge(b *testing.B) {
@@ -60,30 +58,28 @@ func BenchmarkEncodingJsonLarge(b *testing.B) {
 // nikandfor
 func BenchmarkNikandjsonLarge(b *testing.B) {
 	b.ReportAllocs()
-	count := 0
 	for i := 0; i < b.N; i++ {
 		w := json.Wrap(LargeFixture)
-		count = 0
-		for it := w.ObjectIter(); it.HasNext(); {
+		count := 0
+		for w.HasNext() {
 			ok := w.CompareKey([]byte("topics"))
 			if !ok {
-				w.Type()
 				w.Skip()
+				continue
 			}
-			for it := w.ObjectIter(); it.HasNext(); {
+			for w.HasNext() {
 				ok := w.CompareKey([]byte("topics"))
 				if !ok {
-					w.Type()
 					w.Skip()
+					continue
 				}
-				for it := w.ArrayIter(); it.HasNext(); {
+				for w.HasNext() {
 					count++
-					it.Skip()
+					w.Skip()
 				}
 				break
 			}
 			break
 		}
 	}
-	b.Logf("count: %v", count)
 }

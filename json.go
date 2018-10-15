@@ -96,9 +96,9 @@ start:
 		case ' ', '\t', '\n':
 			i++
 			continue
-		}
+			//	}
 		//	log.Printf("skip _: %2v + %2v '%c' %d", r.ref, r.i, c, d)
-		switch c {
+		//	switch c {
 		case '"':
 			r.i = i
 			r.skipString()
@@ -107,6 +107,7 @@ start:
 			i++
 		case ':':
 			i++
+			continue
 		case 't':
 			r.i = i
 			r.skip([]byte("true"))
@@ -147,6 +148,12 @@ start:
 	}
 }
 
+func (r *Reader) NextBytes() []byte {
+	i := r.i
+	r.Skip()
+	return r.b[i:r.i]
+}
+
 func (r *Reader) Get(ks ...interface{}) {
 loop:
 	for _, k := range ks {
@@ -161,7 +168,7 @@ loop:
 		switch k := k.(type) {
 		case int:
 			j := 0
-			for it := r.ArrayIter(); it.HasNext(); {
+			for r.HasNext() {
 				if j == k {
 					continue loop
 				}
@@ -176,7 +183,7 @@ loop:
 			r.err = ErrError
 			return
 		}
-		for it := r.ObjectIter(); it.HasNext(); {
+		for r.HasNext() {
 			ok := r.CompareKey(key)
 			//	log.Printf("compr: %v", ok)
 			r.i++
@@ -261,11 +268,19 @@ start:
 func (r *Reader) skipString() {
 	i := r.i
 	i++
+	esc := false
 start:
 	for i < r.end {
 		c := r.b[i]
 		i++
-		if c == '"' {
+		switch c {
+		case '\\':
+			esc = true
+		case '"':
+			if esc {
+				esc = false
+				break
+			}
 			r.i = i
 			return
 		}

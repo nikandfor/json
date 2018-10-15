@@ -1,22 +1,12 @@
 package json
 
-type ArrayIter struct {
-	*Reader
-}
+func (r *Reader) HasNext() (r_ bool) {
+	//	log.Printf("HasNxt: %d+%d/%d '%c'", r.ref, r.i, r.end, r.b[r.i])
+	//	defer func() {
+	//		log.Printf("HasNxt: %d+%d/%d -> %v", r.ref, r.i, r.end, r_)
+	//	}()
 
-func (r *Reader) ArrayIter() ArrayIter {
-	if r.Type() != '[' {
-		return ArrayIter{}
-	}
-	r.i++
-	return ArrayIter{r}
-}
-
-func (r ArrayIter) HasNext() bool {
-	if r.Reader == nil {
-		return false
-	}
-	//	log.Printf("HasNxt: %d+%d '%s'", r.ref, r.i, r.b)
+	var prev byte
 start:
 	for r.i < r.end {
 		c := r.b[r.i]
@@ -24,57 +14,42 @@ start:
 		case ' ', '\t', '\n':
 			r.i++
 			continue
-		}
-		switch c {
-		case ']':
-			r.i++
-			return false
 		case ',':
 			r.i++
+			prev = c
 			continue
+		case ':':
+			r.i++
+			continue
+		case '{', '[':
+			if prev == ',' || prev == '[' {
+				return true
+			}
+			if prev != '{' {
+				r.i++
+				prev = c
+				continue
+			}
+		case '}', ']':
+			if prev == 0 || prev+2 == c {
+				r.i++
+				return false
+			}
+		case '"':
+			return true
+		case 't', 'f', 'n':
+			if prev != '{' {
+				return true
+			}
+		default:
+			if c >= '0' && c <= '9' || c == '.' || c == '-' || c == '+' {
+				if prev != '{' {
+					return true
+				}
+			}
 		}
-		return true
-	}
-	if r.more() {
-		goto start
-	}
-	return false
-}
-
-type ObjectIter struct {
-	*Reader
-}
-
-func (r *Reader) ObjectIter() ObjectIter {
-	if r.Type() != '{' {
-		return ObjectIter{}
-	}
-	r.i++
-	return ObjectIter{r}
-}
-
-func (r ObjectIter) HasNext() bool {
-	if r.Reader == nil {
+		r.err = ErrError
 		return false
-	}
-	//	log.Printf("HasNxt: %d+%d '%s'", r.ref, r.i, r.b)
-start:
-	for r.i < r.end {
-		c := r.b[r.i]
-		switch c {
-		case ' ', '\t', '\n':
-			r.i++
-			continue
-		}
-		switch c {
-		case '}':
-			r.i++
-			return false
-		case ',':
-			r.i++
-			continue
-		}
-		return true
 	}
 	if r.more() {
 		goto start

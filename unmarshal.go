@@ -73,13 +73,12 @@ func (r *Reader) unmarshalStruct(rv reflect.Value) error {
 
 	ptr := rv.UnsafeAddr()
 
-	for i := r.ObjectIter(); i.HasNext(); {
-		k := i.NextString()
+	for r.HasNext() {
+		k := r.NextString()
 
 		f, ok := m.m[string(k)]
 		//	log.Printf("struct key: %q ok %v", k, ok)
 		if !ok {
-			r.Type()
 			r.Skip()
 			continue
 		}
@@ -91,7 +90,7 @@ func (r *Reader) unmarshalStruct(rv reflect.Value) error {
 
 			switch f.Kind {
 			case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
-				q, err := i.Int64()
+				q, err := r.Int64()
 				if err != nil {
 					return err
 				}
@@ -108,7 +107,7 @@ func (r *Reader) unmarshalStruct(rv reflect.Value) error {
 					*(*int8)(unsafe.Pointer(fptr)) = int8(q)
 				}
 			case reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8:
-				q, err := i.Uint64()
+				q, err := r.Uint64()
 				if err != nil {
 					return err
 				}
@@ -125,7 +124,7 @@ func (r *Reader) unmarshalStruct(rv reflect.Value) error {
 					*(*uint8)(unsafe.Pointer(fptr)) = uint8(q)
 				}
 			case reflect.Float64, reflect.Float32:
-				q, err := i.Float64()
+				q, err := r.Float64()
 				if err != nil {
 					return err
 				}
@@ -234,7 +233,7 @@ func (r *Reader) unmarshalArray(rv reflect.Value) error {
 	elkind := rv.Type().Elem().Kind()
 
 	j := 0
-	for i := r.ArrayIter(); i.HasNext(); {
+	for r.HasNext() {
 		if j == rv.Cap() {
 			rv.Set(reflect.Append(rv, zero))
 			rv.Set(rv.Slice(0, rv.Cap()))
