@@ -275,11 +275,15 @@ start:
 		i++
 		switch c {
 		case '\\':
+			if esc {
+				esc = false
+				continue
+			}
 			esc = true
 		case '"':
 			if esc {
 				esc = false
-				break
+				continue
 			}
 			r.i = i
 			return
