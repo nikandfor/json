@@ -240,3 +240,21 @@ func nums(s string) []byte {
 	pad = pad[:j]
 	return pad
 }
+
+func TestEscaping(t *testing.T) {
+	data := `" \t\n" "лол" "\t кек"`
+	r := WrapString(data)
+
+	exp := []string{
+		" \t\n", "лол", "\t кек",
+	}
+	for i := 0; r.HasNext(); i++ {
+		t.Logf("iter %d: %2v + %2v/%2v '%s' %v  %v", i, r.ref, r.i, r.end, r.b, r.err, r.Type())
+		s := r.NextString()
+		//	t.Logf("str got: '%s'", s)
+		assert.Equal(t, []byte(exp[i]), s, "for %d '%s'", i, exp[i])
+	}
+	t.Logf("iter _: %2v + %2v/%2v '%s' %v", r.ref, r.i, r.end, r.b, r.err)
+
+	assert.NoError(t, r.Err())
+}

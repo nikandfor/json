@@ -70,6 +70,29 @@ func Read(r io.Reader) *Reader {
 	return ReadBufferSize(r, 1000)
 }
 
+func (r *Reader) Reset(b []byte) {
+	r.b = b
+	r.ref = 0
+	r.i = 0
+	r.end = len(b)
+	r.locki = 0
+	r.d = r.d[:0]
+	r.waitkey = false
+	r.err = nil
+	r.r = nil
+}
+
+func (r *Reader) ResetString(s string) {
+	r.Reset([]byte(s))
+}
+
+func (r *Reader) ResetReader(rd io.Reader) {
+	if cap(r.b) > 0 {
+		r.Reset(r.b[:cap(r.b)])
+	}
+	r.r = rd
+}
+
 func (r *Reader) more() bool {
 	if r.r == nil {
 		return false
@@ -285,14 +308,69 @@ start:
 }
 
 func (r *Reader) NextString() []byte {
-	if r.Type() != String {
-		r.err = ErrError
-		return nil
+	r.decoded = r.decoded[:0]
+	//	log.Printf("Skip stri %d+%d/%d", r.ref, r.i, r.end)
+	r.i++
+start:
+	i := r.i
+	s := i
+loop:
+	for i < r.end {
+		c := r.b[i]
+		//	log.Printf("skip str0 %d+%d/%d '%c'", r.ref, i, r.end, c)
+		switch {
+		case c == '\\':
+			r.decoded = append(r.decoded, r.b[s:i]...)
+			i++
+			c = r.b[i]
+			switch c {
+			case 'n':
+				c = '\n'
+			case 't':
+				c = '\t'
+			case 'r':
+				c = '\r'
+			default:
+				r.err = ErrError
+				return nil
+			}
+			r.decoded = append(r.decoded, c)
+			i++
+			s = i
+		case c == '"':
+			i++
+			r.i = i
+			if len(r.decoded) == 0 {
+				return r.b[s : i-1]
+			}
+			r.decoded = append(r.decoded, r.b[s:i-1]...)
+			return r.decoded
+		case c < 0x80: // utf8.RuneStart
+			//	log.Printf("skip stri %d+%d/%d '%c' (%d)", r.ref, i, r.end, c, c)
+			i++
+			continue
+		default:
+			if i+utf8.UTFMax > r.end {
+				if !utf8.FullRune(r.b[i:r.end]) {
+					break loop
+				}
+			}
+			n, s := utf8.DecodeRune(r.b[i:])
+			if n == utf8.RuneError {
+				r.err = ErrError
+				return nil
+			}
+			//	log.Printf("skip rune %d+%d/%d '%c'", r.ref, i, r.end, n)
+			i += s
+		}
 	}
-	r.lock()
-	r.skipString()
-	r.unlock()
-	return r.b[r.locki+1 : r.i-1]
+	r.i = i
+	r.decoded = append(r.decoded, r.b[s:i]...)
+	if r.more() {
+		goto start
+	}
+
+	return nil
 }
 
 func (r *Reader) skipString() {
@@ -324,9 +402,12 @@ loop:
 			//	log.Printf("skip stri %d+%d/%d '%c' (%d)", r.ref, i, r.end, c, c)
 			i++
 			continue
-		case i+utf8.UTFMax > r.end:
-			break loop
 		default:
+			if i+utf8.UTFMax > r.end {
+				if !utf8.FullRune(r.b[i:r.end]) {
+					break loop
+				}
+			}
 			n, s := utf8.DecodeRune(r.b[i:])
 			if n == utf8.RuneError {
 				r.err = ErrError
