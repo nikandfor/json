@@ -1,10 +1,11 @@
-package json
+package fuzz
 
 import "github.com/nikandfor/json"
 
 func Fuzz(d []byte) int {
-	_, err := json.Parse(d)
-	if err != nil {
+	r := json.Wrap(d)
+	r.Skip()
+	if r.Err() != nil {
 		return 0
 	}
 	return 1
