@@ -10,25 +10,25 @@ import (
 
 func TestCompareKey(t *testing.T) {
 	v := WrapString(`"key_a":"res"`)
-	ok := v.compareKey([]byte("key_a"))
+	ok := v.CompareKey([]byte("key_a"))
 	assert.True(t, ok)
 	assert.Equal(t, 7, v.i)
 	assert.NoError(t, v.err)
 
 	v = WrapString(`"key_a":"res"`)
-	ok = v.compareKey([]byte("key_b"))
+	ok = v.CompareKey([]byte("key_b"))
 	assert.False(t, ok)
 	assert.Equal(t, 7, v.i)
 	assert.NoError(t, v.err)
 
 	v = WrapString(`"key_a":"res"`)
-	ok = v.compareKey([]byte("key"))
+	ok = v.CompareKey([]byte("key"))
 	assert.False(t, ok)
 	assert.Equal(t, 7, v.i)
 	assert.NoError(t, v.err)
 
 	v = WrapString(`"key_a":"res"`)
-	ok = v.compareKey([]byte("key_long"))
+	ok = v.CompareKey([]byte("key_long"))
 	assert.False(t, ok)
 	assert.Equal(t, 7, v.i)
 	assert.NoError(t, v.err)

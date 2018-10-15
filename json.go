@@ -64,7 +64,7 @@ func ReadBufferSize(r io.Reader, s int) *Reader {
 }
 
 func Read(r io.Reader) *Reader {
-	return ReadBufferSize(r, 100)
+	return ReadBufferSize(r, 1000)
 }
 
 func (r *Reader) more() bool {
@@ -165,7 +165,7 @@ loop:
 			return
 		}
 		for it := r.ObjectIter(); it.HasNext(); {
-			ok := r.compareKey(key)
+			ok := r.CompareKey(key)
 			//	log.Printf("compr: %v", ok)
 			r.i++
 			if ok {
@@ -220,60 +220,70 @@ start:
 
 func (r *Reader) NextString() []byte {
 	r.decoded = r.decoded[:0]
-	r.i++
-	s := r.i
+	i := r.i
+	i++
+	s := i
 start:
-	for r.i < r.end {
-		c := r.b[r.i]
-		r.i++
+	for i < r.end {
+		c := r.b[i]
+		i++
 		if c == '"' {
+			r.i = i
 			if len(r.decoded) == 0 {
-				return r.b[s : r.i-1]
+				return r.b[s : i-1]
 			}
-			r.decoded = append(r.decoded, r.b[s:r.i-1]...)
+			r.decoded = append(r.decoded, r.b[s:i-1]...)
 			return r.decoded
 		}
 	}
-	r.decoded = append(r.decoded, r.b[s:r.i]...)
+	r.i = i
+	r.decoded = append(r.decoded, r.b[s:i]...)
 	if r.more() {
 		s = r.i
+		i = r.i
 		goto start
 	}
 	return nil
 }
 
 func (r *Reader) skipString() {
-	r.i++
+	i := r.i
+	i++
 start:
-	for r.i < r.end {
-		c := r.b[r.i]
-		r.i++
+	for i < r.end {
+		c := r.b[i]
+		i++
 		if c == '"' {
+			r.i = i
 			return
 		}
 	}
+	r.i = i
 	if r.more() {
+		i = r.i
 		goto start
 	}
 }
 
-func (r *Reader) compareKey(k []byte) (r_ bool) {
+func (r *Reader) CompareKey(k []byte) (r_ bool) {
 	//	log.Printf("compKy: '%s' to %d+%d/%d '%s'", k, r.ref, r.i, r.end, r.b)
 	//	defer func() {
 	//		log.Printf("compK1: '%s' to %d+%d/%d '%s'", k, r.ref, r.i, r.end, r.b)
 	//	}()
-	r.i++
+	i := r.i
+	i++
 	j := 0
 	r_ = true
 start:
-	for r.i < r.end {
-		c := r.b[r.i]
+	for i < r.end {
+		c := r.b[i]
 		//	log.Printf("compK_: '%s' to %d+%d/%d '%c'", k, r.ref, r.i, r.end, c)
-		r.i++
+		i++
 		if c == '"' {
 			if j < len(k) {
 				r_ = false
 			}
+			r.i = i
 			return
 		}
 		if r_ {
@@ -283,7 +293,9 @@ start:
 			j++
 		}
 	}
+	r.i = i
 	if r.more() {
+		i = r.i
 		goto start
 	}
 	return false
@@ -291,20 +303,25 @@ start:
 
 func (r *Reader) skip(k []byte) {
 	j := 0
+	i := r.i
 start:
-	for r.i < r.end {
+	for i < r.end {
 		if j == len(k) {
+			r.i = i
 			return
 		}
-		c := r.b[r.i]
+		c := r.b[i]
 		if c != k[j] {
+			r.i = i
 			r.err = ErrError
 			return
 		}
 		j++
-		r.i++
+		i++
 	}
+	r.i = i
 	if r.more() {
+		i = r.i
 		goto start
 	}
 }

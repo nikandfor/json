@@ -4,16 +4,16 @@ type ArrayIter struct {
 	*Reader
 }
 
-func (r *Reader) ArrayIter() *ArrayIter {
+func (r *Reader) ArrayIter() ArrayIter {
 	if r.Type() != '[' {
-		return nil
+		return ArrayIter{}
 	}
 	r.i++
-	return &ArrayIter{r}
+	return ArrayIter{r}
 }
 
-func (r *ArrayIter) HasNext() bool {
-	if r == nil {
+func (r ArrayIter) HasNext() bool {
+	if r.Reader == nil {
 		return false
 	}
 	//	log.Printf("HasNxt: %d+%d '%s'", r.ref, r.i, r.b)
@@ -45,16 +45,16 @@ type ObjectIter struct {
 	*Reader
 }
 
-func (r *Reader) ObjectIter() *ObjectIter {
+func (r *Reader) ObjectIter() ObjectIter {
 	if r.Type() != '{' {
-		return nil
+		return ObjectIter{}
 	}
 	r.i++
-	return &ObjectIter{r}
+	return ObjectIter{r}
 }
 
-func (r *ObjectIter) HasNext() bool {
-	if r == nil {
+func (r ObjectIter) HasNext() bool {
+	if r.Reader == nil {
 		return false
 	}
 	//	log.Printf("HasNxt: %d+%d '%s'", r.ref, r.i, r.b)
