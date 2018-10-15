@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"unicode/utf8"
 )
 
 var ErrError = errors.New("error")
@@ -71,10 +72,19 @@ func (r *Reader) more() bool {
 	if r.r == nil {
 		return false
 	}
-	r.ref += r.end
-	r.i -= r.end
-	n, err := r.r.Read(r.b)
-	r.end = n
+	rest := r.end - r.i
+	//	log.Printf("more  : %d+%d/%d %d", r.ref, r.i, r.end, rest)
+	if rest > 0 {
+		r.ref += r.i
+		copy(r.b, r.b[r.i:r.end])
+		r.i = 0
+	} else {
+		r.ref += r.end
+		r.i = -rest
+		rest = 0
+	}
+	n, err := r.r.Read(r.b[rest:])
+	r.end = rest + n
 	if n != 0 && err == io.EOF {
 		err = nil
 	}
@@ -196,6 +206,10 @@ loop:
 }
 
 func (r *Reader) Type() Type {
+	//	log.Printf("Type  : %d+%d/%d '%s'", r.ref, r.i, r.end, r.b)
+	//	defer func() {
+	//		log.Printf("Type1 : %d+%d/%d '%s'", r.ref, r.i, r.end, r.b)
+	//	}()
 start:
 	for r.i < r.end {
 		c := r.b[r.i]
@@ -242,11 +256,22 @@ func (r *Reader) NextString() []byte {
 	i := r.i
 	i++
 	s := i
+	esc := false
 start:
 	for i < r.end {
 		c := r.b[i]
 		i++
-		if c == '"' {
+		if c == '\\' {
+			if esc {
+				esc = false
+				continue
+			}
+			esc = true
+		} else if c == '"' {
+			if esc {
+				esc = false
+				continue
+			}
 			r.i = i
 			if len(r.decoded) == 0 {
 				return r.b[s : i-1]
@@ -266,32 +291,46 @@ start:
 }
 
 func (r *Reader) skipString() {
-	i := r.i
-	i++
-	esc := false
+	esc := true
 start:
+	i := r.i
+loop:
 	for i < r.end {
 		c := r.b[i]
-		i++
-		switch c {
-		case '\\':
+		switch {
+		case c == '\\':
+			i++
 			if esc {
 				esc = false
 				continue
 			}
 			esc = true
-		case '"':
+		case c == '"':
+			i++
 			if esc {
 				esc = false
 				continue
 			}
 			r.i = i
 			return
+		case c < 0x80: // utf8.RuneStart
+			//	log.Printf("skip stri %d+%d/%d '%c' (%d)", r.ref, i, r.end, c, c)
+			i++
+			continue
+		case i+utf8.UTFMax > r.end:
+			break loop
+		default:
+			n, s := utf8.DecodeRune(r.b[i:])
+			if n == utf8.RuneError {
+				r.err = ErrError
+				return
+			}
+			//	log.Printf("skip rune %d+%d/%d '%c'", r.ref, i, r.end, n)
+			i += s
 		}
 	}
 	r.i = i
 	if r.more() {
-		i = r.i
 		goto start
 	}
 }

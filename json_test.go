@@ -4,6 +4,7 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -192,4 +193,50 @@ func TestGet2(t *testing.T) {
 	assert.Equal(t, "result", string(v.NextString()))
 
 	t.Logf("iter _: %2v + %2v/%2v '%s' %v", v.ref, v.i, v.end, v.b, v.err)
+}
+
+func TestSkipStringUTF8(t *testing.T) {
+	data := `"строка молока" {"ключ":"значение","массив":["один","日本語","три"]}`
+	t.Logf("data %3d: '%s'", len(data), data)
+	pad := nums(data)
+	t.Logf("____ %3d: '%s'", len(pad), pad)
+
+	r := strings.NewReader(data)
+	v := ReadBufferSize(r, 5)
+
+	tp := v.Type()
+	assert.Equal(t, String, tp)
+	t.Logf("iter _: %2v + %2v/%2v '%s' %v", v.ref, v.i, v.end, v.b, v.err)
+
+	j := 0
+	for v.Type() != None {
+		t.Logf("iter %d: %2v + %2v/%2v '%s' %v", j, v.ref, v.i, v.end, v.b, v.err)
+		v.Skip()
+		j++
+	}
+
+	assert.Error(t, v.Err(), io.EOF.Error())
+	assert.Equal(t, 2, j)
+
+	t.Logf("iter _: %2v + %2v/%2v '%s' %v", v.ref, v.i, v.end, v.b, v.err)
+}
+
+func nums(s string) []byte {
+	pad := make([]byte, len(s))
+	j := 0
+	for i, r := range s {
+		d := i % 10
+		if d == 0 {
+			pad[j] = '_'
+		} else {
+			pad[j] = '0' + (byte)(d)
+		}
+		j++
+		if utf8.RuneLen(r) > 2 {
+			pad[j] = ' '
+			j++
+		}
+	}
+	pad = pad[:j]
+	return pad
 }
