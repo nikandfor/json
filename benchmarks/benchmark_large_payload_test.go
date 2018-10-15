@@ -6,6 +6,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/json-iterator/go"
 	"github.com/nikandfor/json"
+	"github.com/stretchr/testify/assert"
 )
 
 func BenchmarkJsonParserLarge(b *testing.B) {
@@ -81,5 +82,19 @@ func BenchmarkNikandjsonLarge(b *testing.B) {
 			}
 			break
 		}
+	}
+}
+
+func BenchmarkNikandjsonGetLarge(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		w := json.Wrap(LargeFixture)
+		w.Get("topics", "topics")
+		count := 0
+		for w.HasNext() {
+			count++
+			w.Skip()
+		}
+		assert.Equal(b, 30, count)
 	}
 }
