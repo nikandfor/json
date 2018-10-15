@@ -472,5 +472,5 @@ func (r *Reader) Err() error {
 	if r.err == nil {
 		return nil
 	}
-	return r.err
+	return NewError(r.b, r.i, r.err)
 }
