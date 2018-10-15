@@ -47,7 +47,6 @@ func (r *Reader) unmarshal(rv reflect.Value) error {
 		}
 		rv.SetString(q)
 	case reflect.Slice:
-
 		return r.unmarshalArray(rv)
 	case reflect.Array:
 		return r.unmarshalArray(rv)
@@ -222,9 +221,9 @@ func (r *Reader) unmarshalArray(rv reflect.Value) error {
 
 	// usual array
 	zero := reflect.Zero(elt)
-	if rv.Kind() == reflect.Slice {
-		rv.Set(rv.Slice(0, rv.Cap()))
-	}
+	//	if rv.Kind() == reflect.Slice {
+	//		rv.Set(rv.Slice(0, rv.Cap()))
+	//	}
 	var baseptr uintptr
 	if rv.Len() != 0 {
 		baseptr = rv.Index(0).UnsafeAddr()
@@ -234,7 +233,7 @@ func (r *Reader) unmarshalArray(rv reflect.Value) error {
 
 	j := 0
 	for r.HasNext() {
-		if j == rv.Cap() {
+		if j == rv.Len() {
 			rv.Set(reflect.Append(rv, zero))
 			rv.Set(rv.Slice(0, rv.Cap()))
 			baseptr = rv.Index(0).UnsafeAddr()
