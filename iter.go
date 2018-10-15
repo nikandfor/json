@@ -48,7 +48,7 @@ start:
 				}
 			}
 		}
-		r.err = ErrError
+		r.err = errInvalidChar
 		return false
 	}
 	if r.more() {

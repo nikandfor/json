@@ -1,6 +1,7 @@
 package json
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -38,12 +39,12 @@ func (r *Reader) Int64() (int64, error) {
 	}
 	for _, c := range buf {
 		if c < '0' || c > '9' {
-			r.err = ErrError
+			r.err = fmt.Errorf("expected number")
 			return 0, r.Err()
 		}
 		res = res*10 + (int64)(c-'0')
 		if res < 0 {
-			r.err = ErrError
+			r.err = fmt.Errorf("type overflow")
 			return 0, r.Err()
 		}
 	}
@@ -66,19 +67,19 @@ func (r *Reader) Uint64() (uint64, error) {
 
 	res := uint64(0)
 	if buf[0] == '-' {
-		r.err = ErrError
+		r.err = fmt.Errorf("negative number")
 		return 0, r.Err()
 	} else if buf[0] == '+' {
 		buf = buf[1:]
 	}
 	for _, c := range buf {
 		if c < '0' || c > '9' {
-			r.err = ErrError
+			r.err = fmt.Errorf("expected number")
 			return 0, r.Err()
 		}
 		res = res*10 + (uint64)(c-'0')
 		if res < 0 {
-			r.err = ErrError
+			r.err = fmt.Errorf("type overflow")
 			return 0, r.Err()
 		}
 	}

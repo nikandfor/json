@@ -2,14 +2,17 @@ package json
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"unicode/utf8"
 )
 
-var ErrError = errors.New("error")
-
 type Type byte
+
+var (
+	errInvalidChar = errors.New("invalid character")
+)
 
 const (
 	None       Type = 0
@@ -200,7 +203,7 @@ start:
 				//	i = r.i
 			} else {
 				r.i = i
-				r.err = ErrError
+				r.err = errInvalidChar
 				return
 			}
 		}
@@ -216,6 +219,7 @@ start:
 }
 
 func (r *Reader) NextBytes() []byte {
+	r.Type()
 	r.lock()
 	r.Skip()
 	r.unlock()
@@ -248,7 +252,7 @@ loop:
 		case []byte:
 			key = k
 		default:
-			r.err = ErrError
+			r.err = fmt.Errorf("invalid argument type: %T", k)
 			return
 		}
 		for r.HasNext() {
@@ -299,7 +303,7 @@ start:
 				return Number
 			}
 
-			r.err = ErrError
+			r.err = errInvalidChar
 			return None
 		}
 	}
@@ -333,7 +337,7 @@ loop:
 			case 'r':
 				c = '\r'
 			default:
-				r.err = ErrError
+				r.err = fmt.Errorf("unsupported escape sequence: %c", c)
 				return nil
 			}
 			r.decoded = append(r.decoded, c)
@@ -359,7 +363,7 @@ loop:
 			}
 			n, s := utf8.DecodeRune(r.b[i:])
 			if n == utf8.RuneError {
-				r.err = ErrError
+				r.err = fmt.Errorf("undecodable unicode symbol")
 				return nil
 			}
 			//	log.Printf("skip rune %d+%d/%d '%c'", r.ref, i, r.end, n)
@@ -423,7 +427,7 @@ start:
 		c := r.b[i]
 		if c != k[j] {
 			r.i = i
-			r.err = ErrError
+			r.err = fmt.Errorf("broken literal %s", k)
 			return
 		}
 		j++

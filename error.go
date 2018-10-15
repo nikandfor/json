@@ -64,6 +64,10 @@ func (e Error) Format(s fmt.State, c rune) {
 	b, p = escapeString(b, p)
 
 	if s.Flag('#') {
+		//	r, _ := utf8.DecodeRune(b[p:])
+		//	if r == utf8.RuneError {
+		//		r = '*'
+		//	}
 		fmt.Fprintf(s, " `%s`", b)
 		return
 	}
