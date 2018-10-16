@@ -149,23 +149,25 @@ func TestDecodeNikandjsonGetStructMedium(t *testing.T) {
 func BenchmarkDecodeNikandjsonStructMedium(b *testing.B) {
 	b.ReportAllocs()
 	var data MediumPayload
+	var r json.Reader
 	for i := 0; i < b.N; i++ {
-		json.Unmarshal(MediumFixture, &data)
+		r.Reset(MediumFixture).Unmarshal(&data)
 	}
 }
 
 func BenchmarkDecodeNikandjsonSkipStructMedium(b *testing.B) {
 	b.ReportAllocs()
+	var r json.Reader
 	for i := 0; i < b.N; i++ {
-		it := json.Wrap(MediumFixture)
-		it.Skip()
+		r.Reset(MediumFixture).Skip()
 	}
 }
 
 func BenchmarkDecodeNikandjsonGetStructMedium(b *testing.B) {
 	b.ReportAllocs()
+	var r json.Reader
 	for i := 0; i < b.N; i++ {
-		v := json.Wrap(MediumFixture)
-		v.Get("person", "gravatar", "avatars", 0, "url")
+		r.Reset(MediumFixture)
+		r.Get("person", "gravatar", "avatars", 0, "url")
 	}
 }

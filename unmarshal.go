@@ -159,44 +159,48 @@ func (r *Reader) unmarshalStruct(rv reflect.Value) error {
 		if vis {
 			continue
 		}
-		if f := m.s[i]; f.FastErase {
-			fptr := ptr + f.Ptr
-			switch f.Kind {
-			case reflect.Ptr:
-				*(*uintptr)(unsafe.Pointer(fptr)) = 0
-			case reflect.Slice:
-				sl := (*sliceHeader)(unsafe.Pointer(fptr))
-				sl.Data = 0
-				sl.Len = 0
+		f := m.s[i]
+		fptr := ptr + f.Ptr
+		switch f.Kind {
+		case reflect.Ptr:
+			*(*uintptr)(unsafe.Pointer(fptr)) = 0
+		case reflect.String, reflect.Slice:
+			//	if rv.Field(i).Len() != 0 {
+			//		rv.Field(i).Set(reflect.Zero(rv.Field(i).Type()))
+			//	}
+			sl := (*sliceHeader)(unsafe.Pointer(fptr))
+			sl.Data = 0
+			sl.Len = 0
+			if f.Kind == reflect.Slice {
 				sl.Cap = 0
-			case reflect.Int:
-				*(*int)(unsafe.Pointer(fptr)) = 0
-			case reflect.Int64:
-				*(*int64)(unsafe.Pointer(fptr)) = 0
-			case reflect.Int32:
-				*(*int32)(unsafe.Pointer(fptr)) = 0
-			case reflect.Int16:
-				*(*int16)(unsafe.Pointer(fptr)) = 0
-			case reflect.Int8:
-				*(*int8)(unsafe.Pointer(fptr)) = 0
-			case reflect.Uint:
-				*(*uint)(unsafe.Pointer(fptr)) = 0
-			case reflect.Uint64:
-				*(*uint64)(unsafe.Pointer(fptr)) = 0
-			case reflect.Uint32:
-				*(*uint32)(unsafe.Pointer(fptr)) = 0
-			case reflect.Uint16:
-				*(*uint16)(unsafe.Pointer(fptr)) = 0
-			case reflect.Uint8:
-				*(*uint8)(unsafe.Pointer(fptr)) = 0
-			case reflect.Float64:
-				*(*float64)(unsafe.Pointer(fptr)) = 0
-			case reflect.Float32:
-				*(*float32)(unsafe.Pointer(fptr)) = 0
-			case reflect.Bool:
-				*(*bool)(unsafe.Pointer(fptr)) = false
 			}
-		} else {
+		case reflect.Int:
+			*(*int)(unsafe.Pointer(fptr)) = 0
+		case reflect.Int64:
+			*(*int64)(unsafe.Pointer(fptr)) = 0
+		case reflect.Int32:
+			*(*int32)(unsafe.Pointer(fptr)) = 0
+		case reflect.Int16:
+			*(*int16)(unsafe.Pointer(fptr)) = 0
+		case reflect.Int8:
+			*(*int8)(unsafe.Pointer(fptr)) = 0
+		case reflect.Uint:
+			*(*uint)(unsafe.Pointer(fptr)) = 0
+		case reflect.Uint64:
+			*(*uint64)(unsafe.Pointer(fptr)) = 0
+		case reflect.Uint32:
+			*(*uint32)(unsafe.Pointer(fptr)) = 0
+		case reflect.Uint16:
+			*(*uint16)(unsafe.Pointer(fptr)) = 0
+		case reflect.Uint8:
+			*(*uint8)(unsafe.Pointer(fptr)) = 0
+		case reflect.Float64:
+			*(*float64)(unsafe.Pointer(fptr)) = 0
+		case reflect.Float32:
+			*(*float32)(unsafe.Pointer(fptr)) = 0
+		case reflect.Bool:
+			*(*bool)(unsafe.Pointer(fptr)) = false
+		default:
 			rv.Field(i).Set(reflect.Zero(rv.Field(i).Type()))
 		}
 	}
