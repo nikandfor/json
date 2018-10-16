@@ -10,10 +10,12 @@ import (
 	"unsafe"
 )
 
+// Unmarshal unmarshals data info r
 func Unmarshal(data []byte, r interface{}) error {
 	return Wrap(data).Unmarshal(r)
 }
 
+// Unmarshal reads and unmarshals value into res
 func (r *Reader) Unmarshal(res interface{}) error {
 	rv := reflect.ValueOf(res)
 	return r.unmarshal(rv)

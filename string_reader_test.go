@@ -40,7 +40,7 @@ func TestStringReaderFromReader(t *testing.T) {
 	data := `"qwert asdfg"`
 	dr := strings.NewReader(data)
 
-	w := ReadBufferSize(dr, 3)
+	w := NewReaderBufferSize(dr, 3)
 	r := w.StringReader()
 
 	buf := make([]byte, 5)

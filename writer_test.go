@@ -1,7 +1,6 @@
 package json
 
 import (
-	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -135,9 +134,9 @@ func typeHelper(t *testing.T, r *Reader) {
 	switch tp {
 	case ObjStart:
 		for r.HasNext() {
-			tp := r.Type()
-			k := r.NextString()
-			log.Printf("kytp: %v %s", tp, k)
+			//	tp := r.Type()
+			//	k := r.NextString()
+			//	log.Printf("kytp: %v %s", tp, k)
 			typeHelper(t, r)
 		}
 	case ArrayStart:

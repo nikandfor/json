@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 )
 
+// Type is a token type
 type Type byte
 
 var (
@@ -26,10 +27,7 @@ const (
 	Number     Type = 'N'
 )
 
-func (t Type) String() string {
-	return string(t)
-}
-
+// Reader parses byte stream and allows you to manipulate structured data
 type Reader struct {
 	b           []byte
 	ref, i, end int
@@ -46,6 +44,7 @@ type Reader struct {
 	r       io.Reader
 }
 
+// Wrap wraps single byte buffer info json reader object
 func Wrap(b []byte) *Reader {
 	//	if false && len(b) < 300 {
 	//		log.Printf("Wrap      : '%s'", b)
@@ -57,11 +56,13 @@ func Wrap(b []byte) *Reader {
 	return &Reader{b: b, end: len(b)}
 }
 
+// WrapString wraps string
 func WrapString(s string) *Reader {
 	return Wrap([]byte(s))
 }
 
-func ReadBufferSize(r io.Reader, s int) *Reader {
+// NewReaderBufferSize creates reader from stream with specified buffer size
+func NewReaderBufferSize(r io.Reader, s int) *Reader {
 	rv := &Reader{
 		b: make([]byte, s),
 		r: r,
@@ -69,10 +70,12 @@ func ReadBufferSize(r io.Reader, s int) *Reader {
 	return rv
 }
 
+// NewReader reads stream
 func NewReader(r io.Reader) *Reader {
-	return ReadBufferSize(r, 1000)
+	return NewReaderBufferSize(r, 1000)
 }
 
+// Reset resets the reader
 func (r *Reader) Reset(b []byte) *Reader {
 	r.b = b
 	r.ref = 0
@@ -86,10 +89,14 @@ func (r *Reader) Reset(b []byte) *Reader {
 	return r
 }
 
+// ResetString resets the reader
 func (r *Reader) ResetString(s string) *Reader {
 	return r.Reset([]byte(s))
 }
 
+// ResetReader resets the reader
+// it reuses buffer (if you created reader by Wrap for example)
+// if you used Lock and read a big object into the memory it doesn't shrink it buffer back
 func (r *Reader) ResetReader(rd io.Reader) *Reader {
 	if cap(r.b) > 0 {
 		r.Reset(r.b[:cap(r.b)])
@@ -147,24 +154,40 @@ func (r *Reader) more() bool {
 	return 0 < n
 }
 
+// Lock locks all data since the current position and prevents them from freeing.
+// So if buffer has ended it would be grown to accommodate new data
+// You should use it for inspecting some small part of data and decide will you
+// parse them from the beginning or just unlock reader and will go further.
+//
+// See (*Reader).Inspect() source code for better understanding.
 func (r *Reader) Lock() {
 	r.locki = r.i
 	r.locked = true
 }
 
+// Unlock unlocks previously locked reader by (*Reader).Lock().
+// It doesn't change reader position
 func (r *Reader) Unlock() {
 	r.locked = false
 }
 
+// Return returns the reading position to the previously locked by (*Reader).Lock
 func (r *Reader) Return() {
 	r.i = r.locki
 	r.locked = false
 }
 
+// Skip reads and skips one next value.
+// It doesn't metter if you call it before ':' or just at start of value
+// (it actually doesn't matter if ':' or ',' were or not at all)
 func (r *Reader) Skip() {
 	r.GoOut(0)
 }
 
+// GoOut goes out of object or array (reads until end).
+// d means number of objects you want to out of.
+// It's the ideal pair for (*Reader).Get method
+// (See (*Reader).Inspect source code as an example)
 func (r *Reader) GoOut(d int) {
 	//	log.Printf("Skip _: %2v + %2v '%s'", r.ref, r.i, r.b)
 start:
@@ -234,6 +257,8 @@ start:
 	}
 }
 
+// NextBytes reads next object of any type and returns it as a raw byte slice
+// without decoding (including string quotes)
 func (r *Reader) NextBytes() []byte {
 	r.Type()
 	r.Lock()
@@ -242,9 +267,11 @@ func (r *Reader) NextBytes() []byte {
 	return r.b[r.locki:r.i]
 }
 
-func (r *Reader) Get(ks ...interface{}) *Reader {
+// Get searches for value at the specified path.
+// It supports keys of type int for arrays and string or []byte for objects
+func (r *Reader) Get(keys ...interface{}) *Reader {
 loop:
-	for _, k := range ks {
+	for _, k := range keys {
 		//	if true {
 		//		next := r.b
 		//		if len(next) > 10 {
@@ -280,15 +307,22 @@ loop:
 			}
 			r.Skip()
 		}
+		r.err = fmt.Errorf("no such key: %s", key)
 	}
 	return r
 }
 
+// Type returns type of the next value.
+// It skips commas ',' and colons ':' silently
+// It doesn't skip or read over other tokens even if called multiple times
 func (r *Reader) Type() Type {
 	//	log.Printf("Type  : %d+%d/%d '%s'", r.ref, r.i, r.end, r.b)
 	//	defer func() {
 	//		log.Printf("Type1 : %d+%d/%d '%s'", r.ref, r.i, r.end, r.b)
 	//	}()
+	if r.err != nil {
+		return None
+	}
 start:
 	for r.i < r.end {
 		c := r.b[r.i]
@@ -330,6 +364,8 @@ start:
 	return None
 }
 
+// NextString read next object key or string checking utf8 encoding correctness
+// and decoding '\t', '\n', '\r' escape sequences
 func (r *Reader) NextString() []byte {
 	r.Type() // read until value start
 
@@ -398,6 +434,8 @@ loop:
 	return nil
 }
 
+// CompareKey compares given key weth the next string value.
+// It doesn't decodes escape sequences and doesn't check for utf8 correctness
 func (r *Reader) CompareKey(k []byte) bool {
 	//	log.Printf("compKy: '%s' to %d+%d/%d '%s'", k, r.ref, r.i, r.end, r.b)
 	//	defer func() {
@@ -499,6 +537,9 @@ fail:
 	r.err = fmt.Errorf("broken literal")
 }
 
+// NextNumber reads next number (possible incorrect) of any size and returns it as bytes
+// It doesn't check if nubmer is correct. It could have two points or '+' and '-'
+// signs in the middle of string
 func (r *Reader) NextNumber() []byte {
 	r.Type()
 
@@ -534,6 +575,9 @@ start:
 	return r.decoded
 }
 
+// Err returns first happend error.
+// It returns Error type that could nicely format error message for you
+// if you will see it at console or with monospace font
 func (r *Reader) Err() error {
 	if r.err == nil {
 		return nil

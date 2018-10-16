@@ -7,12 +7,26 @@ import (
 
 var pad = []byte("__________")
 
+// Error keeps position and context of an error and can pretty print it
+// It supports 3 forms of formatting:
+//		%v - produces output:
+//		parse error at pos 15: expected object key
+//
+//		%#v
+//		parse error at pos 15: expected object key `{"some":"text",123}`
+//
+//		%+v
+//		parse error at pos 15: expected object key
+//		{"some":"text",123}
+//		_______________^___
+// It also supports width setting which changes max size of context shown in extended forms
 type Error struct {
 	b   []byte
 	p   int
 	err error
 }
 
+// NewError creates new error
 func NewError(b []byte, p int, e error) Error {
 	return Error{b: b, p: p, err: e}
 }
@@ -21,6 +35,7 @@ func (e Error) Error() string {
 	return e.err.Error()
 }
 
+// Pos returns stream position at which error has happend
 func (e Error) Pos() int {
 	return e.p
 }
@@ -90,6 +105,7 @@ func (e Error) Format(s fmt.State, c rune) {
 	fmt.Fprintf(s, "\n")
 }
 
+// Cause returns cause error
 func (e Error) Cause() error {
 	return e.err
 }
@@ -163,7 +179,7 @@ func escapeString(b []byte, p int) ([]byte, int) {
 	return res, p
 }
 
-// Cause returns underlying error
+// Cause returns cause of underlying error if any
 //
 // copy of github.com/pkg/errors.Cause
 func Cause(err error) error {

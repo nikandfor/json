@@ -1,5 +1,6 @@
 package json
 
+// Copy copies one next value from r into w
 func Copy(w *Writer, r *Reader) {
 	t := r.Type()
 	switch t {
@@ -18,5 +19,7 @@ func Copy(w *Writer, r *Reader) {
 			Copy(w, r)
 		}
 		w.ArrayEnd()
+	default:
+		w.RawBytes(r.NextBytes())
 	}
 }

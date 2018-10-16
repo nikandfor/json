@@ -126,3 +126,67 @@ func ExampleReader_messenger() {
 	// Message from Jane: 	When did you see Dan last time?
 	// Connection closed. Total messages got: 3
 }
+
+func ExampleReader_HasNext() {
+	data := `{"a": [{"b": "c"}, {"d": "e"}],"f": true}`
+	r := WrapString(data)
+
+	r.Get("a")
+
+	for r.HasNext() { // over array
+		for r.HasNext() { // over array elements key-value pairs
+			// we must use for loop here even if we know it's the only pair inside
+			// because we have to read closing braket
+			key := r.NextString()
+			val := r.NextString()
+			fmt.Printf("pair:  %q -> %q\n", key, val)
+		}
+	}
+
+	fKey := r.NextString()
+	switch r.Type() {
+	case Bool:
+		fVal, _ := r.Bool() // error could be here if there is truu instead of true for example
+		fmt.Printf("%q -> %v\n", fKey, fVal)
+	}
+
+	r.GoOut(1) // to get out of the most outer object
+	// it's the pair call to the first Get and we always have to call it if we want to read following data correctly
+
+	fmt.Printf("end of buffer, next value type: %v\n", r.Type())
+
+	// Output:
+	// pair:  "b" -> "c"
+	// pair:  "d" -> "e"
+	// "f" -> true
+	// end of buffer, next value type: None
+}
+
+func ExampleReader_Get() {
+	data := `
+	{"day": "Mon", "stats": {"views": {"by_partofday": [1, 2, 3]}}}
+	{"day": "Tue", "stats": {"views": {"by_partofday": [3, 2, 3]}}}
+	{"day": "Wed", "stats": {"views": {"by_partofday": [4, 1, 5]}}}
+	{"day": "Thu", "stats": {"views": {"by_partofday": [1, 2, 2]}}}
+	`
+
+	s := strings.NewReader(data)
+
+	r := NewReader(s)
+
+	sum := 0
+	days := 0
+	for r.Type() != None {
+		days++
+		r.Get("stats", "views", "by_partofday") // goes inside to requested value
+		for r.HasNext() {
+			sum += r.MustInt()
+		}
+		r.GoOut(3) // goes back up at 3 levels (to the end of the current day object)
+	}
+
+	fmt.Printf("total views for %v days: %v\n", days, sum)
+
+	// Output:
+	// total views for 4 days: 29
+}

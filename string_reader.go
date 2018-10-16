@@ -6,10 +6,12 @@ import (
 	"io"
 )
 
+// StringReader allows to read string value as an io.ReadCloser interface
 type StringReader struct {
 	*Reader
 }
 
+// StringReader allows to read string value as an io.ReadCloser interface
 func (r *Reader) StringReader() StringReader {
 	r.Type()
 
@@ -21,6 +23,8 @@ func (r *Reader) StringReader() StringReader {
 	return StringReader{r}
 }
 
+// Read reads data from a big string value
+// It returns io.EOF if entire string has been read
 func (r StringReader) Read(p []byte) (int, error) {
 	read := 0
 start:
@@ -75,9 +79,14 @@ loop:
 	if r.more() {
 		goto start
 	}
-	return read, r.err
+	if r.err == nil {
+		r.err = io.EOF
+	}
+	return read, r.Err()
 }
 
+// Close must be called to finish reading current string value
+// It will skip unread part of string if any
 func (r StringReader) Close() error {
 	if r.err != nil {
 		return r.Err()
@@ -90,17 +99,21 @@ func (r StringReader) Close() error {
 	return r.Err()
 }
 
+// Base64Reader allows to read raw bytes stream encoded in base64 encoding
 type Base64Reader struct {
 	StringReader
 	d io.Reader
 }
 
+// Base64Reader allows to read raw bytes stream encoded in base64 encoding
 func (r *Reader) Base64Reader(enc *base64.Encoding) Base64Reader {
 	s := Base64Reader{StringReader: r.StringReader()}
 	s.d = base64.NewDecoder(enc, s.StringReader)
 	return s
 }
 
+// Read reads data from a big string value and decodes it from base64 encoding
+// It returns io.EOF if entire string has been read
 func (r Base64Reader) Read(p []byte) (int, error) {
 	return r.d.Read(p)
 }

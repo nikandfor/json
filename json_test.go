@@ -129,7 +129,7 @@ func TestReader(t *testing.T) {
 	t.Logf("____   : '%s'", string("_123456789_123456789_123456789_123456789_123456789_123456789_")[:len(data)])
 
 	r := strings.NewReader(data)
-	v := ReadBufferSize(r, 1)
+	v := NewReaderBufferSize(r, 1)
 
 	j := 0
 	for v.Type() != None {
@@ -150,7 +150,7 @@ func TestGetObjects(t *testing.T) {
 	t.Logf("____   : '%s'", string("_123456789_123456789_123456789_123456789_123456789_123456789_")[:len(data)])
 
 	rd := strings.NewReader(data)
-	r := ReadBufferSize(rd, 10)
+	r := NewReaderBufferSize(rd, 10)
 
 	r.Get("a", "e", "f")
 	assert.NoError(t, r.Err())
@@ -169,7 +169,7 @@ func TestGetArrays(t *testing.T) {
 	t.Logf("____   : '%s'", string("_123456789_123456789_123456789_123456789_123456789_123456789_")[:len(data)])
 
 	r := strings.NewReader(data)
-	v := ReadBufferSize(r, 10)
+	v := NewReaderBufferSize(r, 10)
 
 	v.Get(1, 2, 1, 1)
 	assert.NoError(t, v.Err())
@@ -188,7 +188,7 @@ func TestGet2(t *testing.T) {
 	t.Logf("____   : '%s'", string("_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_")[:len(data)])
 
 	r := strings.NewReader(data)
-	v := ReadBufferSize(r, 10)
+	v := NewReaderBufferSize(r, 10)
 
 	v.Get("d", "eee", 1, "c", "val")
 	assert.NoError(t, v.Err())
@@ -205,7 +205,7 @@ func TestSkipStringUTF8(t *testing.T) {
 	t.Logf("____ %3d: '%s'", len(pad), pad)
 
 	r := strings.NewReader(data)
-	v := ReadBufferSize(r, 5)
+	v := NewReaderBufferSize(r, 5)
 
 	tp := v.Type()
 	assert.Equal(t, String, tp)
