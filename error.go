@@ -3,8 +3,6 @@ package json
 import (
 	"fmt"
 	"unicode/utf8"
-
-	"github.com/pkg/errors"
 )
 
 var pad = []byte("__________")
@@ -165,6 +163,20 @@ func escapeString(b []byte, p int) ([]byte, int) {
 	return res, p
 }
 
+// Cause returns underlying error
+//
+// copy of github.com/pkg/errors.Cause
 func Cause(err error) error {
-	return errors.Cause(err)
+	type causer interface {
+		Cause() error
+	}
+
+	for err != nil {
+		cause, ok := err.(causer)
+		if !ok {
+			break
+		}
+		err = cause.Cause()
+	}
+	return err
 }

@@ -11,11 +11,8 @@ type StringReader struct {
 }
 
 func (r *Reader) StringReader() StringReader {
-	if r.i >= r.end {
-		if !r.more() {
-			return StringReader{r}
-		}
-	}
+	r.Type()
+
 	if r.b[r.i] != '"' {
 		r.err = fmt.Errorf("expected string")
 	}

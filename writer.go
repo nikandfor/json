@@ -1,5 +1,7 @@
 package json
 
+import "io"
+
 type Writer struct {
 	b      []byte
 	ref, i int
@@ -10,9 +12,17 @@ type Writer struct {
 	ncomma bool
 	naopen bool
 	prefln bool
+
+	err error
+
+	w io.Writer
 }
 
-func Write(b []byte, p, i []byte) *Writer {
+func NewWriter(b []byte) *Writer {
+	return NewIndentWriter(b, nil, nil)
+}
+
+func NewIndentWriter(b []byte, p, i []byte) *Writer {
 	w := &Writer{
 		b:      b,
 		pref:   p,
@@ -20,6 +30,21 @@ func Write(b []byte, p, i []byte) *Writer {
 		prefln: true,
 	}
 	return w
+}
+
+func NewStreamWriter(w io.Writer) *Writer {
+	return NewStreamWriterBuffer(w, nil)
+}
+
+func NewStreamWriterBuffer(w io.Writer, b []byte) *Writer {
+	if len(b) == 0 {
+		b = make([]byte, 1000)
+	}
+	return &Writer{
+		b:      b,
+		prefln: true,
+		w:      w,
+	}
 }
 
 func (w *Writer) ArrayStart() {
@@ -163,22 +188,44 @@ func (w *Writer) addpref() {
 }
 
 func (w *Writer) add(t []byte) {
-start:
-	n := copy(w.b[w.i:], t)
-	w.i += n
-	if n < len(t) {
+	for {
+		n := copy(w.b[w.i:], t)
+		w.i += n
+		if n == len(t) {
+			return
+		}
+
 		if !w.more() {
 			return
 		}
 		t = t[n:]
-		goto start
 	}
 }
 
 func (w *Writer) more() bool {
-	w.b = append(w.b, 0)
-	w.b = w.b[:cap(w.b)]
-	return true
+	if w.w == nil {
+		w.b = append(w.b, 0)
+		w.b = w.b[:cap(w.b)]
+		return true
+	}
+	r, err := w.w.Write(w.b[:w.i])
+	w.ref += r
+	if r < w.i {
+		copy(w.b, w.b[r:])
+		w.i -= r
+	} else {
+		w.i = 0
+	}
+	w.err = err
+	return r > 0
+}
+
+func (w *Writer) Flush() error {
+	if w.i == 0 {
+		return nil
+	}
+	w.more()
+	return w.Err()
 }
 
 func (w *Writer) Bytes() []byte {
@@ -186,5 +233,5 @@ func (w *Writer) Bytes() []byte {
 }
 
 func (w *Writer) Err() error {
-	return nil
+	return w.err
 }

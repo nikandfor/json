@@ -8,7 +8,7 @@ import (
 )
 
 func TestWriter(t *testing.T) {
-	w := &Writer{b: make([]byte, 1000)}
+	w := NewWriter(make([]byte, 1000))
 
 	w.ObjStart()
 	w.ObjKeyString("key_a")
@@ -27,7 +27,7 @@ func TestWriter(t *testing.T) {
 }
 
 func TestWriterIndent(t *testing.T) {
-	w := Write(make([]byte, 1000), []byte(">"), []byte("--"))
+	w := NewIndentWriter(make([]byte, 1000), []byte(">"), []byte("--"))
 
 	w.ObjStart()
 	w.ObjKeyString("key_a")
@@ -48,7 +48,7 @@ func TestWriterIndent(t *testing.T) {
 }
 
 func TestWriterSetIndent(t *testing.T) {
-	w := Write(make([]byte, 1000), nil, nil)
+	w := NewWriter(make([]byte, 1000))
 	w.SetIndent([]byte(">"), []byte("--"))
 
 	w.ObjStart()
@@ -73,7 +73,7 @@ func TestWriterSetIndent(t *testing.T) {
 }
 
 func TestCopy(t *testing.T) {
-	w := Write(nil, nil, nil)
+	w := NewWriter(nil)
 
 	w.ObjStart()
 	w.ObjKeyString("key_a")
@@ -90,14 +90,14 @@ func TestCopy(t *testing.T) {
 
 	t.Logf("res: '%s'", w.Bytes())
 
-	ind := Write(nil, []byte("\t"), []byte("  "))
+	ind := NewIndentWriter(nil, []byte("\t"), []byte("  "))
 	r := Wrap(w.Bytes())
 
 	Copy(ind, r)
 
 	t.Logf("res:\n%s", ind.Bytes())
 
-	w2 := Write(nil, nil, nil)
+	w2 := NewWriter(nil)
 	r2 := Wrap(ind.Bytes())
 
 	Copy(w2, r2)
@@ -115,7 +115,7 @@ func TestType(t *testing.T) {
 
 	typeHelper(t, r)
 
-	ind := Write(nil, []byte("\t"), []byte("  "))
+	ind := NewIndentWriter(nil, []byte("\t"), []byte("  "))
 	r = Wrap(ind.Bytes())
 
 	Copy(ind, r)

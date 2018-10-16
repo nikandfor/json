@@ -76,7 +76,7 @@ func ExampleReader_messenger() {
 		Term   int
 	}
 
-	r := Read(stream)
+	r := NewReader(stream)
 
 	messagesTotal := 0
 	lastTerm := 0

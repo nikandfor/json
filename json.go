@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"unicode/utf8"
 )
 
@@ -48,13 +47,13 @@ type Reader struct {
 }
 
 func Wrap(b []byte) *Reader {
-	if false && len(b) < 300 {
-		log.Printf("Wrap      : '%s'", b)
-		pad := []byte("_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_")
-		if len(b) <= len(pad) {
-			log.Printf("____      : '%s' = %d total", pad[:len(b)], len(b))
-		}
-	}
+	//	if false && len(b) < 300 {
+	//		log.Printf("Wrap      : '%s'", b)
+	//		pad := []byte("_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_")
+	//		if len(b) <= len(pad) {
+	//			log.Printf("____      : '%s' = %d total", pad[:len(b)], len(b))
+	//		}
+	//	}
 	return &Reader{b: b, end: len(b)}
 }
 
@@ -70,7 +69,7 @@ func ReadBufferSize(r io.Reader, s int) *Reader {
 	return rv
 }
 
-func Read(r io.Reader) *Reader {
+func NewReader(r io.Reader) *Reader {
 	return ReadBufferSize(r, 1000)
 }
 
@@ -162,17 +161,11 @@ func (r *Reader) Return() {
 	r.locked = false
 }
 
-func (r *Reader) Skip() *Reader {
-	r.skip(0)
-	return r
+func (r *Reader) Skip() {
+	r.GoOut(0)
 }
 
-func (r *Reader) GoOut(d int) *Reader {
-	r.skip(d)
-	return r
-}
-
-func (r *Reader) skip(d int) {
+func (r *Reader) GoOut(d int) {
 	//	log.Printf("Skip _: %2v + %2v '%s'", r.ref, r.i, r.b)
 start:
 	i := r.i
@@ -252,13 +245,13 @@ func (r *Reader) NextBytes() []byte {
 func (r *Reader) Get(ks ...interface{}) *Reader {
 loop:
 	for _, k := range ks {
-		if true {
-			next := r.b
-			if len(next) > 10 {
-				next = next[:10]
-			}
-			//	log.Printf("get   : '%v' from %d+%d '%s'", k, r.ref, r.i, next)
-		}
+		//	if true {
+		//		next := r.b
+		//		if len(next) > 10 {
+		//			next = next[:10]
+		//		}
+		//		log.Printf("get   : '%v' from %d+%d '%s'", k, r.ref, r.i, next)
+		//	}
 		var key []byte
 		switch k := k.(type) {
 		case int:
@@ -338,6 +331,8 @@ start:
 }
 
 func (r *Reader) NextString() []byte {
+	r.Type() // read until value start
+
 	r.decoded = r.decoded[:0]
 	//	log.Printf("Skip stri %d+%d/%d", r.ref, r.i, r.end)
 	r.i++
@@ -505,6 +500,8 @@ fail:
 }
 
 func (r *Reader) NextNumber() []byte {
+	r.Type()
+
 	r.decoded = r.decoded[:0]
 start:
 	i := r.i
