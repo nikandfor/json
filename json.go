@@ -34,11 +34,12 @@ func (t Type) String() string {
 type Reader struct {
 	b           []byte
 	ref, i, end int
-	locked      bool
 	locki       int
+	locked      bool
 
-	d       []Type
 	waitkey bool
+
+	//	d []Type
 
 	err error
 
@@ -73,27 +74,29 @@ func Read(r io.Reader) *Reader {
 	return ReadBufferSize(r, 1000)
 }
 
-func (r *Reader) Reset(b []byte) {
+func (r *Reader) Reset(b []byte) *Reader {
 	r.b = b
 	r.ref = 0
 	r.i = 0
 	r.end = len(b)
 	r.locki = 0
-	r.d = r.d[:0]
+	//	r.d = r.d[:0]
 	r.waitkey = false
 	r.err = nil
 	r.r = nil
+	return r
 }
 
-func (r *Reader) ResetString(s string) {
-	r.Reset([]byte(s))
+func (r *Reader) ResetString(s string) *Reader {
+	return r.Reset([]byte(s))
 }
 
-func (r *Reader) ResetReader(rd io.Reader) {
+func (r *Reader) ResetReader(rd io.Reader) *Reader {
 	if cap(r.b) > 0 {
 		r.Reset(r.b[:cap(r.b)])
 	}
 	r.r = rd
+	return r
 }
 
 func (r *Reader) more() bool {
@@ -144,18 +147,32 @@ func (r *Reader) more() bool {
 	return 0 < n
 }
 
-func (r *Reader) lock() {
+func (r *Reader) Lock() {
 	r.locki = r.i
 	r.locked = true
 }
 
-func (r *Reader) unlock() {
+func (r *Reader) Unlock() {
 	r.locked = false
 }
 
-func (r *Reader) Skip() {
+func (r *Reader) Return() {
+	r.i = r.locki
+	r.locked = false
+}
+
+func (r *Reader) Skip() *Reader {
+	r.skip(0)
+	return r
+}
+
+func (r *Reader) GoOut(d int) *Reader {
+	r.skip(d)
+	return r
+}
+
+func (r *Reader) skip(d int) {
 	//	log.Printf("Skip _: %2v + %2v '%s'", r.ref, r.i, r.b)
-	var d int
 start:
 	i := r.i
 	for i < r.end {
@@ -225,13 +242,13 @@ start:
 
 func (r *Reader) NextBytes() []byte {
 	r.Type()
-	r.lock()
+	r.Lock()
 	r.Skip()
-	r.unlock()
+	r.Unlock()
 	return r.b[r.locki:r.i]
 }
 
-func (r *Reader) Get(ks ...interface{}) {
+func (r *Reader) Get(ks ...interface{}) *Reader {
 loop:
 	for _, k := range ks {
 		if true {
@@ -258,7 +275,7 @@ loop:
 			key = k
 		default:
 			r.err = fmt.Errorf("invalid argument type: %T", k)
-			return
+			return r
 		}
 		for r.HasNext() {
 			ok := r.CompareKey(key)
@@ -270,6 +287,7 @@ loop:
 			r.Skip()
 		}
 	}
+	return r
 }
 
 func (r *Reader) Type() Type {
@@ -384,7 +402,7 @@ loop:
 	return nil
 }
 
-func (r *Reader) CompareKey(k []byte) (r_ bool) {
+func (r *Reader) CompareKey(k []byte) bool {
 	//	log.Printf("compKy: '%s' to %d+%d/%d '%s'", k, r.ref, r.i, r.end, r.b)
 	//	defer func() {
 	//		log.Printf("compK1: '%s' to %d+%d/%d '%s'", k, r.ref, r.i, r.end, r.b)
@@ -392,7 +410,7 @@ func (r *Reader) CompareKey(k []byte) (r_ bool) {
 	i := r.i
 	i++
 	j := 0
-	r_ = true
+	r_ := true
 start:
 	for i < r.end {
 		c := r.b[i]
@@ -403,7 +421,7 @@ start:
 				r_ = false
 			}
 			r.i = i
-			return
+			return r_
 		}
 		if r_ {
 			if j == len(k) || c != k[j] {

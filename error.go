@@ -92,6 +92,10 @@ func (e Error) Format(s fmt.State, c rune) {
 	fmt.Fprintf(s, "\n")
 }
 
+func (e Error) Cause() error {
+	return e.err
+}
+
 func escapeString(b []byte, p int) ([]byte, int) {
 	var r int = -1
 	for i, c := range b {

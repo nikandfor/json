@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"unicode"
+	"unicode/utf8"
 	"unsafe"
 )
 
@@ -68,7 +70,13 @@ func (r *Reader) unmarshal(rv reflect.Value) error {
 
 func (r *Reader) unmarshalStruct(rv reflect.Value) error {
 	m := getStructMap(rv.Type())
-	vis := make([]bool, rv.NumField())
+	var visbuf [20]bool
+	var vis []bool
+	if n := rv.NumField(); n < len(visbuf) {
+		vis = visbuf[:n]
+	} else {
+		vis = make([]bool, n)
+	}
 
 	ptr := rv.UnsafeAddr()
 
@@ -384,7 +392,9 @@ func getStructMap(t reflect.Type) *structMap {
 			}
 			n = t[0]
 		} else {
-			m.m[strings.ToLower(n)] = sf
+			r, sz := utf8.DecodeRuneInString(n)
+			ln := string(unicode.ToLower(r)) + n[sz:]
+			m.m[ln] = sf
 		}
 		m.m[n] = sf
 	}

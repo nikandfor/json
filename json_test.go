@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 	"unicode/utf8"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -257,4 +258,10 @@ func TestEscaping(t *testing.T) {
 	t.Logf("iter _: %2v + %2v/%2v '%s' %v", r.ref, r.i, r.end, r.b, r.err)
 
 	assert.NoError(t, r.Err())
+}
+
+func TestSizeof(t *testing.T) {
+	s := unsafe.Sizeof(Reader{})
+
+	t.Logf("sizeof Reader{}: %d", s)
 }
