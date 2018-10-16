@@ -1,6 +1,6 @@
 package json
 
-func (r *Reader) HasNext() (r_ bool) {
+func (r *Reader) HasNext() bool {
 	//	log.Printf("HasNxt: %d+%d/%d '%c'", r.ref, r.i, r.end, r.b[r.i])
 	//	defer func() {
 	//		log.Printf("HasNxt: %d+%d/%d -> %v", r.ref, r.i, r.end, r_)

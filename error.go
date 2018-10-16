@@ -3,9 +3,9 @@ package json
 import (
 	"fmt"
 	"unicode/utf8"
-)
 
-var ()
+	"github.com/pkg/errors"
+)
 
 var pad = []byte("__________")
 
@@ -163,4 +163,8 @@ func escapeString(b []byte, p int) ([]byte, int) {
 	}
 	res = res[:w]
 	return res, p
+}
+
+func Cause(err error) error {
+	return errors.Cause(err)
 }

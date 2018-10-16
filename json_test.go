@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 	"unsafe"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -47,7 +48,8 @@ func TestSkipStrings(t *testing.T) {
 		j++
 	}
 
-	assert.NoError(t, v.Err())
+	err := v.Err()
+	assert.True(t, err == nil || errors.Cause(err) == io.EOF)
 	assert.Equal(t, 5, j)
 
 	t.Logf("iter _: %2v/%2v '%s' %v", v.i, v.end, v.b, v.err)

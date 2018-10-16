@@ -101,6 +101,7 @@ func (r *Reader) ResetReader(rd io.Reader) *Reader {
 
 func (r *Reader) more() bool {
 	if r.r == nil {
+		//	r.err = io.EOF
 		return false
 	}
 	keep := r.end - r.i
@@ -186,7 +187,7 @@ start:
 		//	switch c {
 		case '"':
 			r.i = i
-			r.skipString()
+			r.skipString(true)
 			i = r.i
 		case ',':
 			i++

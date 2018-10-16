@@ -2,9 +2,8 @@
 
 package json
 
-func (r *Reader) skipString() {
+func (r *Reader) skipString(esc bool) {
 	//	log.Printf("Skip stri %d+%d/%d", r.ref, r.i, r.end)
-	esc := true
 start:
 	i := r.i
 	for i < r.end {

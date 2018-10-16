@@ -4,9 +4,8 @@ package json
 
 import "unicode/utf8"
 
-func (r *Reader) skipStringStrict() {
+func (r *Reader) skipStringStrict(esc bool) {
 	//	log.Printf("Skip stri %d+%d/%d", r.ref, r.i, r.end)
-	esc := true
 start:
 	i := r.i
 loop:

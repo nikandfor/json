@@ -67,7 +67,7 @@ func BenchmarkRawLoopMediumFast(b *testing.B) {
 			case '"':
 				q++
 				r.i = j
-				r.skipString()
+				r.skipString(true)
 				j = r.i
 			//	j = skipString(data, j)
 			case '+', '-':
