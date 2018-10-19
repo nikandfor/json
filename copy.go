@@ -20,6 +20,6 @@ func Copy(w *Writer, r *Reader) {
 		}
 		w.ArrayEnd()
 	default:
-		w.RawBytes(r.NextBytes())
+		w.RawBytes(r.NextAsBytes())
 	}
 }

@@ -20,6 +20,18 @@ func (r *Reader) CheckString() (string, error) {
 	return string(d), nil
 }
 
+func (r *Reader) MustCheckString() string {
+	s, err := r.CheckString()
+	if err != nil {
+		panic(err)
+	}
+	return s
+}
+
+func (r *Reader) StringOrEmpty() string {
+	return string(r.NextString())
+}
+
 func (r *Reader) Int64() (int64, error) {
 	if r.Type() != Number {
 		return 0, r.Err()

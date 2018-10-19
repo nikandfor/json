@@ -16,3 +16,8 @@ func (r *Reader) Inspect(cb func(r *Reader) bool, ks ...interface{}) bool {
 	}
 	return rev
 }
+
+// Get is a shortcut for Wrap(data).Get(keys...)
+func Get(data []byte, keys ...interface{}) *Reader {
+	return Wrap(data).Get(keys...)
+}

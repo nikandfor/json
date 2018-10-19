@@ -118,7 +118,7 @@ func TestSmallLargeCount(t *testing.T) {
 			}
 			for w.HasNext() {
 				count++
-				t.Logf("topic: %s", w.NextBytes())
+				t.Logf("topic: %s", w.NextAsBytes())
 			}
 		}
 	}
@@ -160,7 +160,7 @@ func TestIterTopic(t *testing.T) {
 	for v.Type() != None {
 		j := 0
 		for v.HasNext() {
-			t.Logf("%d. %s", j, v.NextBytes())
+			t.Logf("%d. %s", j, v.NextAsBytes())
 			v.Skip()
 			j++
 		}

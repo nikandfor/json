@@ -125,7 +125,7 @@ func TestType(t *testing.T) {
 func typeHelper(t *testing.T, r *Reader) {
 	tp := r.Type()
 	if tp == String {
-		s := r.NextBytes()
+		s := r.NextAsBytes()
 		_ = s
 		//	log.Printf("type: %v %s", tp, s)
 	} else {

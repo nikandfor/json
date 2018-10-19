@@ -202,7 +202,7 @@ func ExampleReader_Type() {
 			//   r.Int() or r.Float64()
 			//   r.Bool()
 			//   r.Skip() // you can skip any value like this
-			val := r.NextBytes() // reads any value including object and array as raw bytes
+			val := r.NextAsBytes() // reads any value including object and array as raw bytes
 			fmt.Printf("%*s is %v\n", d*4, val, tp)
 		case ArrayStart:
 			for r.HasNext() {

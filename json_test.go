@@ -244,7 +244,7 @@ func TestBytesNumbers(t *testing.T) {
 
 	for i := 0; i < 6; i++ {
 		assert.Equal(t, Number, r.Type())
-		v := r.NextBytes()
+		v := r.NextAsBytes()
 		assert.Equal(t, []byte{'1', '0' + byte(i)}, v)
 	}
 

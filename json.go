@@ -258,9 +258,9 @@ start:
 	}
 }
 
-// NextBytes reads next object of any type and returns it as a raw byte slice
+// NextAsBytes reads next object of any type and returns it as a raw byte slice
 // without decoding (including string quotes)
-func (r *Reader) NextBytes() []byte {
+func (r *Reader) NextAsBytes() []byte {
 	r.Type()
 	r.Lock()
 	r.Skip()
@@ -382,6 +382,14 @@ loop:
 		c := r.b[i]
 		//	log.Printf("skip str0 %d+%d/%d '%c'", r.ref, i, r.end, c)
 		switch {
+		case c == '"':
+			i++
+			r.i = i
+			if len(r.decoded) == 0 {
+				return r.b[s : i-1]
+			}
+			r.decoded = append(r.decoded, r.b[s:i-1]...)
+			return r.decoded
 		case c == '\\':
 			r.decoded = append(r.decoded, r.b[s:i]...)
 			i++
@@ -400,14 +408,6 @@ loop:
 			r.decoded = append(r.decoded, c)
 			i++
 			s = i
-		case c == '"':
-			i++
-			r.i = i
-			if len(r.decoded) == 0 {
-				return r.b[s : i-1]
-			}
-			r.decoded = append(r.decoded, r.b[s:i-1]...)
-			return r.decoded
 		case c < 0x80: // utf8.RuneStart
 			//	log.Printf("skip stri %d+%d/%d '%c' (%d)", r.ref, i, r.end, c, c)
 			i++
