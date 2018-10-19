@@ -5,6 +5,7 @@ import (
 	jsonstd "encoding/json"
 	"testing"
 
+	"github.com/buger/jsonparser"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/mailru/easyjson/jlexer"
 	jwriter "github.com/mailru/easyjson/jwriter"
@@ -13,8 +14,9 @@ import (
 )
 
 // raw loop
-func BenchmarkRawLoop(b *testing.B) {
+func BenchmarkRawLoopStructMedium(b *testing.B) {
 	b.ReportAllocs()
+	b.SetBytes(int64(len(MediumFixture)))
 	skipString := func(b []byte, i int) int {
 		i++
 		for b[i] != '"' {
@@ -59,6 +61,7 @@ func BenchmarkRawLoop(b *testing.B) {
 // encode/json
 func BenchmarkDecodeStdStructMedium(b *testing.B) {
 	b.ReportAllocs()
+	b.SetBytes(int64(len(MediumFixture)))
 	var data MediumPayload
 	for i := 0; i < b.N; i++ {
 		jsonstd.Unmarshal(MediumFixture, &data)
@@ -69,6 +72,7 @@ func BenchmarkEncodeStdStructMedium(b *testing.B) {
 	var data MediumPayload
 	jsonstd.Unmarshal(MediumFixture, &data)
 	b.ReportAllocs()
+	b.SetBytes(int64(len(MediumFixture)))
 	for i := 0; i < b.N; i++ {
 		jsonstd.Marshal(data)
 	}
@@ -77,6 +81,7 @@ func BenchmarkEncodeStdStructMedium(b *testing.B) {
 // jsoniter
 func BenchmarkDecodeJsoniterStructMedium(b *testing.B) {
 	b.ReportAllocs()
+	b.SetBytes(int64(len(MediumFixture)))
 	var data MediumPayload
 	for i := 0; i < b.N; i++ {
 		jsoniter.Unmarshal(MediumFixture, &data)
@@ -87,6 +92,7 @@ func BenchmarkEncodeJsoniterStructMedium(b *testing.B) {
 	var data MediumPayload
 	jsoniter.Unmarshal(MediumFixture, &data)
 	b.ReportAllocs()
+	b.SetBytes(int64(len(MediumFixture)))
 	for i := 0; i < b.N; i++ {
 		jsoniter.Marshal(data)
 	}
@@ -95,6 +101,7 @@ func BenchmarkEncodeJsoniterStructMedium(b *testing.B) {
 // easyjson
 func BenchmarkDecodeEasyJsonMedium(b *testing.B) {
 	b.ReportAllocs()
+	b.SetBytes(int64(len(MediumFixture)))
 	var data MediumPayload
 	for i := 0; i < b.N; i++ {
 		lexer := &jlexer.Lexer{Data: MediumFixture}
@@ -107,12 +114,22 @@ func BenchmarkEncodeEasyJsonMedium(b *testing.B) {
 	lexer := &jlexer.Lexer{Data: MediumFixture}
 	data.UnmarshalEasyJSON(lexer)
 	b.ReportAllocs()
+	b.SetBytes(int64(len(MediumFixture)))
 	buf := &bytes.Buffer{}
 	for i := 0; i < b.N; i++ {
 		writer := &jwriter.Writer{}
 		data.MarshalEasyJSON(writer)
 		buf.Reset()
 		writer.DumpTo(buf)
+	}
+}
+
+// buger
+func BenchmarkDecodeBugerGetStructMedium(b *testing.B) {
+	b.ReportAllocs()
+	b.SetBytes(int64(len(MediumFixture)))
+	for i := 0; i < b.N; i++ {
+		jsonparser.Get(MediumFixture, "person", "gravatar", "avatars", "0", "url")
 	}
 }
 
@@ -148,6 +165,7 @@ func TestDecodeNikandjsonGetStructMedium(t *testing.T) {
 
 func BenchmarkDecodeNikandjsonStructMedium(b *testing.B) {
 	b.ReportAllocs()
+	b.SetBytes(int64(len(MediumFixture)))
 	var data MediumPayload
 	var r json.Reader
 	for i := 0; i < b.N; i++ {
@@ -157,6 +175,7 @@ func BenchmarkDecodeNikandjsonStructMedium(b *testing.B) {
 
 func BenchmarkDecodeNikandjsonSkipStructMedium(b *testing.B) {
 	b.ReportAllocs()
+	b.SetBytes(int64(len(MediumFixture)))
 	var r json.Reader
 	for i := 0; i < b.N; i++ {
 		r.Reset(MediumFixture).Skip()
@@ -165,9 +184,12 @@ func BenchmarkDecodeNikandjsonSkipStructMedium(b *testing.B) {
 
 func BenchmarkDecodeNikandjsonGetStructMedium(b *testing.B) {
 	b.ReportAllocs()
+	b.SetBytes(int64(len(MediumFixture)))
+	//	keys := []interface{}{[]byte("person"), []byte("gravatar"), []byte("avatars"), 0, []byte("url")} // to not allocate them in the loop
 	var r json.Reader
 	for i := 0; i < b.N; i++ {
 		r.Reset(MediumFixture)
 		r.Get("person", "gravatar", "avatars", 0, "url")
+		//	r.Get(keys...)
 	}
 }

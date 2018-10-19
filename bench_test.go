@@ -127,6 +127,7 @@ func BenchmarkRawLoopMediumStrict(b *testing.B) {
 func BenchmarkSkipMedium(b *testing.B) {
 	b.ReportAllocs()
 	data := go_benchmark.MediumFixture
+	b.SetBytes(int64(len(data)))
 	var r Reader
 	for i := 0; i < b.N; i++ {
 		r.Reset(data)

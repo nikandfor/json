@@ -8,8 +8,10 @@ import (
 	"github.com/nikandfor/json"
 )
 
-func BenchmarkJsonParserLarge(b *testing.B) {
+// buger
+func BenchmarkBugerJsonParserLarge(b *testing.B) {
 	b.ReportAllocs()
+	b.SetBytes(int64(len(LargeFixture)))
 	for i := 0; i < b.N; i++ {
 		count := 0
 		jsonparser.ArrayEach(LargeFixture, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
@@ -22,6 +24,7 @@ func BenchmarkJsonParserLarge(b *testing.B) {
 func BenchmarkJsoniterLarge(b *testing.B) {
 	iter := jsoniter.ParseBytes(jsoniter.ConfigDefault, LargeFixture)
 	b.ReportAllocs()
+	b.SetBytes(int64(len(LargeFixture)))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		iter.ResetBytes(LargeFixture)
@@ -56,8 +59,9 @@ func BenchmarkEncodingJsonLarge(b *testing.B) {
 }
 
 // nikandfor
-func BenchmarkNikandjsonLarge(b *testing.B) {
+func BenchmarkNikandjsonManualLarge(b *testing.B) {
 	b.ReportAllocs()
+	b.SetBytes(int64(len(LargeFixture)))
 	var w json.Reader
 	for i := 0; i < b.N; i++ {
 		w.Reset(LargeFixture)
@@ -87,6 +91,7 @@ func BenchmarkNikandjsonLarge(b *testing.B) {
 
 func BenchmarkNikandjsonGetLarge(b *testing.B) {
 	b.ReportAllocs()
+	b.SetBytes(int64(len(LargeFixture)))
 	var w json.Reader
 	for i := 0; i < b.N; i++ {
 		w.Reset(LargeFixture)
@@ -94,6 +99,25 @@ func BenchmarkNikandjsonGetLarge(b *testing.B) {
 		count := 0
 		for w.HasNext() {
 			count++
+			w.Skip()
+		}
+	}
+}
+
+// compare profiles
+func BenchmarkCmpLarge(b *testing.B) {
+	b.ReportAllocs()
+	var w json.Reader
+	for i := 0; i < b.N; i++ {
+		count := 0
+		jsonparser.ArrayEach(LargeFixture, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+			count++
+		}, "topics", "topics")
+
+		w.Reset(LargeFixture)
+		w.Get("topics", "topics")
+		for w.HasNext() {
+			count--
 			w.Skip()
 		}
 	}
