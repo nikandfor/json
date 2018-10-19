@@ -291,8 +291,9 @@ loop:
 				r.Skip()
 				j++
 			}
+			r.err = fmt.Errorf("index out of range: %d", j)
 		case string:
-			key = []byte(k)
+			key = UnsafeStringToBytes(k)
 		case []byte:
 			key = k
 		default:
