@@ -15,6 +15,13 @@ func Unmarshal(data []byte, r interface{}) error {
 	return Wrap(data).Unmarshal(r)
 }
 
+// UnmarshalNoZero unmarshals data info r but not clean struct fields that were not set in data
+func UnmarshalNoZero(data []byte, r interface{}) error {
+	w := Wrap(data)
+	w.nozero = true
+	return w.Unmarshal(r)
+}
+
 // Unmarshal reads and unmarshals value into res
 func (r *Reader) Unmarshal(res interface{}) error {
 	rv := reflect.ValueOf(res)
@@ -155,6 +162,10 @@ func (r *Reader) unmarshalStruct(rv reflect.Value) error {
 		if err := r.unmarshal(rv.Field(f.I)); err != nil {
 			return err
 		}
+	}
+
+	if r.nozero {
+		return nil
 	}
 
 	for i, vis := range vis {

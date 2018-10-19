@@ -240,3 +240,54 @@ func TestUnmarshalStructNestedPtr(t *testing.T) {
 		}, a)
 	}
 }
+
+func TestUnmarshalNoZero(t *testing.T) {
+	type B struct {
+		E int
+		D string
+	}
+	type A struct {
+		I  int
+		Ip *int
+		S  string
+		Sp *string
+		B  []byte
+		Bp *[]byte
+		A  B
+		Ap *B
+	}
+
+	var a A
+
+	ival := 2
+	sval := "sp_val"
+	bval := []byte{3, 2, 1}
+	err := WrapString(`{"i":1,"ip":2,"s":"s_val","sp":"sp_val","b":[1,2,3],"bp":[3,2,1],"a":{"e":4,"d":"d_val"},"ap":null}`).Unmarshal(&a)
+	if assert.NoError(t, err) {
+		assert.Equal(t, A{
+			I:  1,
+			Ip: &ival,
+			S:  "s_val",
+			Sp: &sval,
+			B:  []byte{1, 2, 3},
+			Bp: &bval,
+			A:  B{E: 4, D: "d_val"},
+			Ap: nil,
+		}, a)
+	}
+
+	sval = "sp_2"
+	err = UnmarshalNoZero([]byte(`{"i":10,"sp":"sp_2"}`), &a)
+	if assert.NoError(t, err) {
+		assert.Equal(t, A{
+			I:  10,
+			Ip: &ival,
+			S:  "s_val",
+			Sp: &sval,
+			B:  []byte{1, 2, 3},
+			Bp: &bval,
+			A:  B{E: 4, D: "d_val"},
+			Ap: nil,
+		}, a)
+	}
+}
