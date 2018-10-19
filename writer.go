@@ -117,12 +117,12 @@ func (w *Writer) Number(v []byte) {
 	w.RawBytes(v)
 }
 
-func (w *Writer) True() {
-	w.RawBytes([]byte("true"))
-}
-
-func (w *Writer) False() {
-	w.RawBytes([]byte("false"))
+func (w *Writer) Bool(f bool) {
+	if f {
+		w.RawBytes([]byte("true"))
+	} else {
+		w.RawBytes([]byte("false"))
+	}
 }
 
 func (w *Writer) Null() {

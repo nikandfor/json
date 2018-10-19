@@ -2,6 +2,8 @@ package json
 
 import (
 	"encoding/base64"
+	"fmt"
+	"io"
 	"reflect"
 	"strings"
 	"sync"
@@ -48,7 +50,9 @@ func (r *Reader) unmarshal(rv reflect.Value) error {
 		rv = rv.Elem()
 	}
 
-	switch rv.Kind() {
+	fptr := rv.UnsafeAddr()
+
+	switch k := rv.Kind(); k {
 	case reflect.Struct:
 		return r.unmarshalStruct(rv)
 	case reflect.String:
@@ -66,13 +70,47 @@ func (r *Reader) unmarshal(rv reflect.Value) error {
 		if err != nil {
 			return err
 		}
-		rv.SetInt(q)
+		switch k {
+		case reflect.Int:
+			*(*int)(unsafe.Pointer(fptr)) = int(q)
+		case reflect.Int64:
+			*(*int64)(unsafe.Pointer(fptr)) = q
+		case reflect.Int32:
+			*(*int32)(unsafe.Pointer(fptr)) = int32(q)
+		case reflect.Int16:
+			*(*int16)(unsafe.Pointer(fptr)) = int16(q)
+		case reflect.Int8:
+			*(*int8)(unsafe.Pointer(fptr)) = int8(q)
+		}
 	case reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8:
 		q, err := r.Uint64()
 		if err != nil {
 			return err
 		}
-		rv.SetUint(q)
+		switch k {
+		case reflect.Uint:
+			*(*uint)(unsafe.Pointer(fptr)) = uint(q)
+		case reflect.Uint64:
+			*(*uint64)(unsafe.Pointer(fptr)) = q
+		case reflect.Uint32:
+			*(*uint32)(unsafe.Pointer(fptr)) = uint32(q)
+		case reflect.Uint16:
+			*(*uint16)(unsafe.Pointer(fptr)) = uint16(q)
+		case reflect.Uint8:
+			*(*uint8)(unsafe.Pointer(fptr)) = uint8(q)
+		}
+	case reflect.Float64, reflect.Float32:
+		q, err := r.Float64()
+		if err != nil {
+			return err
+		}
+		if k == reflect.Float64 {
+			*(*float64)(unsafe.Pointer(fptr)) = float64(q)
+		} else {
+			*(*float32)(unsafe.Pointer(fptr)) = float32(q)
+		}
+	default:
+		panic(rv.Kind())
 	}
 	return nil
 }
@@ -227,21 +265,28 @@ func (r *Reader) unmarshalArray(rv reflect.Value) error {
 	tp := r.Type()
 
 	if elt.Kind() == reflect.Uint8 && tp == String {
-		bs := r.NextString()
-		n := base64.StdEncoding.DecodedLen(len(bs))
-		if n > rv.Cap() || rv.IsNil() {
-			rv.Set(reflect.MakeSlice(rv.Type(), n, n))
-		} else {
-			rv.Set(rv.Slice(0, n))
+		buf := rv.Bytes()
+		res := buf
+		rn := 0
+		sr := r.Base64Reader(base64.RawStdEncoding)
+		for {
+			n, err := sr.Read(buf)
+			rn += n
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return err
+			}
+
+			res = append(res, 0)
+			buf = res[rn:]
 		}
-		n1, err := base64.StdEncoding.Decode(rv.Bytes(), bs)
-		if err != nil {
-			return err
+		if res == nil {
+			res = make([]byte, 0)
 		}
-		if n1 != n {
-			rv.Set(rv.Slice(0, n1))
-		}
-		return nil
+		rv.SetBytes(res[:rn])
+		return sr.Close()
 	}
 
 	// usual array
@@ -349,6 +394,7 @@ type structMap struct {
 
 type structField struct {
 	I         int
+	Name      []byte
 	Kind      reflect.Kind
 	Ptr       uintptr
 	FastPath  bool
@@ -399,8 +445,6 @@ func getStructMap(t reflect.Type) *structMap {
 			sf.FastErase = true
 		}
 
-		m.s = append(m.s, sf)
-
 		n := f.Name
 		if t, ok := f.Tag.Lookup("json"); ok {
 			t := strings.Split(t, ",")
@@ -413,10 +457,30 @@ func getStructMap(t reflect.Type) *structMap {
 			ln := string(unicode.ToLower(r)) + n[sz:]
 			m.m[ln] = sf
 		}
+		sf.Name = []byte(n)
 		m.m[n] = sf
+
+		m.s = append(m.s, sf)
 	}
 
 	structMaps[t] = m
 
 	return m
+}
+
+func (m *structMap) String() string {
+	var b strings.Builder
+	b.WriteByte('[')
+	for i, f := range m.s {
+		if i != 0 {
+			b.WriteByte(' ')
+		}
+		b.WriteString(f.String())
+	}
+	b.WriteByte(']')
+	return b.String()
+}
+
+func (f structField) String() string {
+	return fmt.Sprintf("{%d %s %v}", f.I, f.Name, f.Kind)
 }
