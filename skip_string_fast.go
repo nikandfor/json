@@ -5,28 +5,26 @@ package json
 func (r *Reader) skipString(esc bool) {
 	//	log.Printf("Skip stri %d+%d/%d", r.ref, r.i, r.end)
 start:
-	i := r.i
-	for i < r.end {
-		c := r.b[i]
-		i++
+	s := r.i
+	b := r.b[s:r.end]
+	for i, c := range b {
 		//	log.Printf("skip str0 %d+%d/%d '%c'", r.ref, r.i, r.end, c)
-		switch {
-		case c == '\\':
+		if c == '"' {
+			if esc {
+				esc = false
+				continue
+			}
+			r.i = s + i + 1
+			return
+		} else if c == '\\' {
 			if esc {
 				esc = false
 				continue
 			}
 			esc = true
-		case c == '"':
-			if esc {
-				esc = false
-				continue
-			}
-			r.i = i
-			return
 		}
 	}
-	r.i = i
+	r.i = r.end
 	if r.more() {
 		goto start
 	}
