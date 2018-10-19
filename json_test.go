@@ -123,6 +123,20 @@ func TestSkipTopic(t *testing.T) {
 	t.Logf("iter _: %2v/%2v '%s' %v", v.i, v.end, v.b, v.err)
 }
 
+func TestSkipNotAValue(t *testing.T) {
+	data := `{"key": here}`
+	v := WrapString(data)
+
+	for v.Type() != None {
+		v.Skip()
+	}
+
+	if err := v.Err(); assert.Error(t, err) {
+		e := err.(Error)
+		assert.Equal(t, 8, e.Pos())
+	}
+}
+
 func TestReader(t *testing.T) {
 	data := `{"a":{"b":[1,2,3],"c":"c_val"},"d":1.2,"e":3e-5} {}`
 	t.Logf("data %d: '%s'", len(data), data)
@@ -164,7 +178,7 @@ func TestGetObjects(t *testing.T) {
 }
 
 func TestGetArrays(t *testing.T) {
-	data := `[[[1,2,3],[4,5]],[6,7,[8,[9,10],11]]]`
+	data := `[[[1,2,3],[4,5]],[6,7,[8,[9,10,11],12]]]`
 	t.Logf("data %d: '%s'", len(data), data)
 	t.Logf("____   : '%s'", string("_123456789_123456789_123456789_123456789_123456789_123456789_")[:len(data)])
 
@@ -196,6 +210,46 @@ func TestGet2(t *testing.T) {
 	assert.Equal(t, "result", string(v.NextString()))
 
 	t.Logf("iter _: %2v + %2v/%2v '%s' %v", v.ref, v.i, v.end, v.b, v.err)
+}
+
+func TestNextNumber(t *testing.T) {
+	data := ` 10,11, 12 ,13 , 14 ,15`
+	r := WrapString(data)
+
+	for i := 0; i < 6; i++ {
+		v, err := r.Int()
+		assert.NoError(t, err)
+		assert.Equal(t, 10+i, v)
+	}
+
+	assert.Equal(t, None, r.Type())
+}
+
+func TestSkipNumbers(t *testing.T) {
+	data := ` 10,11, 12 ,13 , 14 ,15`
+	r := WrapString(data)
+
+	for i := 0; i < 6; i++ {
+		assert.Equal(t, Number, r.Type())
+		r.Skip()
+		assert.NoError(t, r.Err())
+	}
+
+	assert.Equal(t, None, r.Type())
+}
+
+func TestBytesNumbers(t *testing.T) {
+	data := ` 10,11, 12 ,13 , 14 ,15`
+	r := WrapString(data)
+
+	for i := 0; i < 6; i++ {
+		assert.Equal(t, Number, r.Type())
+		v := r.NextBytes()
+		assert.Equal(t, []byte{'1', '0' + byte(i)}, v)
+	}
+
+	assert.NoError(t, r.Err())
+	assert.Equal(t, None, r.Type())
 }
 
 func TestSkipStringUTF8(t *testing.T) {
