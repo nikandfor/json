@@ -190,3 +190,66 @@ func ExampleReader_Get() {
 	// Output:
 	// total views for 4 days: 29
 }
+
+func ExampleReader_Type() {
+	data := `{"first": "string", "second": 123, "third": [1.1, 3.3, 7.7], "fourth": {"again": "string", "and": {"object": "here"}}}`
+	var parse func(*Reader, int) error
+	parse = func(r *Reader, d int) error {
+		switch tp := r.Type(); tp {
+		case String, Number, Bool, Null:
+			// read by one of accordingly
+			//   r.CheckString()
+			//   r.Int() or r.Float64()
+			//   r.Bool()
+			//   r.Skip() // you can skip any value like this
+			val := r.NextBytes() // reads any value including object and array as raw bytes
+			fmt.Printf("%*s is %v\n", d*4, val, tp)
+		case ArrayStart:
+			for r.HasNext() {
+				err := parse(r, d+1)
+				if err != nil {
+					return err
+				}
+			}
+		case ObjStart:
+			for r.HasNext() {
+				key := r.NextString()
+				fmt.Printf("%*s ->\n", d*4, key)
+				err := parse(r, d+1)
+				if err != nil {
+					return err
+				}
+			}
+		default:
+			err := r.Err()
+			fmt.Printf("%*s got type %v err %#v\n", d*4, "", tp, err)
+		}
+		return nil
+	}
+
+	r := WrapString(data)
+
+	err := parse(r, 1)
+	if err != nil {
+		fmt.Printf("error: %v", err)
+	}
+	if err = r.Err(); err != nil {
+		fmt.Printf("reader error: %v", err)
+	}
+
+	// Output:
+	// first ->
+	// "string" is String
+	// second ->
+	//      123 is Number
+	// third ->
+	//          1.1 is Number
+	//          3.3 is Number
+	//          7.7 is Number
+	// fourth ->
+	//    again ->
+	//     "string" is String
+	//      and ->
+	//       object ->
+	//           "here" is String
+}
