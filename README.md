@@ -90,7 +90,7 @@ err = r.Unmarshal(wanted_object)
 ```
 Remember that all bytes that are locked are kept in memory, don't forget to unlock it when you are done
 
-You can parse object in raw format without knowing structure (Full example at godoc under Reader.Type() method)
+You can parse object in raw format without knowing structure (Full example at godoc under [Reader.Type() method](https://godoc.org/github.com/nikandfor/json#example-Reader-Type))
 ```go
 parse = func(r *Reader, d int) {
     switch tp := r.Type(); tp {
@@ -168,7 +168,7 @@ To tell the truth I must say that it doesn't tell you anything if you missed `,`
 All the errors that could be ignored are ignored. That's done for the sake of performance.
 
 ## Performance
-Performance tests are the same as [jsoniter](https://github.com/json-iterator/go-benchmark/blob/master/src/github.com/json-iterator/go-benchmark/benchmark_medium_payload_test.go) and [json parser](https://github.com/buger/jsonparser/blob/master/benchmark/benchmark_medium_payload_test.go) have. And they are my closes competitors.
+Performance tests are the same as [jsoniter](https://github.com/json-iterator/go-benchmark/blob/master/src/github.com/json-iterator/go-benchmark/benchmark_medium_payload_test.go) and [json parser](https://github.com/buger/jsonparser/blob/master/benchmark/benchmark_medium_payload_test.go) have. And they are my closest competitors.
 
 Medium size json object decoding
 ```
