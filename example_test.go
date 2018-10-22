@@ -13,9 +13,9 @@ func ExampleReader() {
 
 	var visits int
 	for r.HasNext() {
-		r.Get("visits")
+		r.Search("visits")
 		visits += r.MustInt()
-		r.GoOut(1) // number of keys passed to Get()
+		r.GoOut(1) // number of keys passed to Search()
 	}
 
 	fmt.Printf("Total visits: %d\n", visits)
@@ -47,7 +47,7 @@ func ExampleReader_Unmarshal() {
 	var f FullName
 
 	// Get only small needed subobject and unmarshal it
-	err := WrapString(data).Get("person", "name").Unmarshal(&f)
+	err := WrapString(data).Search("person", "name").Unmarshal(&f)
 
 	fmt.Printf("name: %+v, err: %v", f, err)
 
@@ -131,7 +131,7 @@ func ExampleReader_HasNext() {
 	data := `{"a": [{"b": "c"}, {"d": "e"}],"f": true}`
 	r := WrapString(data)
 
-	r.Get("a")
+	r.Search("a")
 
 	for r.HasNext() { // over array
 		for r.HasNext() { // over array elements key-value pairs
@@ -151,7 +151,7 @@ func ExampleReader_HasNext() {
 	}
 
 	r.GoOut(1) // to get out of the most outer object
-	// it's the pair call to the first Get and we always have to call it if we want to read following data correctly
+	// it's the pair call to the first Search and we always have to call it if we want to read following data correctly
 
 	fmt.Printf("end of buffer, next value type: %v\n", r.Type())
 
@@ -162,7 +162,7 @@ func ExampleReader_HasNext() {
 	// end of buffer, next value type: None
 }
 
-func ExampleReader_Get() {
+func ExampleReader_Search() {
 	data := `
 	{"day": "Mon", "stats": {"views": {"by_partofday": [1, 2, 3]}}}
 	{"day": "Tue", "stats": {"views": {"by_partofday": [3, 2, 3]}}}
@@ -178,7 +178,7 @@ func ExampleReader_Get() {
 	days := 0
 	for r.Type() != None {
 		days++
-		r.Get("stats", "views", "by_partofday") // goes inside to requested value
+		r.Search("stats", "views", "by_partofday") // goes inside to requested value
 		for r.HasNext() {
 			sum += r.MustInt()
 		}

@@ -158,7 +158,7 @@ func TestReader(t *testing.T) {
 	t.Logf("iter _: %2v + %2v/%2v '%s' %v", v.ref, v.i, v.end, v.b, v.err)
 }
 
-func TestGetObjects(t *testing.T) {
+func TestSearchObjects(t *testing.T) {
 	data := `{"a":{"b":{"c":"d"},"e":{"f":"g"}}}`
 	t.Logf("data %d: '%s'", len(data), data)
 	t.Logf("____   : '%s'", string("_123456789_123456789_123456789_123456789_123456789_123456789_")[:len(data)])
@@ -166,7 +166,7 @@ func TestGetObjects(t *testing.T) {
 	rd := strings.NewReader(data)
 	r := NewReaderBufferSize(rd, 10)
 
-	r.Get("a", "e", "f")
+	r.Search("a", "e", "f")
 	assert.NoError(t, r.Err())
 	assert.Equal(t, String, r.Type())
 
@@ -177,7 +177,7 @@ func TestGetObjects(t *testing.T) {
 	t.Logf("iter _: %2v + %2v/%2v '%s' %v", r.ref, r.i, r.end, r.b, r.err)
 }
 
-func TestGetArrays(t *testing.T) {
+func TestSearchArrays(t *testing.T) {
 	data := `[[[1,2,3],[4,5]],[6,7,[8,[9,10,11],12]]]`
 	t.Logf("data %d: '%s'", len(data), data)
 	t.Logf("____   : '%s'", string("_123456789_123456789_123456789_123456789_123456789_123456789_")[:len(data)])
@@ -185,7 +185,7 @@ func TestGetArrays(t *testing.T) {
 	r := strings.NewReader(data)
 	v := NewReaderBufferSize(r, 10)
 
-	v.Get(1, 2, 1, 1)
+	v.Search(1, 2, 1, 1)
 	assert.NoError(t, v.Err())
 	assert.Equal(t, Number, v.Type())
 
@@ -196,7 +196,7 @@ func TestGetArrays(t *testing.T) {
 	t.Logf("iter _: %2v + %2v/%2v '%s' %v", v.ref, v.i, v.end, v.b, v.err)
 }
 
-func TestGet2(t *testing.T) {
+func TestSearch2(t *testing.T) {
 	data := `{"a":{"b":[true,false,null],"c":false},"d":{"eee":[{"a":1,"c":{"val":"not_result"}},{"a":1,"b":[1,2,3],"c":{"val":"result"}}]},"e":null}`
 	t.Logf("data %d: '%s'", len(data), data)
 	t.Logf("____   : '%s'", string("_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_")[:len(data)])
@@ -204,7 +204,7 @@ func TestGet2(t *testing.T) {
 	r := strings.NewReader(data)
 	v := NewReaderBufferSize(r, 10)
 
-	v.Get("d", "eee", 1, "c", "val")
+	v.Search("d", "eee", 1, "c", "val")
 	assert.NoError(t, v.Err())
 	assert.Equal(t, String, v.Type())
 	assert.Equal(t, "result", string(v.NextString()))

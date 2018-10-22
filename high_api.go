@@ -6,7 +6,7 @@ package json
 // is stored in memory and buffer doesn't shrinked back
 func (r *Reader) Inspect(cb func(r *Reader) bool, ks ...interface{}) bool {
 	r.Lock()
-	r.Get(ks...)
+	r.Search(ks...)
 	rev := cb(r)
 	if rev {
 		r.Return()
@@ -17,7 +17,7 @@ func (r *Reader) Inspect(cb func(r *Reader) bool, ks ...interface{}) bool {
 	return rev
 }
 
-// Get is a shortcut for Wrap(data).Get(keys...)
-func Get(data []byte, keys ...interface{}) *Reader {
-	return Wrap(data).Get(keys...)
+// Search is a shortcut for Wrap(data).Search(keys...)
+func Search(data []byte, keys ...interface{}) *Reader {
+	return Wrap(data).Search(keys...)
 }

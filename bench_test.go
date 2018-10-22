@@ -4,7 +4,7 @@ import "testing"
 
 import "github.com/nikandfor/json/benchmarks"
 
-func BenchmarkGetUnmarshal(b *testing.B) {
+func BenchmarkSearchUnmarshal(b *testing.B) {
 	b.ReportAllocs()
 
 	data := []byte(`{
@@ -30,8 +30,8 @@ func BenchmarkGetUnmarshal(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		r.Reset(data)
-		// Get only small needed subobject and unmarshal it
-		r.Get("person", "name").Unmarshal(&f)
+		// Search only small needed subobject and unmarshal it
+		r.Search("person", "name").Unmarshal(&f)
 	}
 }
 

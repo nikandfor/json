@@ -187,7 +187,7 @@ func (r *Reader) Skip() {
 
 // GoOut goes out of object or array (reads until end).
 // d means number of objects you want to out of.
-// It's the ideal pair for (*Reader).Get method
+// It's the ideal pair for (*Reader).Search method
 // (See (*Reader).Inspect source code as an example)
 func (r *Reader) GoOut(d int) {
 	//	log.Printf("Skip _: %2v + %2v '%s'", r.ref, r.i, r.b)
@@ -268,9 +268,9 @@ func (r *Reader) NextAsBytes() []byte {
 	return r.b[r.locki:r.i]
 }
 
-// Get searches for value at the specified path.
+// Search searches for value at the specified path.
 // It supports keys of type int for arrays and string or []byte for objects
-func (r *Reader) Get(keys ...interface{}) *Reader {
+func (r *Reader) Search(keys ...interface{}) *Reader {
 loop:
 	for _, k := range keys {
 		//	if true {

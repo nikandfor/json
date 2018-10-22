@@ -50,14 +50,6 @@ func BenchmarkJsoniterLarge(b *testing.B) {
 	}
 }
 
-func BenchmarkEncodingJsonLarge(b *testing.B) {
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		payload := &LargePayload{}
-		json.Unmarshal(LargeFixture, payload)
-	}
-}
-
 // nikandfor
 func BenchmarkNikandjsonManualLarge(b *testing.B) {
 	b.ReportAllocs()
@@ -89,13 +81,13 @@ func BenchmarkNikandjsonManualLarge(b *testing.B) {
 	}
 }
 
-func BenchmarkNikandjsonGetLarge(b *testing.B) {
+func BenchmarkNikandjsonSearchLarge(b *testing.B) {
 	b.ReportAllocs()
 	b.SetBytes(int64(len(LargeFixture)))
 	var w json.Reader
 	for i := 0; i < b.N; i++ {
 		w.Reset(LargeFixture)
-		w.Get("topics", "topics")
+		w.Search("topics", "topics")
 		count := 0
 		for w.HasNext() {
 			count++
@@ -115,7 +107,7 @@ func BenchmarkCmpLarge(b *testing.B) {
 		}, "topics", "topics")
 
 		w.Reset(LargeFixture)
-		w.Get("topics", "topics")
+		w.Search("topics", "topics")
 		for w.HasNext() {
 			count--
 			w.Skip()

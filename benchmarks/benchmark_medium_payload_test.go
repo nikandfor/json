@@ -125,7 +125,7 @@ func BenchmarkEncodeEasyJsonMedium(b *testing.B) {
 }
 
 // buger
-func BenchmarkDecodeBugerGetStructMedium(b *testing.B) {
+func BenchmarkDecodeBugerSearchStructMedium(b *testing.B) {
 	b.ReportAllocs()
 	b.SetBytes(int64(len(MediumFixture)))
 	for i := 0; i < b.N; i++ {
@@ -155,9 +155,9 @@ func TestDecodeNikandjsonSkipStructMedium(t *testing.T) {
 	assert.Equal(t, json.None, it.Type())
 }
 
-func TestDecodeNikandjsonGetStructMedium(t *testing.T) {
+func TestDecodeNikandjsonSearchStructMedium(t *testing.T) {
 	v := json.Wrap(MediumFixture)
-	v.Get("person", "gravatar", "avatars", 0, "url")
+	v.Search("person", "gravatar", "avatars", 0, "url")
 	assert.NoError(t, v.Err())
 	assert.Equal(t, json.String, v.Type(), "%T %T %v %v", json.String, v.Type(), json.String, v.Type())
 	assert.Equal(t, []byte("http://1.gravatar.com/avatar/f7c8edd577d13b8930d5522f28123510"), v.NextString())
@@ -182,14 +182,14 @@ func BenchmarkDecodeNikandjsonSkipStructMedium(b *testing.B) {
 	}
 }
 
-func BenchmarkDecodeNikandjsonGetStructMedium(b *testing.B) {
+func BenchmarkDecodeNikandjsonSearchStructMedium(b *testing.B) {
 	b.ReportAllocs()
 	b.SetBytes(int64(len(MediumFixture)))
 	//	keys := []interface{}{[]byte("person"), []byte("gravatar"), []byte("avatars"), 0, []byte("url")} // to not allocate them in the loop
 	var r json.Reader
 	for i := 0; i < b.N; i++ {
 		r.Reset(MediumFixture)
-		r.Get("person", "gravatar", "avatars", 0, "url")
-		//	r.Get(keys...)
+		r.Search("person", "gravatar", "avatars", 0, "url")
+		//	r.Search(keys...)
 	}
 }
