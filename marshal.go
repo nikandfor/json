@@ -2,6 +2,7 @@ package json
 
 import (
 	"encoding/base64"
+	"fmt"
 	"reflect"
 	"strconv"
 	"unsafe"
@@ -27,6 +28,13 @@ func (w *Writer) marshal(rv reflect.Value) error {
 		if rv.IsNil() {
 			w.Null()
 			return nil
+		}
+		rv = rv.Elem()
+	}
+	if rv.Kind() == reflect.Interface {
+		if rv.IsNil() {
+			w.Null()
+			return w.Err()
 		}
 		rv = rv.Elem()
 	}
@@ -56,9 +64,53 @@ func (w *Writer) marshal(rv reflect.Value) error {
 		w.Number(UnsafeStringToBytes(s))
 	case reflect.Bool:
 		w.Bool(rv.Bool())
+	case reflect.Map:
+		return w.marshalMap(rv)
 	default:
 		panic(rv.Kind())
 	}
+	return w.Err()
+}
+
+func (w *Writer) marshalMap(rv reflect.Value) error {
+	w.ObjStart()
+	keys := rv.MapKeys()
+	for i := 0; i < len(keys); i++ {
+		k := keys[i]
+		w.ObjKey([]byte(k.String()))
+		v := rv.MapIndex(k)
+		if v.Kind() == reflect.Interface {
+			if v.IsNil() {
+				w.Null()
+				continue
+			}
+			v = v.Elem()
+		}
+		for v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				w.Null()
+				continue
+			}
+			v = v.Elem()
+		}
+		switch v.Kind() {
+		case reflect.String:
+			w.StringString(v.String())
+		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8,
+			reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8,
+			reflect.Float64, reflect.Float32:
+			s := fmt.Sprintf("%v", v.Interface())
+			w.Number(UnsafeStringToBytes(s))
+		case reflect.Bool:
+			w.Bool(v.Bool())
+		default:
+			if err := w.marshal(v); err != nil {
+				return err
+			}
+		}
+	}
+	w.ObjEnd()
+
 	return w.Err()
 }
 

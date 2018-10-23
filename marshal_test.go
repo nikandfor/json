@@ -82,3 +82,45 @@ func TestMarshalStruct(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, `{"i":1,"ip":2,"s":"s_val","sp":"sp_val","b":[1,2,3],"bp":[3,2,1],"a":{"e":4,"d":"d_val"},"ap":null}`, string(data))
 }
+
+func TestMarshalMap(t *testing.T) {
+	data, err := Marshal(map[string]interface{}{
+		"e": 11, "d": "d_str",
+	})
+	assert.NoError(t, err)
+	assert.Subset(t, [][]byte{
+		[]byte(`{"e":11,"d":"d_str"}`),
+		[]byte(`{"d":"d_str","e":11}`),
+	}, [][]byte{data}, "%s", data)
+
+	data, err = Marshal(map[string]string{
+		"e": "11", "d": "d_str",
+	})
+	assert.NoError(t, err)
+	assert.Subset(t, [][]byte{
+		[]byte(`{"e":"11","d":"d_str"}`),
+		[]byte(`{"d":"d_str","e":"11"}`),
+	}, [][]byte{data}, "%s", data)
+
+	data, err = Marshal(map[string]int64{
+		"e": 11, "d": 44,
+	})
+	assert.NoError(t, err)
+	assert.Subset(t, [][]byte{
+		[]byte(`{"e":11,"d":44}`),
+		[]byte(`{"d":44,"e":11}`),
+	}, [][]byte{data}, "%s", data)
+}
+
+func TestMapStructPtr(t *testing.T) {
+	type B struct {
+		E int    `json:"e"`
+		D string `json:"d"`
+	}
+
+	data, err := Marshal(map[string]interface{}{
+		"b": &B{E: 12, D: "d_str"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, []byte(`{"b":{"e":12,"d":"d_str"}}`), data)
+}

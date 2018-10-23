@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"log"
 	"reflect"
 	"strings"
 	"sync"
@@ -166,7 +165,7 @@ func (r *Reader) unmarshalMap(rv reflect.Value) error {
 		k := r.NextString()
 		rk := reflect.ValueOf(string(k))
 
-		log.Printf("set map %s -> %v  %v", k, r.Type(), rv.Type())
+		//	log.Printf("set map %s -> %v  %v", k, r.Type(), rv.Type())
 
 		switch r.Type() {
 		case String:
