@@ -133,7 +133,6 @@ func (r *Reader) unmarshal(rv reflect.Value) error {
 				return err
 			}
 			v = q
-		case Null:
 		case Array:
 			q := reflect.New(sliceType).Elem()
 			err := r.unmarshal(q)
@@ -148,6 +147,8 @@ func (r *Reader) unmarshal(rv reflect.Value) error {
 				return err
 			}
 			v = q.Interface()
+		case Null:
+			// we'll set `v` that is nil
 		case None:
 			return r.Err()
 		}

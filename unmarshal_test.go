@@ -358,3 +358,11 @@ func TestUnmarshalMapFloat(t *testing.T) {
 		"e": 3.333,
 	}, m)
 }
+
+func TestUnmarshalNull(t *testing.T) {
+	data := `null`
+	var v interface{} = 4
+	err := WrapString(data).Unmarshal(&v)
+	assert.NoError(t, err)
+	assert.Nil(t, v)
+}

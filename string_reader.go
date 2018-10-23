@@ -80,7 +80,7 @@ loop:
 		goto start
 	}
 	if r.err == nil {
-		r.err = io.EOF
+		r.err = io.ErrUnexpectedEOF
 	}
 	return read, r.Err()
 }
