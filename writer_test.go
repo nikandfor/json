@@ -132,14 +132,14 @@ func typeHelper(t *testing.T, r *Reader) {
 		//	log.Printf("type: %v", tp)
 	}
 	switch tp {
-	case ObjStart:
+	case Object:
 		for r.HasNext() {
 			//	tp := r.Type()
 			//	k := r.NextString()
 			//	log.Printf("kytp: %v %s", tp, k)
 			typeHelper(t, r)
 		}
-	case ArrayStart:
+	case Array:
 		for r.HasNext() {
 			typeHelper(t, r)
 		}

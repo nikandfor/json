@@ -141,7 +141,7 @@ func ExampleReader_Base64Reader() {
 	var tokenDec []byte = make([]byte, len(token))
 
 	// check if it's really object (but we can skip this)
-	if tp := r.Type(); tp != ObjStart {
+	if tp := r.Type(); tp != Object {
 		fmt.Printf("Expected object, got %v\n", tp)
 	}
 

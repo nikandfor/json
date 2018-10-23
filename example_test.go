@@ -204,11 +204,11 @@ func ExampleReader_Type() {
 			//   r.Skip() // you can skip any value like this
 			val := r.NextAsBytes() // reads any value including object and array as raw bytes
 			fmt.Printf("%*s is %v\n", d*4, val, tp)
-		case ArrayStart:
+		case Array:
 			for r.HasNext() {
 				parse(r, d+1)
 			}
-		case ObjStart:
+		case Object:
 			for r.HasNext() {
 				key := r.NextString()
 				fmt.Printf("%*s ->\n", d*4, key)

@@ -6,14 +6,14 @@ func Copy(w *Writer, r *Reader) {
 	switch t {
 	case String:
 		w.String(r.NextString())
-	case ObjStart:
+	case Object:
 		w.ObjStart()
 		for r.HasNext() {
 			w.ObjKey(r.NextString())
 			Copy(w, r)
 		}
 		w.ObjEnd()
-	case ArrayStart:
+	case Array:
 		w.ArrayStart()
 		for r.HasNext() {
 			Copy(w, r)

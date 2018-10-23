@@ -15,16 +15,13 @@ var (
 )
 
 const (
-	None       Type = 0
-	Null       Type = 'n'
-	Bool       Type = 'b'
-	ArrayStart Type = '['
-	ArrayEnd   Type = ']'
-	ObjStart   Type = '{'
-	ObjEnd     Type = '}'
-	ObjKey     Type = 'k'
-	String     Type = 's'
-	Number     Type = 'N'
+	None   Type = 0
+	Null   Type = 'n'
+	Bool   Type = 'b'
+	Array  Type = '['
+	Object Type = '{'
+	String Type = 's'
+	Number Type = 'N'
 )
 
 // Reader parses byte stream and allows you to manipulate structured data
@@ -34,8 +31,7 @@ type Reader struct {
 	locki       int
 	locked      bool
 
-	waitkey bool
-	nozero  bool
+	nozero bool
 
 	//	d []Type
 
@@ -83,8 +79,6 @@ func (r *Reader) Reset(b []byte) *Reader {
 	r.i = 0
 	r.end = len(b)
 	r.locki = 0
-	//	r.d = r.d[:0]
-	r.waitkey = false
 	r.err = nil
 	r.r = nil
 	return r
@@ -332,11 +326,7 @@ start:
 		case ' ', '\t', '\n':
 			r.i++
 		case '"':
-			if r.waitkey {
-				return ObjKey
-			} else {
-				return String
-			}
+			return String
 		case ',':
 			r.i++
 		case ':':

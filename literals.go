@@ -5,6 +5,14 @@ import (
 	"strconv"
 )
 
+type (
+	Num []byte
+)
+
+func (n Num) String() string {
+	return string(n)
+}
+
 func (r *Reader) IsNull() bool {
 	return r.Type() == Null
 }
@@ -41,6 +49,10 @@ func (r *Reader) Int64() (int64, error) {
 		return 0, r.Err()
 	}
 
+	return Num(buf).Int64()
+}
+
+func (buf Num) Int64() (int64, error) {
 	res := int64(0)
 	n := false
 	if buf[0] == '-' {
@@ -51,13 +63,13 @@ func (r *Reader) Int64() (int64, error) {
 	}
 	for _, c := range buf {
 		if c < '0' || c > '9' {
-			r.err = fmt.Errorf("expected number")
-			return 0, r.Err()
+			err := fmt.Errorf("expected number")
+			return 0, err
 		}
 		res = res*10 + (int64)(c-'0')
 		if res < 0 {
-			r.err = fmt.Errorf("type overflow")
-			return 0, r.Err()
+			err := fmt.Errorf("type overflow")
+			return 0, err
 		}
 	}
 
@@ -77,22 +89,26 @@ func (r *Reader) Uint64() (uint64, error) {
 		return 0, r.Err()
 	}
 
+	return Num(buf).Uint64()
+}
+
+func (buf Num) Uint64() (uint64, error) {
 	res := uint64(0)
 	if buf[0] == '-' {
-		r.err = fmt.Errorf("negative number")
-		return 0, r.Err()
+		err := fmt.Errorf("negative number")
+		return 0, err
 	} else if buf[0] == '+' {
 		buf = buf[1:]
 	}
 	for _, c := range buf {
 		if c < '0' || c > '9' {
-			r.err = fmt.Errorf("expected number")
-			return 0, r.Err()
+			err := fmt.Errorf("expected number")
+			return 0, err
 		}
 		res = res*10 + (uint64)(c-'0')
 		if res < 0 {
-			r.err = fmt.Errorf("type overflow")
-			return 0, r.Err()
+			err := fmt.Errorf("type overflow")
+			return 0, err
 		}
 	}
 
@@ -108,6 +124,10 @@ func (r *Reader) Float64() (float64, error) {
 		return 0, r.Err()
 	}
 
+	return Num(buf).Float64()
+}
+
+func (buf Num) Float64() (float64, error) {
 	return strconv.ParseFloat(string(buf), 64)
 }
 
