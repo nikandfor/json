@@ -291,3 +291,70 @@ func TestUnmarshalNoZero(t *testing.T) {
 		}, a)
 	}
 }
+
+func TestUnmarshalMap(t *testing.T) {
+	data := `{"i":1,"ip":2,"s":"s_val","sp":"sp_val","b":[1,2,3],"bp":[3,2,1],"a":{"e":4,"d":"d_val"},"ap":null}`
+	var m map[string]interface{}
+	err := WrapString(data).Unmarshal(&m)
+	assert.NoError(t, err)
+	exp := map[string]interface{}{
+		"i":  Num("1"),
+		"ip": Num("2"),
+		"s":  "s_val",
+		"sp": "sp_val",
+		"b":  []interface{}{Num("1"), Num("2"), Num("3")},
+		"bp": []interface{}{Num("3"), Num("2"), Num("1")},
+		"a": map[string]interface{}{
+			"e": Num("4"),
+			"d": "d_val",
+		},
+		"ap": nil,
+	}
+	if !assert.Equal(t, exp, m) {
+		for k, v := range exp {
+			t.Logf("%10s : %v vs %v", k, v, m[k])
+		}
+		return
+	}
+
+	var i interface{}
+	err = WrapString(data).Unmarshal(&i)
+	assert.NoError(t, err)
+	assert.Equal(t, exp, i)
+}
+
+func TestUnmarshalMapString(t *testing.T) {
+	data := `{"a": "b", "c": "d", "e": "f"}`
+	var m map[string]string
+	err := WrapString(data).Unmarshal(&m)
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"a": "b",
+		"c": "d",
+		"e": "f",
+	}, m)
+}
+
+func TestUnmarshalMapInt(t *testing.T) {
+	data := `{"a": 1, "c": 2, "e": 3}`
+	var m map[string]int
+	err := WrapString(data).Unmarshal(&m)
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]int{
+		"a": 1,
+		"c": 2,
+		"e": 3,
+	}, m)
+}
+
+func TestUnmarshalMapFloat(t *testing.T) {
+	data := `{"a": 1, "c": 2.3, "e": 3.333}`
+	var m map[string]float64
+	err := WrapString(data).Unmarshal(&m)
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]float64{
+		"a": 1,
+		"c": 2.3,
+		"e": 3.333,
+	}, m)
+}

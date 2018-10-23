@@ -4,12 +4,19 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"log"
 	"reflect"
 	"strings"
 	"sync"
 	"unicode"
 	"unicode/utf8"
 	"unsafe"
+)
+
+var (
+	interface_val interface{}
+	sliceType     = reflect.SliceOf(reflect.TypeOf(&interface_val).Elem())
+	mapType       = reflect.MapOf(reflect.TypeOf("string"), reflect.TypeOf(&interface_val).Elem())
 )
 
 // Unmarshal unmarshals data info r
@@ -50,7 +57,10 @@ func (r *Reader) unmarshal(rv reflect.Value) error {
 		rv = rv.Elem()
 	}
 
-	fptr := rv.UnsafeAddr()
+	var fptr uintptr
+	if rv.CanAddr() {
+		fptr = rv.UnsafeAddr()
+	}
 
 	switch k := rv.Kind(); k {
 	case reflect.Struct:
@@ -109,9 +119,118 @@ func (r *Reader) unmarshal(rv reflect.Value) error {
 		} else {
 			*(*float32)(unsafe.Pointer(fptr)) = float32(q)
 		}
+	case reflect.Map:
+		return r.unmarshalMap(rv)
+	case reflect.Interface:
+		var v interface{}
+		switch r.Type() {
+		case String:
+			v = string(r.NextString())
+		case Number:
+			v = Num(r.NextNumber())
+		case Bool:
+			q, err := r.Bool()
+			if err != nil {
+				return err
+			}
+			v = q
+		case Null:
+		case Array:
+			q := reflect.New(sliceType).Elem()
+			err := r.unmarshal(q)
+			if err != nil {
+				return err
+			}
+			v = q.Interface()
+		case Object:
+			q := reflect.New(mapType).Elem()
+			err := r.unmarshal(q)
+			if err != nil {
+				return err
+			}
+			v = q.Interface()
+		case None:
+			return r.Err()
+		}
+		rv.Set(reflect.ValueOf(&v).Elem())
 	default:
 		panic(rv.Kind())
 	}
+	return nil
+}
+
+func (r *Reader) unmarshalMap(rv reflect.Value) error {
+	rv.Set(reflect.MakeMap(rv.Type()))
+
+	for r.HasNext() {
+		k := r.NextString()
+		rk := reflect.ValueOf(string(k))
+
+		log.Printf("set map %s -> %v  %v", k, r.Type(), rv.Type())
+
+		switch r.Type() {
+		case String:
+			v := string(r.NextString())
+			rv.SetMapIndex(rk, reflect.ValueOf(v))
+		case Number:
+			elt := rv.Type().Elem()
+			rval := reflect.New(elt).Elem()
+			num := Num(r.NextNumber())
+			switch elt.Kind() {
+			case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
+				q, err := num.Int64()
+				if err != nil {
+					return err
+				}
+				rval.SetInt(q)
+				rv.SetMapIndex(rk, rval)
+			case reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8:
+				q, err := num.Uint64()
+				if err != nil {
+					return err
+				}
+				rval.SetUint(q)
+				rv.SetMapIndex(rk, rval)
+			case reflect.Float64, reflect.Float32:
+				q, err := num.Float64()
+				if err != nil {
+					return err
+				}
+				rval.SetFloat(q)
+				rv.SetMapIndex(rk, rval)
+			default:
+				rv.SetMapIndex(rk, reflect.ValueOf(num))
+			}
+		case Bool:
+			v, err := r.Bool()
+			if err != nil {
+				return err
+			}
+			rv.SetMapIndex(rk, reflect.ValueOf(v))
+		case Null:
+			var v interface{}
+			rv.SetMapIndex(rk, reflect.ValueOf(&v).Elem())
+		case Array:
+			v := reflect.New(sliceType).Elem()
+			err := r.unmarshal(v)
+			if err != nil {
+				return err
+			}
+			rv.SetMapIndex(rk, v)
+		case Object:
+			v := reflect.New(mapType).Elem()
+			err := r.unmarshal(v)
+			if err != nil {
+				return err
+			}
+			rv.SetMapIndex(rk, v)
+		case None:
+			return r.Err()
+		default:
+			panic(r.Type())
+		}
+	}
+
 	return nil
 }
 
