@@ -37,7 +37,7 @@ func (r *Reader) Unmarshal(res interface{}) error {
 }
 
 func (r *Reader) unmarshal(rv reflect.Value) error {
-	//	log.Printf("unmarshal: %d+%d/%d  -> %v", r.ref, r.i, r.end, rv)
+	//	log.Printf("unmarshal: %d+%d/%d  -> %v (%v)", r.ref, r.i, r.end, rv, rv.Type())
 	for rv.Kind() == reflect.Ptr {
 		if r.IsNull() && rv.IsNil() {
 			return nil
@@ -406,6 +406,10 @@ func (r *Reader) unmarshalArray(rv reflect.Value) error {
 		}
 		rv.SetBytes(res[:rn])
 		return sr.Close()
+	}
+
+	if tp != Array {
+		return r.setErr(ErrIncompatibleTypes)
 	}
 
 	// usual array

@@ -1,8 +1,13 @@
 package json
 
 import (
+	"errors"
 	"fmt"
 	"unicode/utf8"
+)
+
+var (
+	ErrIncompatibleTypes = errors.New("incompatible types")
 )
 
 var pad = []byte("__________")

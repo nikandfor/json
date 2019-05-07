@@ -24,14 +24,14 @@ func (w *Writer) Marshal(r interface{}) error {
 
 func (w *Writer) marshal(rv reflect.Value) error {
 	//	log.Printf("marshal: %v %v", rv.Type(), rv)
-	for rv.Kind() == reflect.Ptr {
+	if rv.Kind() == reflect.Interface {
 		if rv.IsNil() {
 			w.Null()
-			return nil
+			return w.Err()
 		}
 		rv = rv.Elem()
 	}
-	if rv.Kind() == reflect.Interface {
+	for rv.Kind() == reflect.Ptr {
 		if rv.IsNil() {
 			w.Null()
 			return w.Err()
@@ -186,6 +186,11 @@ func (w *Writer) marshalStruct(rv reflect.Value) error {
 }
 
 func (w *Writer) marshalSlice(rv reflect.Value) error {
+	if rv.IsNil() {
+		w.Null()
+		return w.Err()
+	}
+
 	elk := rv.Type().Elem().Kind()
 	if elk == reflect.Uint8 {
 		sw := w.Base64Writer(base64.RawStdEncoding)

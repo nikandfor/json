@@ -19,7 +19,7 @@ func (r *Reader) IsNull() bool {
 
 func (r *Reader) CheckString() (string, error) {
 	if r.Type() != String {
-		return "", r.Err()
+		return "", r.setErr(ErrIncompatibleTypes)
 	}
 	d := r.NextString()
 	if r.err != nil {
@@ -42,7 +42,7 @@ func (r *Reader) StringOrEmpty() string {
 
 func (r *Reader) Int64() (int64, error) {
 	if r.Type() != Number {
-		return 0, r.Err()
+		return 0, r.setErr(ErrIncompatibleTypes)
 	}
 	buf := r.NextNumber()
 	if r.err != nil {
@@ -82,7 +82,7 @@ func (buf Num) Int64() (int64, error) {
 
 func (r *Reader) Uint64() (uint64, error) {
 	if r.Type() != Number {
-		return 0, r.Err()
+		return 0, r.setErr(ErrIncompatibleTypes)
 	}
 	buf := r.NextNumber()
 	if r.err != nil {
@@ -117,7 +117,7 @@ func (buf Num) Uint64() (uint64, error) {
 
 func (r *Reader) Float64() (float64, error) {
 	if r.Type() != Number {
-		return 0, r.Err()
+		return 0, r.setErr(ErrIncompatibleTypes)
 	}
 	buf := r.NextNumber()
 	if r.err != nil {
@@ -133,7 +133,7 @@ func (buf Num) Float64() (float64, error) {
 
 func (r *Reader) Bool() (bool, error) {
 	if r.Type() != Bool {
-		return false, r.Err()
+		return false, r.setErr(ErrIncompatibleTypes)
 	}
 
 	c := r.b[r.i]

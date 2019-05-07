@@ -359,7 +359,10 @@ start:
 // NextString read next object key or string checking utf8 encoding correctness
 // and decoding '\t', '\n', '\r' escape sequences
 func (r *Reader) NextString() []byte {
-	r.Type() // read until value start
+	if r.Type() != String { // read until value start
+		r.setErr(ErrIncompatibleTypes)
+		return nil
+	}
 
 	r.decoded = r.decoded[:0]
 	//	log.Printf("Skip stri %d+%d/%d", r.ref, r.i, r.end)
@@ -575,4 +578,18 @@ func (r *Reader) Err() error {
 		return nil
 	}
 	return NewError(r.b, r.i, r.err)
+}
+
+func (r *Reader) setErr(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	r.err = err
+
+	return r.Err()
+}
+
+func (r *Reader) ResetErr() {
+	r.err = nil
 }
