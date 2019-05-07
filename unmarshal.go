@@ -208,6 +208,7 @@ func (r *Reader) unmarshalMap(rv reflect.Value) error {
 			}
 			rv.SetMapIndex(rk, reflect.ValueOf(v))
 		case Null:
+			r.Skip()
 			var v interface{}
 			rv.SetMapIndex(rk, reflect.ValueOf(&v).Elem())
 		case Array:
