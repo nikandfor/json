@@ -1,3 +1,5 @@
 #!/bin/sh
 
-go-fuzz -workdir wd -bin json-fuzz.zip
+f=${1:-FuzzSkip}
+
+go-fuzz -func $f -workdir ${f}_wd -bin nikandjson-fuzz.zip

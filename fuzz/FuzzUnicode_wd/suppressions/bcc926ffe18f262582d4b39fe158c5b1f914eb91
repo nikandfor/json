@@ -1,0 +1,4 @@
+panic: unmarshal: parse error at pos 1: unsupported escape sequence: :
+github.com/nikandfor/json/fuzz.FuzzUnicode
+go-fuzz-dep.Main
+main.main

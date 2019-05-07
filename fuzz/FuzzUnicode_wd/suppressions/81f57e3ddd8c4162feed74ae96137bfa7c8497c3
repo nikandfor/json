@@ -1,0 +1,4 @@
+panic: unmarshal
+github.com/nikandfor/json/fuzz.FuzzUnicode
+go-fuzz-dep.Main
+main.main
