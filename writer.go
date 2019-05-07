@@ -5,7 +5,7 @@ import (
 	"unicode/utf8"
 )
 
-var tohex = []byte("0123456789abcdef")
+var tohex = "0123456789abcdef"
 
 type Writer struct {
 	b      []byte
@@ -221,12 +221,14 @@ func (w *Writer) add(t []byte) {
 }
 
 func (w *Writer) safeadd(s []byte) {
-	var buf []byte
-
 again:
 	i := 0
 	l := len(s)
-	for i < l && 0x20 <= s[i] && s[i] <= 0x7e {
+	for i < l {
+		c := s[i]
+		if c == '"' || c == '\\' || c < 0x20 || c > 0x7e {
+			break
+		}
 		i++
 	}
 	w.add(s[:i])
@@ -236,17 +238,30 @@ again:
 
 	s = s[i:]
 
+	switch s[0] {
+	case '"':
+		w.add([]byte{'\\', '"'})
+	case '\\':
+		w.add([]byte{'\\', '\\'})
+	default:
+		goto complex
+	}
+
+	s = s[1:]
+	goto again
+
+complex:
 	r, width := utf8.DecodeRune(s)
 
 	if r == utf8.RuneError && width == 1 {
-		buf = append(buf[:0], '\\', 'x', tohex[s[0]>>4], tohex[s[0]&0xf])
+		w.add([]byte{'\\', 'x', tohex[s[0]>>4], tohex[s[0]&0xf]})
+	} else if r == utf8.RuneError {
+		w.add(s[:width])
+	} else if r <= 0xffff {
+		w.add([]byte{'\\', 'u', tohex[r>>12&0xf], tohex[r>>8&0xf], tohex[r>>4&0xf], tohex[r&0xf]})
 	} else {
-		buf = append(buf[:0], '\\', 'u')
-		buf = append(buf, tohex[r>>12&0xf], tohex[r>>8&0xf])
-		buf = append(buf, tohex[r>>4&0xf], tohex[r&0xf])
+		w.add([]byte{'\\', 'U', tohex[r>>28&0xf], tohex[r>>24&0xf], tohex[r>>20&0xf], tohex[r>>16&0xf], tohex[r>>12&0xf], tohex[r>>8&0xf], tohex[r>>4&0xf], tohex[r&0xf]})
 	}
-
-	w.add(buf)
 
 	s = s[width:]
 

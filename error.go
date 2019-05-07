@@ -12,6 +12,7 @@ var (
 )
 
 var pad = []byte("__________")
+var notPrintableChar byte = '.'
 
 // Error keeps position and context of an error and can pretty print it
 // It supports 3 forms of formatting:
@@ -83,10 +84,6 @@ func (e Error) Format(s fmt.State, c rune) {
 	b, p = escapeString(b, p)
 
 	if s.Flag('#') {
-		//	r, _ := utf8.DecodeRune(b[p:])
-		//	if r == utf8.RuneError {
-		//		r = '*'
-		//	}
 		fmt.Fprintf(s, " `%s`", b)
 		return
 	}
@@ -165,8 +162,8 @@ func escapeString(b []byte, p int) ([]byte, int) {
 		default:
 			n, s := utf8.DecodeRune(b[i:])
 			//	log.Printf("decode from %d '%s' -> '%c' %d %d != %d  p %d %d", i, b[i:], n, s, n, utf8.RuneError, p, p0)
-			if n == utf8.RuneError {
-				res[w] = '*'
+			if n == utf8.RuneError && s == 1 {
+				res[w] = notPrintableChar
 				w++
 				break
 			}

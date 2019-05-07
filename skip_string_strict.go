@@ -39,7 +39,7 @@ loop:
 				}
 			}
 			n, s := utf8.DecodeRune(r.b[i:])
-			if n == utf8.RuneError {
+			if n == utf8.RuneError && s == 1 {
 				r.err = ErrEncoding
 				return
 			}

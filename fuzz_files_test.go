@@ -1,16 +1,21 @@
 package json
 
 import (
+	"encoding/hex"
+	stdjson "encoding/json"
 	"io/ioutil"
 	"path"
+	"strconv"
+	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 )
 
-const dir = "fuzz/wd/corpus"
+func TestFuzzSkip(t *testing.T) {
+	const dir = "fuzz/FuzzSkip_wd/corpus"
 
-func TestFuzz(t *testing.T) {
 	fs, err := ioutil.ReadDir(dir)
 	if !assert.NoError(t, err) {
 		return
@@ -25,5 +30,58 @@ func TestFuzz(t *testing.T) {
 		t.Run(f.Name(), func(t *testing.T) {
 			Wrap(data).Skip()
 		})
+	}
+}
+
+func TestFuzzUnicode(t *testing.T) {
+	const dir = "fuzz/FuzzUnicode_wd/corpus"
+
+	fs, err := ioutil.ReadDir(dir)
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	for _, f := range fs {
+		if strings.Contains(f.Name(), ".") {
+			//	t.Logf("skip file %v", f.Name())
+			continue
+		}
+
+		d, err := ioutil.ReadFile(path.Join(dir, f.Name()))
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !utf8.Valid(d) {
+			panic("unvalid string")
+		}
+
+		if back, err := strconv.Unquote(strconv.Quote(string(d))); err != nil || back != string(d) {
+			t.Logf("unquote * quote: %q -> %q  (%v)", d, back, err)
+		} else {
+			t.Logf("unquote * quote: %q -> %q  (%v)", d, back, err)
+		}
+
+		t.Run(f.Name(), func(t *testing.T) {
+			data, err := Marshal(string(d))
+			assert.NoError(t, err, "marshal")
+
+			var res string
+			err = Unmarshal(data, &res)
+			assert.NoError(t, err, "unmarshal")
+
+			assert.Equal(t, d, []byte(res), "marshalled data:\n%v", hex.Dump(data))
+
+			if t.Failed() {
+				stddata, stderr := stdjson.Marshal(string(d))
+				if assert.NoError(t, stderr) {
+					assert.Equal(t, stddata, data, "src data:\n%v", hex.Dump(d))
+				}
+			}
+		})
+
+		if t.Failed() {
+			break
+		}
 	}
 }

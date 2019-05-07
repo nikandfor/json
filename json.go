@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"unicode/utf8"
 )
 
@@ -394,6 +395,50 @@ loop:
 				c = '\t'
 			case 'r':
 				c = '\r'
+			case '"', '\\':
+				// c = c
+			case 'x', 'u', 'U':
+				n := 2
+				switch c {
+				case 'u':
+					n = 4
+				case 'U':
+					n = 8
+				}
+				r.i = i - 1
+				if i+n >= r.end && !r.more() {
+					return nil
+				}
+				i = r.i + 2
+				if i+n >= r.end {
+					r.err = io.ErrUnexpectedEOF
+					return nil
+				}
+				rn, mb, _, err := strconv.UnquoteChar(string(r.b[r.i:r.i+2+n]), '"')
+				if err != nil {
+					r.err = err
+					return nil
+				}
+				if rn < utf8.RuneSelf || !mb {
+					r.decoded = append(r.decoded, byte(rn))
+				} else {
+					n := utf8.RuneLen(rn)
+					s := len(r.decoded)
+					switch n {
+					case 2:
+						r.decoded = append(r.decoded, 0, 0)
+					case 3:
+						r.decoded = append(r.decoded, 0, 0, 0)
+					case 4:
+						r.decoded = append(r.decoded, 0, 0, 0, 0)
+					default:
+						panic(n)
+					}
+					utf8.EncodeRune(r.decoded[s:], rn)
+				}
+				i += n
+				s = i
+				continue loop
 			default:
 				r.err = fmt.Errorf("unsupported escape sequence: %c", c)
 				return nil
@@ -406,18 +451,18 @@ loop:
 			i++
 			continue
 		default:
-			if i+utf8.UTFMax > r.end {
+			if i+utf8.UTFMax >= r.end {
 				if !utf8.FullRune(r.b[i:r.end]) {
 					break loop
 				}
 			}
-			n, s := utf8.DecodeRune(r.b[i:])
-			if n == utf8.RuneError {
+			rn, w := utf8.DecodeRune(r.b[i:])
+			if rn == utf8.RuneError && w == 1 {
 				r.err = fmt.Errorf("undecodable unicode symbol")
 				return nil
 			}
 			//	log.Printf("skip rune %d+%d/%d '%c'", r.ref, i, r.end, n)
-			i += s
+			i += w
 		}
 	}
 	r.i = i
