@@ -197,4 +197,4 @@ BenchmarkNikandjsonGetLarge-8      	   30000	     52134 ns/op	 539.43 MB/s	     
 As you can see my library is not the fastest, but it is as memory efficient as possible (as Buger as) and it has all the functions in single package.
 Two allocs in `BenchmarkDecodeNikandjsonStructMedium` test is []byte to string conversion when struct fields are set (that could be avoided by `unsafe` hack, but in that situation it's not worth it).
 
-There are two skipString functions implementations: fast (default) and strict, that checks all strings to utf8 encoding correctness (it's still done for strings you get by NextString and CheckString methods). It could be chosen at compilation time by setting build tag `strict`.
+There are two skipString function implementations: strict (default) that checks all strings to utf8 encoding correctness (it's still done for strings you get by NextString and CheckString methods) and fast that doesn't. It could be chosen at compilation time by setting build tag `unsafestrings`.

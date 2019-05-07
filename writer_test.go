@@ -22,7 +22,9 @@ func TestWriter(t *testing.T) {
 	w.ArrayEnd()
 	w.ObjEnd()
 
-	t.Logf("res: '%s'", w.Bytes())
+	assert.Equal(t, []byte(`{"key_a":"value","key_b":["a","b",{},"c"]}`), w.Bytes())
+
+	//	t.Logf("res: '%s'", w.Bytes())
 }
 
 func TestWriterIndent(t *testing.T) {
@@ -40,10 +42,18 @@ func TestWriterIndent(t *testing.T) {
 	w.StringString("c")
 	w.ArrayEnd()
 	w.ObjEnd()
-	if false {
-	}
 
-	t.Logf("res: \n%s", w.Bytes())
+	assert.Equal(t, `>{
+>--"key_a": "value",
+>--"key_b": [
+>----"a",
+>----"b",
+>----{},
+>----"c"
+>--]
+>}`, string(w.Bytes()))
+
+	//	t.Logf("res: \n%s", w.Bytes())
 }
 
 func TestWriterSetIndent(t *testing.T) {
@@ -68,7 +78,12 @@ func TestWriterSetIndent(t *testing.T) {
 
 	w.ObjEnd()
 
-	t.Logf("res: \n%s", w.Bytes())
+	assert.Equal(t, `>{
+>--"key_a": "value",
+>--"key_b": ["a","b",{},"c"]
+>}`, string(w.Bytes()))
+
+	//	t.Logf("res: \n%s", w.Bytes())
 }
 
 func TestCopy(t *testing.T) {
@@ -120,6 +135,16 @@ func TestType(t *testing.T) {
 	Copy(ind, r)
 
 	typeHelper(t, Wrap(ind.Bytes()))
+}
+
+func TestWriteSafe(t *testing.T) {
+	w := NewWriter(make([]byte, 1000))
+
+	w.SafeStringString("\xbd\xb2\x3d\xbc\x20\xe2\x8c\x98")
+
+	assert.Equal(t, []byte(`"\xbd\xb2=\xbc \u2318"`), w.Bytes())
+
+	//	t.Logf("res: '%s'", w.Bytes())
 }
 
 func typeHelper(t *testing.T, r *Reader) {

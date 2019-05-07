@@ -1,4 +1,4 @@
-// +build !strict
+// +build unsafestrings
 
 package json
 

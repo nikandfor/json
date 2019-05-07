@@ -1,6 +1,11 @@
 package json
 
-import "io"
+import (
+	"io"
+	"unicode/utf8"
+)
+
+var tohex = []byte("0123456789abcdef")
 
 type Writer struct {
 	b      []byte
@@ -52,6 +57,7 @@ func (w *Writer) ArrayStart() {
 	w.add([]byte{'['})
 	w.d++
 	w.naopen = true
+	w.ncomma = false
 }
 
 func (w *Writer) ArrayEnd() {
@@ -113,6 +119,14 @@ func (w *Writer) String(v []byte) {
 	w.valueEnd()
 }
 
+func (w *Writer) SafeString(v []byte) {
+	w.valueStart()
+	w.add([]byte{'"'})
+	w.safeadd(v)
+	w.add([]byte{'"'})
+	w.valueEnd()
+}
+
 func (w *Writer) Number(v []byte) {
 	w.RawBytes(v)
 }
@@ -163,6 +177,10 @@ func (w *Writer) StringString(v string) {
 	w.String([]byte(v))
 }
 
+func (w *Writer) SafeStringString(v string) {
+	w.SafeString(UnsafeStringToBytes(v))
+}
+
 func (w *Writer) comma() {
 	if !w.ncomma {
 		return
@@ -200,6 +218,39 @@ func (w *Writer) add(t []byte) {
 		}
 		t = t[n:]
 	}
+}
+
+func (w *Writer) safeadd(s []byte) {
+	var buf []byte
+
+again:
+	i := 0
+	l := len(s)
+	for i < l && 0x20 <= s[i] && s[i] <= 0x7e {
+		i++
+	}
+	w.add(s[:i])
+	if i == l {
+		return
+	}
+
+	s = s[i:]
+
+	r, width := utf8.DecodeRune(s)
+
+	if r == utf8.RuneError && width == 1 {
+		buf = append(buf[:0], '\\', 'x', tohex[s[0]>>4], tohex[s[0]&0xf])
+	} else {
+		buf = append(buf[:0], '\\', 'u')
+		buf = append(buf, tohex[r>>12&0xf], tohex[r>>8&0xf])
+		buf = append(buf, tohex[r>>4&0xf], tohex[r&0xf])
+	}
+
+	w.add(buf)
+
+	s = s[width:]
+
+	goto again
 }
 
 func (w *Writer) more() bool {

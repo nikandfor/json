@@ -1,10 +1,10 @@
-// +build strict
+// +build !unsafestrings
 
 package json
 
 import "unicode/utf8"
 
-func (r *Reader) skipStringStrict(esc bool) {
+func (r *Reader) skipString(esc bool) {
 	//	log.Printf("Skip stri %d+%d/%d", r.ref, r.i, r.end)
 start:
 	i := r.i
@@ -40,7 +40,7 @@ loop:
 			}
 			n, s := utf8.DecodeRune(r.b[i:])
 			if n == utf8.RuneError {
-				r.err = ErrError
+				r.err = ErrEncoding
 				return
 			}
 			//	log.Printf("skip rune %d+%d/%d '%c'", r.ref, i, r.end, n)

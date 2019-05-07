@@ -8,6 +8,7 @@ import (
 
 var (
 	ErrIncompatibleTypes = errors.New("incompatible types")
+	ErrEncoding          = errors.New("string encoding")
 )
 
 var pad = []byte("__________")
