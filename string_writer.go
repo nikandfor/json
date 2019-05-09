@@ -20,7 +20,7 @@ func (w *Writer) StringWriter() StringWriter {
 
 // Write writes data into the big string
 func (w StringWriter) Write(p []byte) (int, error) {
-	w.add(p)
+	w.safeadd(p)
 	return len(p), nil
 }
 

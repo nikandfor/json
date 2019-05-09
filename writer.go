@@ -175,11 +175,11 @@ func (w *Writer) SetIndent(pref, ind []byte) {
 }
 
 func (w *Writer) ObjKeyString(k string) {
-	w.ObjKey([]byte(k))
+	w.ObjKey(UnsafeStringToBytes(k))
 }
 
 func (w *Writer) StringString(v string) {
-	w.String([]byte(v))
+	w.String(UnsafeStringToBytes(v))
 }
 
 func (w *Writer) SafeStringString(v string) {

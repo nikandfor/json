@@ -28,6 +28,11 @@ func (w *Writer) Marshal(r interface{}) error {
 
 func (w *Writer) marshal(rv reflect.Value) error {
 	//	log.Printf("marshal: %v %v", rv.Type(), rv)
+	switch m := rv.Interface().(type) {
+	case Marshaler:
+		return m.MarshalJSON(w)
+	}
+
 	if rv.Kind() == reflect.Interface {
 		if rv.IsNil() {
 			w.Null()
@@ -129,11 +134,6 @@ func (w *Writer) marshalMap(rv reflect.Value) error {
 }
 
 func (w *Writer) marshalStruct(rv reflect.Value) error {
-	switch m := rv.Interface().(type) {
-	case Marshaler:
-		return m.MarshalJSON(w)
-	}
-
 	m := getStructMap(rv.Type())
 	var ptr, fptr uintptr
 	if rv.CanAddr() {
