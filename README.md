@@ -46,7 +46,7 @@ city, err := json.Wrap(data).Get("users", 0, "profile", "location", "city").Chec
 You may do the same for stream of objects (like application/json-seq)
 ```go
 r := json.NewReader(stream)
-for r.Type() != None {
+for r.Type() != json.None {
     city, err := r.Get("profile", "location", "city").CheckString()
     if err != nil {
         break
@@ -98,9 +98,9 @@ Remember that all bytes that are locked are kept in memory, don't forget to unlo
 
 You can parse object in raw format without knowing structure (Full example at godoc under [Reader.Type() method](https://godoc.org/github.com/nikandfor/json#example-Reader-Type))
 ```go
-parse = func(r *Reader, d int) {
+parse = func(r *json.Reader, d int) {
     switch tp := r.Type(); tp {
-    case String, Number, Bool, Null:
+    case json.String, json.Number, json.Bool, json.Null:
         // read by one of these accordingly
         //   r.CheckString()
         //   r.Int() or r.Float64()
@@ -108,11 +108,11 @@ parse = func(r *Reader, d int) {
         //   r.Skip() // you can skip any value like this
         val := r.NextBytes() // reads any value including object and array as raw bytes
         fmt.Printf("%*s is %v\n", d*4, val, tp)
-    case ArrayStart:
+    case json.ArrayStart:
         for r.HasNext() {
             parse(r, d+1)
         }
-    case ObjStart:
+    case json.ObjStart:
         for r.HasNext() {
             key := r.NextString()
             fmt.Printf("%*s ->\n", d*4, key)
