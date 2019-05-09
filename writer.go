@@ -164,11 +164,10 @@ func (w *Writer) valueStart() {
 func (w *Writer) valueEnd() {
 	if w.d == 0 {
 		w.ncomma = false
-		w.naopen = true
 	} else {
 		w.ncomma = true
-		w.naopen = false
 	}
+	w.naopen = false
 }
 
 func (w *Writer) SetIndent(pref, ind []byte) {
@@ -187,6 +186,11 @@ func (w *Writer) SafeStringString(v string) {
 	w.SafeString(UnsafeStringToBytes(v))
 }
 
+func (w *Writer) NewLine() {
+	w.add([]byte{'\n'})
+	w.prefln = true
+}
+
 func (w *Writer) comma() {
 	if !w.ncomma {
 		return
@@ -197,7 +201,7 @@ func (w *Writer) comma() {
 }
 
 func (w *Writer) newline(d int) {
-	if len(w.ind) != 0 || w.d == 0 {
+	if len(w.ind) != 0 {
 		w.d += d
 		w.add([]byte{'\n'})
 		w.prefln = true
