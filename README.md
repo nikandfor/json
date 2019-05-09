@@ -1,3 +1,9 @@
+[![Documentation](https://godoc.org/github.com/nikandfor/json?status.svg)](http://godoc.org/github.com/nikandfor/json)
+[![Build Status](https://travis-ci.com/nikandfor/json.svg?branch=master)](https://travis-ci.com/nikandfor/json)
+[![codecov](https://codecov.io/gh/nikandfor/json/branch/master/graph/badge.svg)](https://codecov.io/gh/nikandfor/json)
+[![Go Report Card](https://goreportcard.com/badge/github.com/nikandfor/json)](https://goreportcard.com/report/github.com/nikandfor/json)
+![Project status](https://img.shields.io/badge/status-Developing-yellow.svg)
+
 # json - Fast but Flexible JSON library for golang
 
 This is one more json decoding/encoding library. Why should you use it? Because it's
