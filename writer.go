@@ -80,6 +80,7 @@ func (w *Writer) ObjStart() {
 	w.add([]byte{'{'})
 	w.d++
 	w.naopen = true
+	w.ncomma = false
 }
 
 func (w *Writer) ObjEnd() {
@@ -99,7 +100,6 @@ func (w *Writer) ObjEnd() {
 
 func (w *Writer) ObjKey(k []byte) {
 	if w.naopen {
-		w.naopen = false
 		w.newline(0)
 	}
 	w.naopen = false
@@ -162,7 +162,13 @@ func (w *Writer) valueStart() {
 }
 
 func (w *Writer) valueEnd() {
-	w.ncomma = true
+	if w.d == 0 {
+		w.ncomma = false
+		w.naopen = true
+	} else {
+		w.ncomma = true
+		w.naopen = false
+	}
 }
 
 func (w *Writer) SetIndent(pref, ind []byte) {
@@ -191,7 +197,7 @@ func (w *Writer) comma() {
 }
 
 func (w *Writer) newline(d int) {
-	if len(w.ind) != 0 {
+	if len(w.ind) != 0 || w.d == 0 {
 		w.d += d
 		w.add([]byte{'\n'})
 		w.prefln = true
@@ -300,4 +306,9 @@ func (w *Writer) Bytes() []byte {
 
 func (w *Writer) Err() error {
 	return w.err
+}
+
+func (w *Writer) Write(p []byte) (int, error) {
+	w.RawBytes(p)
+	return -1, w.Err()
 }

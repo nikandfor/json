@@ -27,6 +27,32 @@ func TestWriter(t *testing.T) {
 	//	t.Logf("res: '%s'", w.Bytes())
 }
 
+func TestWriterStreamStrings(t *testing.T) {
+	w := NewWriter(make([]byte, 1000))
+
+	w.StringString("a")
+	w.StringString("b")
+	w.StringString("c")
+
+	assert.Equal(t, []byte("\"a\"\n\"b\"\n\"c\""), w.Bytes())
+
+	//	t.Logf("res: '%s'", w.Bytes())
+}
+
+func TestWriterStreamStructs(t *testing.T) {
+	w := NewWriter(make([]byte, 1000))
+
+	w.Marshal(struct{ A string }{"str"})
+	w.Marshal(struct{ A string }{"str"})
+	w.Marshal(struct{ A string }{"str"})
+
+	assert.Equal(t, []byte(`{"A":"str"}
+{"A":"str"}
+{"A":"str"}`), w.Bytes())
+
+	//	t.Logf("res: '%s'", w.Bytes())
+}
+
 func TestWriterIndent(t *testing.T) {
 	w := NewIndentWriter(make([]byte, 1000), []byte(">"), []byte("--"))
 
@@ -64,6 +90,7 @@ func TestWriterSetIndent(t *testing.T) {
 	w.ObjKeyString("key_a")
 	w.StringString("value")
 	w.ObjKeyString("key_b")
+
 	w.SetIndent(nil, nil)
 
 	w.ArrayStart()

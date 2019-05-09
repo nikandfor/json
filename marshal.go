@@ -8,6 +8,10 @@ import (
 	"unsafe"
 )
 
+type Marshaler interface {
+	MarshalJSON(w *Writer) error
+}
+
 func Marshal(r interface{}) ([]byte, error) {
 	w := NewWriter(nil)
 	err := w.Marshal(r)
@@ -125,6 +129,11 @@ func (w *Writer) marshalMap(rv reflect.Value) error {
 }
 
 func (w *Writer) marshalStruct(rv reflect.Value) error {
+	switch m := rv.Interface().(type) {
+	case Marshaler:
+		return m.MarshalJSON(w)
+	}
+
 	m := getStructMap(rv.Type())
 	var ptr, fptr uintptr
 	if rv.CanAddr() {
@@ -133,7 +142,7 @@ func (w *Writer) marshalStruct(rv reflect.Value) error {
 	//	log.Printf("struct: %+v", m)
 
 	w.ObjStart()
-	for i, f := range m.s {
+	for _, f := range m.s {
 		if ptr != 0 {
 			fptr = ptr + f.Ptr
 		}
@@ -141,7 +150,7 @@ func (w *Writer) marshalStruct(rv reflect.Value) error {
 		switch f.Kind {
 		case reflect.String:
 			w.ObjKey(f.Name)
-			val := rv.Field(i).String()
+			val := rv.Field(f.I).String()
 			if val == "" && f.OmitEmpty {
 				continue
 			}
@@ -149,7 +158,7 @@ func (w *Writer) marshalStruct(rv reflect.Value) error {
 		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
 			var q int64
 			if fptr == 0 {
-				q = rv.Field(i).Int()
+				q = rv.Field(f.I).Int()
 			} else {
 				switch f.Kind {
 				case reflect.Int:
@@ -174,7 +183,7 @@ func (w *Writer) marshalStruct(rv reflect.Value) error {
 			reflect.Uintptr:
 			var q uint64
 			if fptr == 0 {
-				q = rv.Field(i).Uint()
+				q = rv.Field(f.I).Uint()
 			} else {
 				switch f.Kind {
 				case reflect.Uint:
@@ -204,7 +213,7 @@ func (w *Writer) marshalStruct(rv reflect.Value) error {
 			}
 			var q float64
 			if fptr == 0 {
-				q = rv.Field(i).Float()
+				q = rv.Field(f.I).Float()
 			} else {
 				if f.Kind == reflect.Float64 {
 					q = (float64)(*(*float64)(unsafe.Pointer(fptr)))
@@ -221,7 +230,7 @@ func (w *Writer) marshalStruct(rv reflect.Value) error {
 		case reflect.Bool:
 			var q bool
 			if fptr == 0 {
-				q = rv.Field(i).Bool()
+				q = rv.Field(f.I).Bool()
 			} else {
 				q = *(*bool)(unsafe.Pointer(fptr))
 			}
@@ -231,13 +240,13 @@ func (w *Writer) marshalStruct(rv reflect.Value) error {
 			w.ObjKey(f.Name)
 			w.Bool(q)
 		case reflect.Slice, reflect.Ptr, reflect.Map:
-			if f.OmitEmpty && rv.Field(i).IsNil() {
+			if f.OmitEmpty && rv.Field(f.I).IsNil() {
 				continue
 			}
 			fallthrough
 		default:
 			w.ObjKey(f.Name)
-			w.marshal(rv.Field(i))
+			w.marshal(rv.Field(f.I))
 		}
 	}
 	w.ObjEnd()

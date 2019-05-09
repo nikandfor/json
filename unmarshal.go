@@ -592,6 +592,9 @@ func getStructMap(t reflect.Type) *structMap {
 			}
 		} else {
 			r, sz := utf8.DecodeRuneInString(n)
+			if unicode.IsLower(r) {
+				continue
+			}
 			ln := string(unicode.ToLower(r)) + n[sz:]
 			m.m[ln] = sf
 		}
