@@ -91,7 +91,8 @@ func (r *Reader) unmarshal(rv reflect.Value) error {
 		case reflect.Int8:
 			*(*int8)(unsafe.Pointer(fptr)) = int8(q)
 		}
-	case reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8:
+	case reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8,
+		reflect.Uintptr:
 		q, err := r.Uint64()
 		if err != nil {
 			return err
@@ -280,7 +281,8 @@ func (r *Reader) unmarshalStruct(rv reflect.Value) error {
 				case reflect.Int8:
 					*(*int8)(unsafe.Pointer(fptr)) = int8(q)
 				}
-			case reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8:
+			case reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8,
+				reflect.Uintptr:
 				q, err := r.Uint64()
 				if err != nil {
 					return err
@@ -288,6 +290,8 @@ func (r *Reader) unmarshalStruct(rv reflect.Value) error {
 				switch f.Kind {
 				case reflect.Uint:
 					*(*uint)(unsafe.Pointer(fptr)) = uint(q)
+				case reflect.Uintptr:
+					*(*uintptr)(unsafe.Pointer(fptr)) = uintptr(q)
 				case reflect.Uint64:
 					*(*uint64)(unsafe.Pointer(fptr)) = q
 				case reflect.Uint32:
@@ -357,6 +361,8 @@ func (r *Reader) unmarshalStruct(rv reflect.Value) error {
 			*(*int8)(unsafe.Pointer(fptr)) = 0
 		case reflect.Uint:
 			*(*uint)(unsafe.Pointer(fptr)) = 0
+		case reflect.Uintptr:
+			*(*uintptr)(unsafe.Pointer(fptr)) = 0
 		case reflect.Uint64:
 			*(*uint64)(unsafe.Pointer(fptr)) = 0
 		case reflect.Uint32:
@@ -523,6 +529,7 @@ type structField struct {
 	Ptr       uintptr
 	FastPath  bool
 	FastErase bool
+	OmitEmpty bool
 }
 
 type sliceHeader struct {
@@ -564,7 +571,8 @@ func getStructMap(t reflect.Type) *structMap {
 			sf.FastErase = true
 		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8,
 			reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8,
-			reflect.Float64, reflect.Float32:
+			reflect.Float64, reflect.Float32,
+			reflect.Uintptr:
 			sf.FastPath = true
 			sf.FastErase = true
 		}
@@ -576,6 +584,12 @@ func getStructMap(t reflect.Type) *structMap {
 				continue
 			}
 			n = t[0]
+			for _, o := range t[1:] {
+				switch o {
+				case "omitempty":
+					sf.OmitEmpty = true
+				}
+			}
 		} else {
 			r, sz := utf8.DecodeRuneInString(n)
 			ln := string(unicode.ToLower(r)) + n[sz:]

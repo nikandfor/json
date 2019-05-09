@@ -83,47 +83,6 @@ func BenchmarkRawLoopMediumFast(b *testing.B) {
 	//b.Logf("l %d, p %d, q %d, n %d, d %d", l, p, q, n, d)
 }
 
-/*
-func BenchmarkRawLoopMediumStrict(b *testing.B) {
-	b.ReportAllocs()
-	data := go_benchmark.MediumFixture
-	r := &Reader{b: data, end: len(data)}
-	var l, p, q, n, d int
-	for i := 0; i < b.N; i++ {
-		l, p, q, n, d = 0, 0, 0, 0, 0
-		for j := 0; j < len(data); j++ {
-			c := data[j]
-			switch c {
-			case ' ', '\t', '\n':
-				continue
-			case '{', '[':
-				d++
-			case '}', ']':
-				d--
-			case ':':
-				l++
-			case ',':
-				p++
-			case '"':
-				q++
-				r.i = j
-				r.skipStringStrict()
-				j = r.i
-			//	j = skipString(data, j)
-			case '+', '-':
-				n++
-			default:
-				if c >= '0' && c <= '9' {
-					n++
-				}
-			}
-		}
-		_, _, _, _, _ = l, p, q, n, d
-	}
-	//b.Logf("l %d, p %d, q %d, n %d, d %d", l, p, q, n, d)
-}
-*/
-
 func BenchmarkSkipMedium(b *testing.B) {
 	b.ReportAllocs()
 	data := go_benchmark.MediumFixture
