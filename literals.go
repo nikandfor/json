@@ -18,6 +18,10 @@ func (r *Reader) IsNull() bool {
 }
 
 func (r *Reader) CheckString() (string, error) {
+	if r.Type() == Null {
+		r.Skip()
+		return "", nil
+	}
 	if r.Type() != String {
 		return "", r.setErr(ErrIncompatibleTypes)
 	}

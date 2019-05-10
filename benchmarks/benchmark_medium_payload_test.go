@@ -62,10 +62,12 @@ func BenchmarkRawLoopStructMedium(b *testing.B) {
 func BenchmarkDecodeStdStructMedium(b *testing.B) {
 	b.ReportAllocs()
 	b.SetBytes(int64(len(MediumFixture)))
+	var err error
 	var data MediumPayload
 	for i := 0; i < b.N; i++ {
-		jsonstd.Unmarshal(MediumFixture, &data)
+		err = jsonstd.Unmarshal(MediumFixture, &data)
 	}
+	assert.NoError(b, err)
 }
 
 func BenchmarkEncodeStdStructMedium(b *testing.B) {
@@ -82,10 +84,12 @@ func BenchmarkEncodeStdStructMedium(b *testing.B) {
 func BenchmarkDecodeJsoniterStructMedium(b *testing.B) {
 	b.ReportAllocs()
 	b.SetBytes(int64(len(MediumFixture)))
+	var err error
 	var data MediumPayload
 	for i := 0; i < b.N; i++ {
-		jsoniter.Unmarshal(MediumFixture, &data)
+		err = jsoniter.Unmarshal(MediumFixture, &data)
 	}
+	assert.NoError(b, err)
 }
 
 func BenchmarkEncodeJsoniterStructMedium(b *testing.B) {
@@ -102,11 +106,14 @@ func BenchmarkEncodeJsoniterStructMedium(b *testing.B) {
 func BenchmarkDecodeEasyJsonMedium(b *testing.B) {
 	b.ReportAllocs()
 	b.SetBytes(int64(len(MediumFixture)))
+	var err error
 	var data MediumPayload
 	for i := 0; i < b.N; i++ {
 		lexer := &jlexer.Lexer{Data: MediumFixture}
 		data.UnmarshalEasyJSON(lexer)
+		err = lexer.Error()
 	}
+	assert.NoError(b, err)
 }
 
 func BenchmarkEncodeEasyJsonMedium(b *testing.B) {
@@ -137,15 +144,7 @@ func BenchmarkDecodeBugerSearchStructMedium(b *testing.B) {
 func TestDecodeNikandjsonStructMedium(t *testing.T) {
 	var data MediumPayload
 	err := json.Unmarshal(MediumFixture, &data)
-	if !assert.NoError(t, err) {
-		return
-	}
-	var exp MediumPayload
-	err = json.Unmarshal(MediumFixture, &exp)
-	if !assert.NoError(t, err) {
-		return
-	}
-	assert.Equal(t, exp, data)
+	assert.NoError(t, err)
 }
 
 func TestDecodeNikandjsonSkipStructMedium(t *testing.T) {
@@ -166,11 +165,13 @@ func TestDecodeNikandjsonSearchStructMedium(t *testing.T) {
 func BenchmarkDecodeNikandjsonStructMedium(b *testing.B) {
 	b.ReportAllocs()
 	b.SetBytes(int64(len(MediumFixture)))
+	var err error
 	var data MediumPayload
 	var r json.Reader
 	for i := 0; i < b.N; i++ {
-		r.Reset(MediumFixture).Unmarshal(&data)
+		err = r.Reset(MediumFixture).Unmarshal(&data)
 	}
+	assert.NoError(b, err)
 }
 
 func BenchmarkDecodeNikandjsonSkipStructMedium(b *testing.B) {
@@ -180,6 +181,7 @@ func BenchmarkDecodeNikandjsonSkipStructMedium(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		r.Reset(MediumFixture).Skip()
 	}
+	assert.NoError(b, r.Err())
 }
 
 func BenchmarkDecodeNikandjsonSearchStructMedium(b *testing.B) {
