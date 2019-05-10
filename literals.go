@@ -9,8 +9,8 @@ type (
 	Num []byte
 )
 
-func (n Num) String() string {
-	return string(n)
+func (buf Num) String() string {
+	return string(buf)
 }
 
 func (r *Reader) IsNull() bool {

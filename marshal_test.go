@@ -179,12 +179,13 @@ func TestMarshalBigValue(t *testing.T) {
 func BenchmarkMarshal(b *testing.B) {
 	b.ReportAllocs()
 
-	var err error
+	var err1, err2 error
 	var data []byte
 	var r A
 	for i := 0; i < b.N; i++ {
-		data, err = Marshal(v)
-		err = Unmarshal(data, &r)
+		data, err1 = Marshal(v)
+		err2 = Unmarshal(data, &r)
 	}
-	assert.NoError(b, err)
+	assert.NoError(b, err1)
+	assert.NoError(b, err2)
 }

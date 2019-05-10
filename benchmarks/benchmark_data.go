@@ -27,7 +27,7 @@ type SmallPayload struct {
 	V    int    `json:"-"`
 }
 
-// Reponse from Clearbit API. Size: 2.4kb
+// Response from Clearbit API. Size: 2.4kb
 var MediumFixture []byte = []byte(`{
   "person": {
     "id": "d50887ca-a6ce-4e59-b89f-14f0b5d03b03",
@@ -146,7 +146,7 @@ type CBPerson struct {
 
 type MediumPayload struct {
 	Person  *CBPerson `json:"person"`
-	Company string    `json:"compnay"`
+	Company string    `json:"company"`
 }
 
 /*

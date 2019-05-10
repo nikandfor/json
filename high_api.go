@@ -3,7 +3,7 @@ package json
 // Inspect inspects requested value and returns back or skips object according
 // to callback returned value: true - return back, false - skip the object.
 // Whole data from the beginning of the object until inspected value (including)
-// is stored in memory and buffer doesn't shrinked back
+// is stored in memory and buffer doesn't shrunk back
 func (r *Reader) Inspect(cb func(r *Reader) bool, ks ...interface{}) bool {
 	r.Lock()
 	r.Search(ks...)

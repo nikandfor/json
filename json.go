@@ -615,7 +615,7 @@ start:
 	return r.decoded
 }
 
-// Err returns first happend error.
+// Err returns first happened error.
 // It returns Error type that could nicely format error message for you
 // if you will see it at console or with monospace font
 func (r *Reader) Err() error {

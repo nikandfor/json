@@ -13,9 +13,9 @@ import (
 )
 
 var (
-	interface_val interface{}
-	sliceType     = reflect.SliceOf(reflect.TypeOf(&interface_val).Elem())
-	mapType       = reflect.MapOf(reflect.TypeOf("string"), reflect.TypeOf(&interface_val).Elem())
+	interfaceVal interface{}
+	sliceType    = reflect.SliceOf(reflect.TypeOf(&interfaceVal).Elem())
+	mapType      = reflect.MapOf(reflect.TypeOf("string"), reflect.TypeOf(&interfaceVal).Elem())
 )
 
 // Unmarshal unmarshals data info r

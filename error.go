@@ -42,7 +42,7 @@ func (e Error) Error() string {
 	return e.err.Error()
 }
 
-// Pos returns stream position at which error has happend
+// Pos returns stream position at which error has happened
 func (e Error) Pos() int {
 	return e.p
 }
