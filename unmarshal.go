@@ -1,6 +1,7 @@
 package json
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -610,7 +611,7 @@ func getStructMap(t reflect.Type) *structMap {
 }
 
 func (m *structMap) String() string {
-	var b strings.Builder
+	var b bytes.Buffer
 	b.WriteByte('[')
 	for i, f := range m.s {
 		if i != 0 {
