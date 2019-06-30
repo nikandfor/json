@@ -625,6 +625,13 @@ func (r *Reader) Err() error {
 	return NewError(r.b, r.i, r.err)
 }
 
+func (r *Reader) ErrorHere(err error) error {
+	if err == nil {
+		return nil
+	}
+	return NewError(r.b, r.i, err)
+}
+
 func (r *Reader) setErr(err error) error {
 	if err == nil {
 		return nil
