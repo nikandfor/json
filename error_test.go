@@ -12,17 +12,17 @@ func TestErrorSimple(t *testing.T) {
 	data := `{"some":"text",123}`
 	err := errors.New("some error message")
 
-	t.Logf("%v", NewError([]byte(data), 15, err))
-	t.Logf("%#v", NewError([]byte(data), 15, err))
-	t.Logf("%+v", NewError([]byte(data), 15, err))
+	t.Logf("%v", NewError([]byte(data), 37, 15, err))
+	t.Logf("%#v", NewError([]byte(data), 37, 15, err))
+	t.Logf("%+v", NewError([]byte(data), 37, 15, err))
 
-	t.Logf("%#10v", NewError([]byte(data), 15, err))
+	t.Logf("%#10v", NewError([]byte(data), 37, 15, err))
 
-	assert.Equal(t, "parse error at pos 15: some error message", fmt.Sprintf("%v", NewError([]byte(data), 15, err)))
-	assert.Equal(t, "parse error at pos 15: some error message `"+`{"some":"text",123}`+"`", fmt.Sprintf("%#v", NewError([]byte(data), 15, err)))
-	assert.Equal(t, "parse error at pos 15: some error message\n"+
+	assert.Equal(t, "parse error at pos 37: some error message", fmt.Sprintf("%v", NewError([]byte(data), 37, 15, err)))
+	assert.Equal(t, "parse error at pos 37: some error message `"+`{"some":"text",123}`+"`", fmt.Sprintf("%#v", NewError([]byte(data), 37, 15, err)))
+	assert.Equal(t, "parse error at pos 37: some error message\n"+
 		`{"some":"text",123}`+"\n"+
-		"_______________^___\n", fmt.Sprintf("%+v", NewError([]byte(data), 15, err)))
+		"_______________^___\n", fmt.Sprintf("%+v", NewError([]byte(data), 37, 15, err)))
 }
 
 func TestErrorEscapeTabs(t *testing.T) {

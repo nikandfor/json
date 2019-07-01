@@ -622,14 +622,14 @@ func (r *Reader) Err() error {
 	if r.err == nil {
 		return nil
 	}
-	return NewError(r.b, r.i, r.err)
+	return NewError(r.b[:r.end], r.ref+r.i, r.i, r.err)
 }
 
 func (r *Reader) ErrorHere(err error) error {
 	if err == nil {
 		return nil
 	}
-	return NewError(r.b, r.i, err)
+	return NewError(r.b[:r.end], r.ref+r.i, r.i, err)
 }
 
 func (r *Reader) setErr(err error) error {

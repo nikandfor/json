@@ -28,14 +28,14 @@ var notPrintableChar byte = '.'
 //		_______________^___
 // It also supports width setting which changes max size of context shown in extended forms
 type Error struct {
-	b   []byte
-	p   int
-	err error
+	b      []byte
+	ref, i int
+	err    error
 }
 
 // NewError creates new error
-func NewError(b []byte, p int, e error) Error {
-	return Error{b: b, p: p, err: e}
+func NewError(b []byte, ref, i int, e error) Error {
+	return Error{b: b, ref: ref, i: i, err: e}
 }
 
 func (e Error) Error() string {
@@ -44,11 +44,11 @@ func (e Error) Error() string {
 
 // Pos returns stream position at which error has happened
 func (e Error) Pos() int {
-	return e.p
+	return e.ref
 }
 
 func (e Error) Format(s fmt.State, c rune) {
-	fmt.Fprintf(s, "parse error at pos %d: %v", e.p, e.err.Error())
+	fmt.Fprintf(s, "parse error at pos %d: %v", e.ref, e.err.Error())
 	if !s.Flag('+') && !s.Flag('#') {
 		return
 	}
@@ -63,7 +63,7 @@ func (e Error) Format(s fmt.State, c rune) {
 	}
 
 	b := e.b
-	p := e.p
+	p := e.i
 
 	if p > w {
 		d := p - w
