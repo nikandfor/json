@@ -1,6 +1,8 @@
 [![Documentation](https://godoc.org/github.com/nikandfor/json?status.svg)](http://godoc.org/github.com/nikandfor/json)
 [![Build Status](https://travis-ci.com/nikandfor/json.svg?branch=master)](https://travis-ci.com/nikandfor/json)
+[![CircleCI](https://circleci.com/gh/nikandfor/json.svg?style=svg)](https://circleci.com/gh/nikandfor/json)
 [![codecov](https://codecov.io/gh/nikandfor/json/branch/master/graph/badge.svg)](https://codecov.io/gh/nikandfor/json)
+[![GolangCI](https://golangci.com/badges/github.com/nikandfor/json.svg)](https://golangci.com/r/github.com/nikandfor/json)
 [![Go Report Card](https://goreportcard.com/badge/github.com/nikandfor/json)](https://goreportcard.com/report/github.com/nikandfor/json)
 ![Project status](https://img.shields.io/badge/status-Developing-yellow.svg)
 
