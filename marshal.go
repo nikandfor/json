@@ -54,7 +54,7 @@ func (w *Writer) marshal(rv reflect.Value) error {
 	case reflect.Array, reflect.Slice:
 		return w.marshalSlice(rv)
 	case reflect.String:
-		w.SafeString(UnsafeStringToBytes(rv.String()))
+		w.String(UnsafeStringToBytes(rv.String()))
 	case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
 		i := rv.Int()
 		s := strconv.FormatInt(i, 10)
@@ -113,7 +113,7 @@ func (w *Writer) marshalMap(rv reflect.Value) error {
 		}
 		switch v.Kind() {
 		case reflect.String:
-			w.SafeStringString(v.String())
+			w.String(UnsafeStringToBytes(v.String()))
 		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8,
 			reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8,
 			reflect.Float64, reflect.Float32,
@@ -154,7 +154,7 @@ func (w *Writer) marshalStruct(rv reflect.Value) error {
 			if val == "" && f.OmitEmpty {
 				continue
 			}
-			w.SafeStringString(val)
+			w.String(UnsafeStringToBytes(val))
 		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
 			var q int64
 			if fptr == 0 {
@@ -272,7 +272,7 @@ func (w *Writer) marshalSlice(rv reflect.Value) error {
 		vi := rv.Index(i)
 		switch elk {
 		case reflect.String:
-			w.SafeString(UnsafeStringToBytes(vi.String()))
+			w.String(UnsafeStringToBytes(vi.String()))
 		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
 			i := vi.Int()
 			s := strconv.FormatInt(i, 10)

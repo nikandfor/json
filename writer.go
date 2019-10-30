@@ -111,7 +111,7 @@ func (w *Writer) ObjKey(k []byte) {
 	w.ncomma = false
 }
 
-func (w *Writer) String(v []byte) {
+func (w *Writer) RawString(v []byte) {
 	w.valueStart()
 	w.add([]byte{'"'})
 	w.add(v)
@@ -119,7 +119,7 @@ func (w *Writer) String(v []byte) {
 	w.valueEnd()
 }
 
-func (w *Writer) SafeString(v []byte) {
+func (w *Writer) String(v []byte) {
 	w.valueStart()
 	w.add([]byte{'"'})
 	w.safeadd(v)
@@ -178,12 +178,12 @@ func (w *Writer) ObjKeyString(k string) {
 	w.ObjKey(UnsafeStringToBytes(k))
 }
 
-func (w *Writer) StringString(v string) {
-	w.String(UnsafeStringToBytes(v))
+func (w *Writer) RawStringString(v string) {
+	w.RawString(UnsafeStringToBytes(v))
 }
 
-func (w *Writer) SafeStringString(v string) {
-	w.SafeString(UnsafeStringToBytes(v))
+func (w *Writer) StringString(v string) {
+	w.String(UnsafeStringToBytes(v))
 }
 
 func (w *Writer) NewLine() {

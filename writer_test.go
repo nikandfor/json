@@ -173,7 +173,7 @@ func TestType(t *testing.T) {
 func TestWriteSafe(t *testing.T) {
 	w := NewWriter(make([]byte, 1000))
 
-	w.SafeStringString("\xbd\xb2\x3d\xbc\x20\xe2\x8c\x98")
+	w.StringString("\xbd\xb2\x3d\xbc\x20\xe2\x8c\x98")
 
 	assert.Equal(t, []byte(`"\xbd\xb2=\xbc \u2318"`), w.Bytes())
 
