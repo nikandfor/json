@@ -92,11 +92,12 @@ func (r *Reader) ResetString(s string) *Reader {
 
 // ResetReader resets the reader
 // it reuses buffer (if you created reader by Wrap for example)
-// if you used Lock and read a big object into the memory it doesn't shrink it buffer back
+// if you used Lock and read a big object into the memory it doesn't shrink buffer back
 func (r *Reader) ResetReader(rd io.Reader) *Reader {
 	if cap(r.b) > 0 {
 		r.Reset(r.b[:cap(r.b)])
 	}
+	r.end = 0
 	r.r = rd
 	return r
 }

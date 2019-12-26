@@ -35,7 +35,7 @@ func TestMarshal(t *testing.T) {
 func TestMarshalSlice(t *testing.T) {
 	data, err := Marshal([]byte("qwertbase64"))
 	assert.NoError(t, err)
-	assert.Equal(t, []byte(`"cXdlcnRiYXNlNjQ"`), data)
+	assert.Equal(t, []byte(`"cXdlcnRiYXNlNjQ="`), data)
 
 	data, err = Marshal([]int{1, 2, 3, 4, 5})
 	assert.NoError(t, err)
