@@ -262,7 +262,7 @@ func (w *Writer) marshalSlice(rv reflect.Value) error {
 
 	elk := rv.Type().Elem().Kind()
 	if elk == reflect.Uint8 {
-		sw := w.Base64Writer(base64.RawStdEncoding)
+		sw := w.Base64Writer(base64.StdEncoding)
 		sw.Write(rv.Bytes())
 		return sw.Close()
 	}

@@ -395,7 +395,7 @@ func (r *Reader) unmarshalArray(rv reflect.Value) error {
 		buf := rv.Bytes()
 		res := buf
 		rn := 0
-		sr := r.Base64Reader(base64.RawStdEncoding)
+		sr := r.Base64Reader(base64.StdEncoding)
 		for {
 			n, err := sr.Read(buf)
 			rn += n
@@ -407,6 +407,7 @@ func (r *Reader) unmarshalArray(rv reflect.Value) error {
 			}
 
 			res = append(res, 0)
+			res = res[:cap(res)]
 			buf = res[rn:]
 		}
 		if res == nil {
