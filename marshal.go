@@ -27,7 +27,7 @@ func (w *Writer) Marshal(r interface{}) error {
 }
 
 func (w *Writer) marshal(rv reflect.Value) error {
-	//	log.Printf("marshal: %v %v", rv.Type(), rv)
+	// log.Printf("marshal: %v %v", rv.Type(), rv)
 	switch m := rv.Interface().(type) {
 	case Marshaler:
 		return m.MarshalJSON(w)
@@ -149,11 +149,11 @@ func (w *Writer) marshalStruct(rv reflect.Value) error {
 
 		switch f.Kind {
 		case reflect.String:
-			w.ObjKey(f.Name)
 			val := rv.Field(f.I).String()
 			if val == "" && f.OmitEmpty {
 				continue
 			}
+			w.ObjKey(f.Name)
 			w.String(UnsafeStringToBytes(val))
 		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
 			var q int64
