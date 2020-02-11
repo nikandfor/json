@@ -20,6 +20,9 @@ func (r *Reader) HasNext() bool {
 	//	defer func() {
 	//		log.Printf("HasNxt: %d+%d/%d -> %v", r.ref, r.i, r.end, r_)
 	//	}()
+	if r.err != nil {
+		return false
+	}
 
 	var prev byte
 start:

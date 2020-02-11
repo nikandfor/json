@@ -433,7 +433,8 @@ loop:
 					case 4:
 						r.decoded = append(r.decoded, 0, 0, 0, 0)
 					default:
-						panic(n)
+						r.err = errors.New("can't unquote char")
+						return nil
 					}
 					utf8.EncodeRune(r.decoded[s:], rn)
 				}
