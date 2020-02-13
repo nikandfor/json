@@ -41,12 +41,14 @@ func (r *Reader) unmarshal(rv reflect.Value) error {
 	//	log.Printf("unmarshal: %d+%d/%d  -> %v (%v)", r.ref, r.i, r.end, rv, rv.Type())
 	for rv.Kind() == reflect.Ptr {
 		if r.IsNull() && rv.IsNil() {
+			r.Skip()
 			return nil
 		}
 
 		if r.IsNull() {
 			rv = rv.Elem()
 			rv.Set(reflect.Zero(rv.Type()))
+			r.Skip()
 			return nil
 		}
 
@@ -328,7 +330,7 @@ func (r *Reader) unmarshalStruct(rv reflect.Value) error {
 	}
 
 	if r.nozero {
-		return nil
+		return r.Err()
 	}
 
 	for i, vis := range vis {
@@ -383,7 +385,7 @@ func (r *Reader) unmarshalStruct(rv reflect.Value) error {
 		}
 	}
 
-	return nil
+	return r.Err()
 }
 
 func (r *Reader) unmarshalArray(rv reflect.Value) error {

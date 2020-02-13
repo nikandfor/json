@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+
+cd $(dirname $0)
 
 f=${1:-FuzzSkip}
 

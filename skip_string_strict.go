@@ -11,7 +11,15 @@ start:
 loop:
 	for i < r.end {
 		c := r.b[i]
-		//	log.Printf("skip str0 %d+%d/%d '%c'", r.ref, r.i, r.end, c)
+		//	log.Printf("skip str0 %d+%d/%d  esc %5v '%c'", r.ref, i, r.end, esc, c)
+		if esc {
+			switch c {
+			case 'b', 'f', 'n', 'r', 't', '\\', '/', '"':
+				i++
+				esc = false
+				continue
+			}
+		}
 		switch {
 		case c == '\\':
 			i++
@@ -22,10 +30,6 @@ loop:
 			esc = true
 		case c == '"':
 			i++
-			if esc {
-				esc = false
-				continue
-			}
 			r.i = i
 			return
 		case c < 0x80: // utf8.RuneStart
