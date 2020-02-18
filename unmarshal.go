@@ -249,6 +249,8 @@ func (r *Reader) unmarshalStruct(rv reflect.Value) error {
 		vis = make([]bool, n)
 	}
 
+	//	log.Printf("m: %+v", m)
+
 	ptr := rv.UnsafeAddr()
 
 	for r.HasNext() {
@@ -419,6 +421,11 @@ func (r *Reader) unmarshalArray(rv reflect.Value) error {
 		return sr.Close()
 	}
 
+	if tp == Null {
+		rv.Set(reflect.Zero(rv.Type()))
+		r.Skip()
+		return nil
+	}
 	if tp != Array {
 		return r.setErr(ErrIncompatibleTypes)
 	}
