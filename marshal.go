@@ -8,9 +8,17 @@ import (
 	"unsafe"
 )
 
-type Marshaler interface {
-	MarshalJSON(w *Writer) error
-}
+type (
+	marshaler1 interface {
+		MarshalJSON(w *Writer) error
+	}
+	marshaler2 interface {
+		Marshal(w *Writer) error
+	}
+	marshaler3 interface {
+		MarshalJSON() ([]byte, error)
+	}
+)
 
 func Marshal(r interface{}) ([]byte, error) {
 	w := NewWriter(nil)
@@ -29,8 +37,32 @@ func (w *Writer) Marshal(r interface{}) error {
 func (w *Writer) marshal(rv reflect.Value) error {
 	// log.Printf("marshal: %v %v", rv.Type(), rv)
 	switch m := rv.Interface().(type) {
-	case Marshaler:
+	case marshaler1:
 		return m.MarshalJSON(w)
+	case marshaler2:
+		return m.Marshal(w)
+	case marshaler3:
+		data, err := m.MarshalJSON()
+		if err != nil {
+			return err
+		}
+		_, _ = w.Write(data)
+		return nil
+	}
+	if rv.CanAddr() {
+		switch m := rv.Addr().Interface().(type) {
+		case marshaler1:
+			return m.MarshalJSON(w)
+		case marshaler2:
+			return m.Marshal(w)
+		case marshaler3:
+			data, err := m.MarshalJSON()
+			if err != nil {
+				return err
+			}
+			_, _ = w.Write(data)
+			return nil
+		}
 	}
 
 	if rv.Kind() == reflect.Interface {
@@ -255,15 +287,26 @@ func (w *Writer) marshalStruct(rv reflect.Value) error {
 }
 
 func (w *Writer) marshalSlice(rv reflect.Value) error {
-	if rv.IsNil() {
+	if rv.Kind() == reflect.Slice && rv.IsNil() {
 		w.Null()
 		return w.Err()
 	}
 
 	elk := rv.Type().Elem().Kind()
 	if elk == reflect.Uint8 {
+		var data []byte
+		if rv.Kind() == reflect.Slice {
+			data = rv.Bytes()
+		} else if rv.CanAddr() {
+			data = rv.Slice(0, rv.Len()).Bytes()
+		} else {
+			v := reflect.New(rv.Type()).Elem()
+			v.Set(rv)
+			data = v.Slice(0, rv.Len()).Bytes()
+		}
+
 		sw := w.Base64Writer(base64.StdEncoding)
-		sw.Write(rv.Bytes())
+		sw.Write(data)
 		return sw.Close()
 	}
 	w.ArrayStart()

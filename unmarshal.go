@@ -13,6 +13,18 @@ import (
 	"unsafe"
 )
 
+type (
+	unmarshaler1 interface {
+		UnmarshalJSON(*Reader) error
+	}
+	unmarshaler2 interface {
+		Unmarshal(*Reader) error
+	}
+	unmarshaler3 interface {
+		UnmarshalJSON([]byte) error
+	}
+)
+
 var (
 	interfaceVal interface{}
 	sliceType    = reflect.SliceOf(reflect.TypeOf(&interfaceVal).Elem())
@@ -56,7 +68,27 @@ func (r *Reader) unmarshal(rv reflect.Value) error {
 			rv.Set(reflect.New(rv.Type().Elem()))
 		}
 
+		switch u := rv.Interface().(type) {
+		case unmarshaler1:
+			return u.UnmarshalJSON(r)
+		case unmarshaler2:
+			return u.Unmarshal(r)
+		case unmarshaler3:
+			v := r.NextAsBytes()
+			return u.UnmarshalJSON(v)
+		}
+
 		rv = rv.Elem()
+	}
+
+	switch u := rv.Addr().Interface().(type) {
+	case unmarshaler1:
+		return u.UnmarshalJSON(r)
+	case unmarshaler2:
+		return u.Unmarshal(r)
+	case unmarshaler3:
+		v := r.NextAsBytes()
+		return u.UnmarshalJSON(v)
 	}
 
 	var fptr uintptr
@@ -122,6 +154,12 @@ func (r *Reader) unmarshal(rv reflect.Value) error {
 		} else {
 			*(*float32)(unsafe.Pointer(fptr)) = float32(q)
 		}
+	case reflect.Bool:
+		v, err := r.Bool()
+		if err != nil {
+			return err
+		}
+		rv.SetBool(v)
 	case reflect.Map:
 		return r.unmarshalMap(rv)
 	case reflect.Interface:
