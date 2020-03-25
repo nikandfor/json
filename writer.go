@@ -253,6 +253,20 @@ again:
 		w.add([]byte{'\\', '"'})
 	case '\\':
 		w.add([]byte{'\\', '\\'})
+	case '\n':
+		w.add([]byte{'\\', 'n'})
+	case '\t':
+		w.add([]byte{'\\', 't'})
+	case '\v':
+		w.add([]byte{'\\', 'v'})
+	case '\r':
+		w.add([]byte{'\\', 'r'})
+	case '\a':
+		w.add([]byte{'\\', 'a'})
+	case '\b':
+		w.add([]byte{'\\', 'b'})
+	case '\f':
+		w.add([]byte{'\\', 'f'})
 	default:
 		goto complex
 	}
@@ -261,19 +275,21 @@ again:
 	goto again
 
 complex:
-	r, width := utf8.DecodeRune(s)
-
-	if r == utf8.RuneError && width == 1 {
+	if s[0] < 0x20 {
 		w.add([]byte{'\\', 'x', tohex[s[0]>>4], tohex[s[0]&0xf]})
-	} else if r == utf8.RuneError {
-		w.add(s[:width])
-	} else if r <= 0xffff {
-		w.add([]byte{'\\', 'u', tohex[r>>12&0xf], tohex[r>>8&0xf], tohex[r>>4&0xf], tohex[r&0xf]})
-	} else {
-		w.add([]byte{'\\', 'U', tohex[r>>28&0xf], tohex[r>>24&0xf], tohex[r>>20&0xf], tohex[r>>16&0xf], tohex[r>>12&0xf], tohex[r>>8&0xf], tohex[r>>4&0xf], tohex[r&0xf]})
+		s = s[1:]
+		goto again
 	}
 
-	s = s[width:]
+	r, width := utf8.DecodeRune(s)
+
+	if r == utf8.RuneError {
+		w.add([]byte{'\\', 'x', tohex[s[0]>>4], tohex[s[0]&0xf]})
+		s = s[1:]
+	} else {
+		w.add(s[:width])
+		s = s[width:]
+	}
 
 	goto again
 }

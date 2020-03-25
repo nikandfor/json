@@ -62,8 +62,9 @@ func (e Error) Format(s fmt.State, c rune) {
 		w = d / 2
 	}
 
-	b := e.b
 	p := e.i
+	b := make([]byte, len(e.b))
+	copy(b, e.b)
 
 	if p > w {
 		d := p - w

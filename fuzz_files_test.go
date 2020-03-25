@@ -53,16 +53,18 @@ func TestFuzzUnicode(t *testing.T) {
 		}
 
 		if !utf8.Valid(d) {
-			panic("unvalid string")
-		}
-
-		if back, err := strconv.Unquote(strconv.Quote(string(d))); err != nil || back != string(d) {
-			t.Logf("unquote * quote: %q -> %q  (%v)", d, back, err)
-		} else {
-			t.Logf("unquote * quote: %q -> %q  (%v)", d, back, err)
+			panic("invalid string")
 		}
 
 		t.Run(f.Name(), func(t *testing.T) {
+			if back, err := strconv.Unquote(strconv.Quote(string(d))); err != nil || back != string(d) {
+				t.Logf("unquote * quote: %q -> %q  eq %v (%v)", d, back, back == string(d), err)
+			} else {
+				t.Logf("unquote * quote: %q -> %q  eq %v (%v)", d, back, back == string(d), err)
+			}
+
+			//	t.Logf("quoted:\n%v", hex.Dump([]byte(strconv.Quote(string(d)))))
+
 			data, err := Marshal(string(d))
 			assert.NoError(t, err, "marshal")
 
@@ -72,7 +74,11 @@ func TestFuzzUnicode(t *testing.T) {
 
 			assert.Equal(t, d, []byte(res), "marshalled data:\n%v", hex.Dump(data))
 
+			t.Logf("marsha:\n%v", hex.Dump(data))
+
 			if t.Failed() {
+				t.Logf("data len %d -> %d -> %d", len(d), len(data), len(res))
+
 				stddata, stderr := stdjson.Marshal(string(d))
 				if assert.NoError(t, stderr) {
 					assert.Equal(t, stddata, data, "src data:\n%v", hex.Dump(d))

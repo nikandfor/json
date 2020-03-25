@@ -176,7 +176,7 @@ func TestMarshalBigValue(t *testing.T) {
 	assert.Equal(t, exp, &r, "%s", data)
 }
 
-func BenchmarkMarshal(b *testing.B) {
+func BenchmarkMarshalUnmarshal(b *testing.B) {
 	b.ReportAllocs()
 
 	var err1, err2 error

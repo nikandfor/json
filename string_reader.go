@@ -55,6 +55,16 @@ loop:
 				p[n] = '\n'
 			case 'r':
 				p[n] = '\r'
+			case 'v':
+				p[n] = '\v'
+			case 'a':
+				p[n] = '\a'
+			case 'b':
+				p[n] = '\b'
+			case 'f':
+				p[n] = '\f'
+			default:
+				p[n] = r.b[i]
 			}
 			p = p[n+1:]
 			read++

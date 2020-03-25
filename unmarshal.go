@@ -96,6 +96,12 @@ func (r *Reader) unmarshal(rv reflect.Value) error {
 		fptr = rv.UnsafeAddr()
 	}
 
+	// do not decode, save in byte slice as json
+	if rv.Kind() == reflect.Slice && rv.Type().Elem().Kind() == reflect.Uint8 && r.Type() != String && r.Type() != Array {
+		rv.SetBytes(r.NextAsBytes())
+		return r.Err()
+	}
+
 	switch k := rv.Kind(); k {
 	case reflect.Struct:
 		return r.unmarshalStruct(rv)
@@ -198,6 +204,7 @@ func (r *Reader) unmarshal(rv reflect.Value) error {
 	default:
 		panic(rv.Kind())
 	}
+
 	return nil
 }
 
@@ -435,6 +442,7 @@ func (r *Reader) unmarshalArray(rv reflect.Value) error {
 
 	if elt.Kind() == reflect.Uint8 && tp == String {
 		buf := rv.Bytes()
+		buf = buf[:cap(buf)]
 		res := buf
 		rn := 0
 		sr := r.Base64Reader(base64.StdEncoding)
@@ -448,8 +456,10 @@ func (r *Reader) unmarshalArray(rv reflect.Value) error {
 				return err
 			}
 
-			res = append(res, 0)
-			res = res[:cap(res)]
+			if rn == len(res) {
+				res = append(res, 0)
+				res = res[:cap(res)]
+			}
 			buf = res[rn:]
 		}
 		if res == nil {

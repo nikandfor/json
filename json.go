@@ -392,10 +392,18 @@ loop:
 			switch c {
 			case 'n':
 				c = '\n'
-			case 't':
-				c = '\t'
 			case 'r':
 				c = '\r'
+			case 't':
+				c = '\t'
+			case 'v':
+				c = '\v'
+			case 'a':
+				c = '\a'
+			case 'b':
+				c = '\b'
+			case 'f':
+				c = '\f'
 			case '"', '\\':
 				// c = c
 			case 'x', 'u', 'U':
