@@ -325,7 +325,7 @@ start:
 	for r.i < r.end {
 		c := r.b[r.i]
 		switch c {
-		case ' ', '\t', '\n':
+		case ' ', '\t', '\n', '\r':
 			r.i++
 		case '"':
 			return String
@@ -360,11 +360,16 @@ start:
 
 // NextString read next object key or string checking utf8 encoding correctness
 // and decoding '\t', '\n', '\r' escape sequences
-func (r *Reader) NextString() []byte {
+func (r *Reader) NextString() (res []byte) {
 	if r.Type() != String { // read until value start
 		r.setErr(ErrIncompatibleTypes)
 		return nil
 	}
+
+	//	log.Printf("NxtStr: %d+%d/%d '%c'", r.ref, r.i, r.end, r.b[r.i])
+	//	defer func() {
+	//		log.Printf("NxtStr: %d+%d/%d -> %q", r.ref, r.i, r.end, res)
+	//	}()
 
 	r.decoded = r.decoded[:0]
 	//	log.Printf("Skip stri %d+%d/%d", r.ref, r.i, r.end)

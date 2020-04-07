@@ -15,10 +15,10 @@ package json
 //		        ^ - here (inside b->c object)
 //		// all subsequent calls will not move cursor anywhere until you read "b" key
 // See example how to use it properly
-func (r *Reader) HasNext() bool {
+func (r *Reader) HasNext() (res bool) {
 	//	log.Printf("HasNxt: %d+%d/%d '%c'", r.ref, r.i, r.end, r.b[r.i])
 	//	defer func() {
-	//		log.Printf("HasNxt: %d+%d/%d -> %v", r.ref, r.i, r.end, r_)
+	//		log.Printf("HasNxt: %d+%d/%d -> %v", r.ref, r.i, r.end, res)
 	//	}()
 	if r.err != nil {
 		return false
@@ -29,7 +29,7 @@ start:
 	for r.i < r.end {
 		c := r.b[r.i]
 		switch c {
-		case ' ', '\t', '\n':
+		case ' ', '\t', '\n', '\r':
 			r.i++
 			continue
 		case ',':
