@@ -1,11 +1,11 @@
 package json
 
 import (
+	"errors"
 	"io"
 	"testing"
 
-	"github.com/nikandfor/json/benchmarks"
-	"github.com/pkg/errors"
+	go_benchmark "github.com/nikandfor/json/benchmarks"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -59,7 +59,7 @@ func TestIterObject(t *testing.T) {
 	}
 
 	err := r.Err()
-	assert.True(t, err == nil || errors.Cause(err) == io.EOF)
+	assert.True(t, err == nil || errors.Is(err, io.EOF))
 	assert.Equal(t, None, r.Type())
 }
 

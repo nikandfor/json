@@ -1,13 +1,13 @@
 package json
 
 import (
+	"errors"
 	"io"
 	"strings"
 	"testing"
 	"unicode/utf8"
 	"unsafe"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -49,7 +49,7 @@ func TestSkipStrings(t *testing.T) {
 	}
 
 	err := v.Err()
-	assert.True(t, err == nil || errors.Cause(err) == io.EOF)
+	assert.True(t, err == nil || errors.Is(err, io.EOF))
 	assert.Equal(t, 5, j)
 
 	t.Logf("iter _: %2v/%2v '%s' %v", v.i, v.end, v.b, v.err)

@@ -38,6 +38,10 @@ func NewError(b []byte, ref, i int, e error) Error {
 	return Error{b: b, ref: ref, i: i, err: e}
 }
 
+func (e Error) Unwrap() error {
+	return e.err
+}
+
 func (e Error) Error() string {
 	return e.err.Error()
 }
