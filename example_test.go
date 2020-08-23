@@ -1,6 +1,7 @@
 package json
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -22,37 +23,6 @@ func ExampleReader() {
 
 	// Output:
 	// Total visits: 216
-}
-
-func ExampleReader_Unmarshal() {
-	data := `{
-  "person": {
-    "id": "d50887ca-a6ce-4e59-b89f-14f0b5d03b03",
-    "name": {
-      "fullName": "Leonid Bugaev",
-      "givenName": "Leonid",
-      "familyName": "Bugaev"
-    },
-    "email": "leonsbox@gmail.com",
-    "gender": "male",
-    "location": "Saint Petersburg, Saint Petersburg, RU",
-  }
-}`
-
-	type FullName struct {
-		GivenName  string
-		FamilyName string
-	}
-
-	var f FullName
-
-	// Get only small needed subobject and unmarshal it
-	err := WrapString(data).Search("person", "name").Unmarshal(&f)
-
-	fmt.Printf("name: %+v, err: %v", f, err)
-
-	// Output:
-	// name: {GivenName:Leonid FamilyName:Bugaev}, err: <nil>
 }
 
 func ExampleReader_messenger() {
@@ -98,9 +68,29 @@ func ExampleReader_messenger() {
 		r.Inspect(func(r *Reader) bool {
 			for r.HasNext() {
 				var m Message
-				err := r.Unmarshal(&m)
-				if err != nil {
-					return false
+				/*
+					err := r.Unmarshal(&m)
+					if err != nil {
+						return false
+					}
+				*/
+
+				for r.HasNext() {
+					k := string(r.NextString())
+					switch k {
+					case "text":
+						m.Text = string(r.NextString())
+					case "sender":
+						m.Sender = string(r.NextString())
+					case "term":
+						v, err := json.Number(r.NextNumber()).Int64()
+						if err != nil {
+							return false
+						}
+						m.Term = int(v)
+					default:
+						r.Skip()
+					}
 				}
 
 				if m.Term != lastTerm {

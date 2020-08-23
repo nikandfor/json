@@ -1,3 +1,5 @@
+// +build ignore
+
 package json
 
 import (
@@ -194,7 +196,8 @@ func (w *Writer) marshalStruct(rv reflect.Value) error {
 			} else {
 				switch f.Kind {
 				case reflect.Int:
-					q = (int64)(*(*int)(unsafe.Pointer(fptr)))
+					ptr := (*int)(unsafe.Pointer(fptr))
+					q = (int64)(*ptr)
 				case reflect.Int64:
 					q = (int64)(*(*int64)(unsafe.Pointer(fptr)))
 				case reflect.Int32:

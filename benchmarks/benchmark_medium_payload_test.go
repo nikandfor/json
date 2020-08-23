@@ -141,12 +141,6 @@ func BenchmarkDecodeBugerSearchStructMedium(b *testing.B) {
 }
 
 // nikandfor
-func TestDecodeNikandjsonStructMedium(t *testing.T) {
-	var data MediumPayload
-	err := json.Unmarshal(MediumFixture, &data)
-	assert.NoError(t, err)
-}
-
 func TestDecodeNikandjsonSkipStructMedium(t *testing.T) {
 	it := json.Wrap(MediumFixture)
 	it.Skip()
@@ -160,18 +154,6 @@ func TestDecodeNikandjsonSearchStructMedium(t *testing.T) {
 	assert.NoError(t, v.Err())
 	assert.Equal(t, json.String, v.Type(), "%T %T %v %v", json.String, v.Type(), json.String, v.Type())
 	assert.Equal(t, []byte("http://1.gravatar.com/avatar/f7c8edd577d13b8930d5522f28123510"), v.NextString())
-}
-
-func BenchmarkDecodeNikandjsonStructMedium(b *testing.B) {
-	b.ReportAllocs()
-	b.SetBytes(int64(len(MediumFixture)))
-	var err error
-	var data MediumPayload
-	var r json.Reader
-	for i := 0; i < b.N; i++ {
-		err = r.Reset(MediumFixture).Unmarshal(&data)
-	}
-	assert.NoError(b, err)
 }
 
 func BenchmarkDecodeNikandjsonSkipStructMedium(b *testing.B) {
