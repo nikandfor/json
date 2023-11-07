@@ -108,7 +108,28 @@ func (p *Parser) DecodeString(b []byte, st int, buf []byte) (s []byte, i int, er
 		return nil, i, ErrType
 	}
 
-	return p.decodeString(b, i, buf)
+	if buf == nil {
+		buf = []byte{}
+	}
+
+	s, _, i, err = p.decodeString(b, i, buf)
+
+	return
+}
+
+func (p *Parser) DecodedStringLength(b []byte, st int) (n, i int, err error) {
+	tp, i, err := p.Type(b, st)
+	if err != nil {
+		return
+	}
+
+	if tp != String {
+		return 0, i, ErrType
+	}
+
+	_, n, i, err = p.decodeString(b, i, nil)
+
+	return
 }
 
 func (p *Parser) break_(b []byte, st, depth int) (i, maxDepth int, err error) {
@@ -213,6 +234,48 @@ func (p *Parser) ForMore(b []byte, i *int, typ byte, errp *error) bool {
 	return more
 }
 
+func (p *Parser) Length(b []byte, st int) (n, i int, err error) {
+	tp, i, err := p.Type(b, st)
+	if err != nil {
+		return 0, i, err
+	}
+
+	switch tp {
+	case String:
+		_, n, i, err = p.decodeString(b, i, nil)
+		return
+	case Array, Object:
+	default:
+		return 0, i, ErrType
+	}
+
+	i, err = p.Enter(b, i, tp)
+	if err != nil {
+		return 0, i, err
+	}
+
+	for p.ForMore(b, &i, tp, &err) {
+		if tp == Object {
+			i, err = p.Skip(b, i)
+			if err != nil {
+				return n, i, err
+			}
+		}
+
+		i, err = p.Skip(b, i)
+		if err != nil {
+			return n, i, err
+		}
+
+		n++
+	}
+	if err != nil {
+		return n, i, err
+	}
+
+	return n, i, nil
+}
+
 func (p *Parser) SkipSpaces(b []byte, i int) int {
 	for i < len(b) && (b[i] == ' ' || b[i] == '\n' || b[i] == '\t') {
 		i++
@@ -260,57 +323,68 @@ func (p *Parser) skipString(b []byte, st int) (i int, err error) {
 	return i, ErrEndOfBuffer
 }
 
-func (p *Parser) decodeString(b []byte, st int, w []byte) (_ []byte, i int, err error) {
+func (p *Parser) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, err error) {
 	i = st + 1 // open "
 	done := i
+
+	add := func(d []byte, s ...byte) []byte {
+		if w == nil {
+			return nil
+		}
+
+		return append(w, s...)
+	}
 
 	for i < len(b) {
 		switch b[i] {
 		case '"':
-			w = append(w, b[done:i]...)
+			w = add(w, b[done:i]...)
 			i++
-			return w, i, err
+			return w, n, i, err
 		case '\\':
-			w = append(w, b[done:i]...)
+			w = add(w, b[done:i]...)
 
 			i++
 			if i == len(b) {
-				return w, i, ErrEndOfBuffer
+				return w, n, i, ErrEndOfBuffer
 			}
 
 			switch b[i] {
 			case '\\':
 				i--
 			case '"':
-				w = append(w, '"')
+				w = add(w, '"')
 			case 'n':
-				w = append(w, '\n')
+				w = add(w, '\n')
 			case 't':
-				w = append(w, '\t')
+				w = add(w, '\t')
 			default:
-				return w, i, ErrBadString
+				return w, n, i, ErrBadString
 			}
 
 			i++
+			n++
 			done = i
 		case '\n':
-			return w, i, ErrBadString
+			return w, n, i, ErrBadString
 		default:
 			if b[i] < utf8.RuneSelf {
 				i++
+				n++
 				break
 			}
 
 			r, wid := utf8.DecodeRune(b[i:])
 			if r == utf8.RuneError {
-				return w, i, ErrBadRune
+				return w, n, i, ErrBadRune
 			}
 
 			i += wid
+			n++
 		}
 	}
 
-	return w, i, ErrEndOfBuffer
+	return w, n, i, ErrEndOfBuffer
 }
 
 func (p *Parser) skipLit(b []byte, st int) (i int, err error) {
