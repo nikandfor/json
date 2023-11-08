@@ -33,6 +33,17 @@ type (
 	}
 )
 
+func ApplyToAll(f Filter, w, r []byte, st int) ([]byte, error) {
+	for i := json.SkipSpaces(r, st); i < len(r); i = json.SkipSpaces(r, i) {
+		w, i, err = f.Apply(w, r, i)
+		if err != nil {
+			return w, err
+		}
+	}
+
+	return w, nil
+}
+
 func (f Dot) Apply(w, r []byte, st int) ([]byte, int, error) {
 	var p json.Parser
 
@@ -180,11 +191,9 @@ func (f *Pipe) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 			wb = f.Bufs[bw][:0]
 		}
 
-		for j := 0; j < len(f.Bufs[1-fi&1]); {
-			wb, j, err = f.Filters[fi].Apply(wb, f.Bufs[br], j)
-			if err != nil {
-				return w, i, err
-			}
+		wb, err = ApplyToAll(f.Filters[fi], wb, f.Bufs[br], 0)
+		if err != nil {
+			return w, i, err
 		}
 
 		if fi == l {
