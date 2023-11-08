@@ -34,6 +34,8 @@ type (
 )
 
 func ApplyToAll(f Filter, w, r []byte, st int) ([]byte, error) {
+	var err error
+
 	for i := json.SkipSpaces(r, st); i < len(r); i = json.SkipSpaces(r, i) {
 		w, i, err = f.Apply(w, r, i)
 		if err != nil {
