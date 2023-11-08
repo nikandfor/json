@@ -5,8 +5,6 @@ import (
 
 	"github.com/nikandfor/errors"
 	"github.com/nikandfor/json"
-	"github.com/nikandfor/loc"
-	"tlog.app/go/tlog"
 )
 
 type (
@@ -24,6 +22,10 @@ type (
 		Filters []Filter
 		Bufs    [2][]byte
 	}
+
+	Func func(w, r []byte, st int) ([]byte, int, error)
+
+	Dumper func(w, r []byte, st, end int)
 
 	ParseError struct {
 		Err error
@@ -211,8 +213,28 @@ func (f Comma) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 	return w, i, nil
 }
 
+func (f Func) Apply(w, r []byte, st int) ([]byte, int, error) {
+	return f(w, r, st)
+}
+
+func (f Dumper) Apply(w, r []byte, st int) ([]byte, int, error) {
+	st = json.SkipSpaces(r, st)
+	if st == len(r) {
+		return w, st, nil
+	}
+
+	raw, i, err := (&json.Parser{}).Raw(r, st)
+	if err != nil {
+		return w, i, err
+	}
+
+	f(w, r, st, i)
+
+	return append(w, raw...), i, nil
+}
+
 func pe(err error, i int) error {
-	tlog.Printw("parse error", "i", i, "err", err, "from", loc.Callers(1, 3))
+	//	tlog.Printw("parse error", "i", i, "err", err, "from", loc.Callers(1, 3))
 	return ParseError{Err: err, Pos: i}
 }
 

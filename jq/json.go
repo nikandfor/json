@@ -28,9 +28,11 @@ func (f *JSONDecoder) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 		return w, i, pe(err, i)
 	}
 
+	//	log.Printf("decoded string\n%s", s)
+
 	var raw []byte
 
-	for j := 0; j < len(s); {
+	for j := p.SkipSpaces(s, 0); j < len(s); j = p.SkipSpaces(s, j) {
 		raw, j, err = p.Raw(s, j)
 		if errors.Is(err, json.ErrEndOfBuffer) {
 			break

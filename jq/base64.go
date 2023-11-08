@@ -44,47 +44,48 @@ func base64Apply(w, r []byte, st int, e *base64.Encoding, enc bool, buf []byte) 
 	}
 
 	if e == nil {
-		e = base64.StdEncoding
+		e = base64.RawStdEncoding
 	}
-
-	var n int
-	wst := len(w)
 
 	if enc {
-		n = e.EncodedLen(len(s))
-	} else {
-		n = e.DecodedLen(len(s))
-	}
+		n := e.EncodedLen(len(s))
 
-	n += 3
+		wst := len(w) + 1 // open "
+		w = grow(w, n+3)
 
-	if (wst+n)-cap(w) >= 4*1024 {
-		q := make([]byte, wst+n)
-		copy(q, w)
-		w = q
-	} else {
-		for wst+n > cap(w) {
-			w = append(w[:cap(w)], 0, 0, 0, 0, 0, 0, 0, 0)
-		}
-	}
-
-	w = w[:wst+n]
-	wst++
-
-	if enc {
 		e.Encode(w[wst:], s)
+
+		w[wst-1] = '"'
+		w[len(w)-2] = '"'
+		w[len(w)-1] = '\n'
 	} else {
-		n, err = e.Decode(w[wst:], s)
-		n += 2
-		w = w[:wst+n]
+		n := e.DecodedLen(len(s))
+
+		ssize := len(s)
+		s = grow(s, ssize+n)
+
+		n, err = e.Decode(s[ssize:], s[:ssize])
 		if err != nil {
 			return w, s, i, err
 		}
+
+		w = (&json.Generator{}).EncodeString(w, s[ssize:ssize+n])
+		w = append(w, '\n')
 	}
 
-	w[wst-1] = '"'
-	w[len(w)-2] = '"'
-	w[len(w)-1] = '\n'
-
 	return w, s, i, nil
+}
+
+func grow(b []byte, size int) []byte {
+	if size-cap(b) >= 4*1024 {
+		q := make([]byte, size)
+		copy(q, b)
+		return q
+	}
+
+	for size > cap(b) {
+		b = append(b[:cap(b)], 0, 0, 0, 0, 0, 0, 0, 0)
+	}
+
+	return b[:size]
 }

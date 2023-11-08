@@ -7,14 +7,14 @@ import (
 )
 
 func TestBase64(t *testing.T) {
-	data := `"abcd"`
+	data := `"ab\ncd"`
 
 	var e Base64
 
 	res1, i, err := e.Apply(nil, []byte(data), 0)
 	assert.NoError(t, err)
 	assert.Equal(t, len(data), i)
-	assert.Equal(t, `"YWJjZA=="`+"\n", string(res1))
+	assert.Equal(t, `"YWIKY2Q"`+"\n", string(res1))
 
 	var d Base64d
 
