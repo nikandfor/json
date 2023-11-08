@@ -34,6 +34,11 @@ type (
 func (f Dot) Apply(w, r []byte, st int) ([]byte, int, error) {
 	var p json.Parser
 
+	st = p.SkipSpaces(r, st)
+	if st == len(r) {
+		return w, st, nil
+	}
+
 	raw, i, err := p.Raw(r, st)
 	if err != nil {
 		return w, i, pe(err, i)
@@ -48,8 +53,13 @@ func (f Dot) Apply(w, r []byte, st int) ([]byte, int, error) {
 func (f Selector) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 	var p json.Parser
 
+	i = p.SkipSpaces(r, st)
+	if i == len(r) {
+		return w, i, nil
+	}
+
 	if len(f) == 0 {
-		raw, i, err := p.Raw(r, st)
+		raw, i, err := p.Raw(r, i)
 		if err != nil {
 			return w, i, pe(err, i)
 		}
@@ -75,7 +85,7 @@ func (f Selector) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 		return nil, i, errors.New("unsupported selector type: %T", f[0])
 	}
 
-	i, err = p.Enter(r, st, typ)
+	i, err = p.Enter(r, i, typ)
 	if err != nil {
 		return w, i, pe(err, i)
 	}
@@ -136,44 +146,61 @@ func NewPipe(fs ...Filter) *Pipe {
 }
 
 func (f *Pipe) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
-	var j int
+	st = json.SkipSpaces(r, st)
+	if st == len(r) {
+		return w, st, nil
+	}
 
-	ri := r
-	sti := st
+	switch len(f.Filters) {
+	case 0:
+		// TODO: what to do here?
+		return Dot{}.Apply(w, r, st)
+	case 1:
+		return f.Filters[0].Apply(w, r, st)
+	}
 
-	for fi, ff := range f.Filters {
-		var wi []byte
+	fi := 0
+	l := len(f.Filters) - 1
 
-		if fi == len(f.Filters)-1 {
-			wi = w
+	f.Bufs[fi&1], i, err = f.Filters[0].Apply(f.Bufs[fi&1][:0], r, st)
+	if err != nil {
+		return w, i, err
+	}
+
+	for fi = 1; fi < len(f.Filters); fi++ {
+		bw, br := fi&1, 1-fi&1
+
+		var wb []byte
+
+		if fi == l {
+			wb = w
 		} else {
-			wi = f.Bufs[fi&1][:0]
+			wb = f.Bufs[bw][:0]
 		}
 
-		wi, j, err = ff.Apply(wi, ri, sti)
-
-		if fi == 0 {
-			i = j
+		for j := 0; j < len(f.Bufs[1-fi&1]); {
+			wb, j, err = f.Filters[fi].Apply(wb, f.Bufs[br], j)
+			if err != nil {
+				return w, i, err
+			}
 		}
 
-		if fi == len(f.Filters)-1 {
-			w = wi
+		if fi == l {
+			w = wb
 		} else {
-			f.Bufs[fi&1] = wi
+			f.Bufs[bw] = wb
 		}
-
-		if err != nil {
-			return w, i, err
-		}
-
-		ri = wi
-		sti = 0
 	}
 
 	return w, i, nil
 }
 
 func (f Comma) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
+	st = json.SkipSpaces(r, st)
+	if st == len(r) {
+		return w, st, nil
+	}
+
 	for _, ff := range f {
 		w, i, err = ff.Apply(w, r, st)
 		if err != nil {

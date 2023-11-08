@@ -16,11 +16,19 @@ type (
 		Buf    []byte
 	}
 
-	Array struct{}
+	Array struct {
+		Filter Filter
+		Buf    []byte
+	}
 )
 
 func (f Length) Apply(w, r []byte, st int) ([]byte, int, error) {
 	var p json.Parser
+
+	st = p.SkipSpaces(r, st)
+	if st == len(r) {
+		return w, st, nil
+	}
 
 	n, i, err := p.Length(r, st)
 	if err != nil {
@@ -35,6 +43,11 @@ func (f Length) Apply(w, r []byte, st int) ([]byte, int, error) {
 
 func (f *Slice) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 	var p json.Parser
+
+	st = p.SkipSpaces(r, st)
+	if st == len(r) {
+		return w, st, nil
+	}
 
 	tp, i, err := p.Type(r, st)
 	if err != nil {
@@ -184,18 +197,35 @@ func (f *Slice) leftRight(n int) (l, r int) {
 	return
 }
 
-func (f Array) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
+func (f *Array) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 	var p json.Parser
+
+	st = p.SkipSpaces(r, st)
+	if st == len(r) {
+		return w, st, nil
+	}
+
+	f.Buf = f.Buf[:0]
+
+	if f.Filter != nil {
+		f.Buf, i, err = f.Filter.Apply(f.Buf, r, st)
+	} else {
+		i, err = p.Skip(r, st)
+	}
+	if err != nil {
+		return w, i, err
+	}
+
 	var raw []byte
 
 	w = append(w, '[')
 
-	for i = st; i < len(r); {
-		if i != st {
+	for j := p.SkipSpaces(f.Buf, 0); j < len(f.Buf); j = p.SkipSpaces(f.Buf, j) {
+		if j != 0 {
 			w = append(w, ',')
 		}
 
-		raw, i, err = p.Raw(r, i)
+		raw, j, err = p.Raw(f.Buf, j)
 		if err != nil {
 			return w, i, pe(err, i)
 		}

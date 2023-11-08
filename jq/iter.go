@@ -9,6 +9,11 @@ type (
 func (f Iter) Apply(w, r []byte, st int) ([]byte, int, error) {
 	var p json.Parser
 
+	st = p.SkipSpaces(r, st)
+	if st == len(r) {
+		return w, st, nil
+	}
+
 	tp, i, err := p.Type(r, st)
 	if err != nil {
 		return w, i, pe(err, i)

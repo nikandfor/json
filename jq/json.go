@@ -17,6 +17,11 @@ type (
 func (f *JSONDecoder) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 	var p json.Parser
 
+	st = p.SkipSpaces(r, st)
+	if st == len(r) {
+		return w, st, nil
+	}
+
 	s, i, err := p.DecodeString(r, st, f.Buf[:0])
 	f.Buf = s
 	if err != nil {

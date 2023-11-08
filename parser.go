@@ -480,6 +480,10 @@ func (p *Parser) skipNum(b []byte, st int) (i int, err error) {
 	return i, nil
 }
 
+func SkipSpaces(b []byte, i int) int {
+	return (&Parser{}).SkipSpaces(b, i)
+}
+
 func skipSign(b []byte, i int) int {
 	if i < len(b) && (b[i] == '+' || b[i] == '-') {
 		i++

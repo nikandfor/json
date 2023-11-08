@@ -49,10 +49,10 @@ func TestSliceArray(t *testing.T) {
 	assert.Equal(t, len(data), i)
 	assert.Equal(t, `[[4],{"b":true},1,null]`+"\n", string(w))
 
-	w, i, err = Array{}.Apply(nil, []byte(data[1:len(data)-1]), 0)
+	w, i, err = (&Array{}).Apply(nil, []byte("1\n2"), 0)
 	assert.NoError(t, err)
-	assert.Equal(t, len(data)-2, i)
-	assert.Equal(t, data+"\n", string(w))
+	assert.Equal(t, 1, i)
+	assert.Equal(t, "[]\n", string(w))
 }
 
 func TestSliceString(t *testing.T) {
@@ -97,4 +97,45 @@ func TestSliceString(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, len(data), i)
 	assert.Equal(t, `"deab"`+"\n", string(w))
+}
+
+func TestArray(t *testing.T) {
+	var f Filter
+	data := `[{"a":"b"}, {"a":"c"}, {"a":3}]`
+
+	f = NewPipe(
+		Iter{},
+		Selector{"a"},
+	)
+
+	w, i, err := f.Apply(nil, []byte(data), 0)
+	assert.NoError(t, err)
+	assert.Equal(t, len(data), i)
+	assert.Equal(t, "\"b\"\n\"c\"\n3\n", string(w))
+
+	f = &Array{
+		Filter: NewPipe(
+			Iter{},
+			Selector{"a"},
+		),
+	}
+
+	w, i, err = f.Apply(nil, []byte(data), 0)
+	assert.NoError(t, err)
+	assert.Equal(t, len(data), i)
+	assert.Equal(t, `["b","c",3]`+"\n", string(w))
+
+	f = NewPipe(
+		&Array{
+			Filter: NewPipe(
+				Iter{},
+				Selector{"a"},
+			),
+		},
+	)
+
+	w, i, err = f.Apply(nil, []byte(data), 0)
+	assert.NoError(t, err)
+	assert.Equal(t, len(data), i)
+	assert.Equal(t, `["b","c",3]`+"\n", string(w))
 }

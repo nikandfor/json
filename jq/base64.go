@@ -33,6 +33,11 @@ func (f *Base64d) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 func base64Apply(w, r []byte, st int, e *base64.Encoding, enc bool, buf []byte) (res, buf1 []byte, i int, err error) {
 	var p json.Parser
 
+	st = p.SkipSpaces(r, st)
+	if st == len(r) {
+		return w, buf, st, nil
+	}
+
 	s, i, err := p.DecodeString(r, st, buf)
 	if err != nil {
 		return w, s, i, pe(err, i)
