@@ -68,13 +68,13 @@ func (f Dot) Apply(w, r []byte, st int) ([]byte, int, error) {
 func (f Selector) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 	var p json.Parser
 
-	i = p.SkipSpaces(r, st)
-	if i == len(r) {
-		return w, i, nil
+	st = p.SkipSpaces(r, st)
+	if st == len(r) {
+		return w, st, nil
 	}
 
 	if len(f) == 0 {
-		raw, i, err := p.Raw(r, i)
+		raw, i, err := p.Raw(r, st)
 		if err != nil {
 			return w, i, pe(err, i)
 		}
@@ -100,7 +100,7 @@ func (f Selector) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 		return nil, i, errors.New("unsupported selector type: %T", f[0])
 	}
 
-	i, err = p.Enter(r, i, typ)
+	i, err = p.Enter(r, st, typ)
 	if err != nil {
 		return w, i, pe(err, i)
 	}

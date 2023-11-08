@@ -59,12 +59,9 @@ func (p *Parser) Skip(b []byte, st int) (i int, err error) {
 }
 
 func (p *Parser) Raw(b []byte, st int) (v []byte, i int, err error) {
-	tp, st, err := p.Type(b, st)
+	_, st, err = p.Type(b, st)
 	if err != nil {
 		return nil, st, err
-	}
-	if tp == None {
-		return nil, st, ErrEndOfBuffer
 	}
 
 	i, _, err = p.break_(b, st, 0)
@@ -351,7 +348,7 @@ func (p *Parser) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, e
 
 			switch b[i] {
 			case '\\':
-				i--
+				w = add(w, '\\')
 			case '"':
 				w = add(w, '"')
 			case 'n':

@@ -19,13 +19,13 @@ type (
 )
 
 func (f *Base64) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
-	w, f.Buf, i, err = base64Apply(w, r, st, f.Encoding, true, f.Buf)
+	w, f.Buf, i, err = base64Apply(w, r, st, f.Encoding, true, f.Buf[:0])
 
 	return w, i, err
 }
 
 func (f *Base64d) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
-	w, f.Buf, i, err = base64Apply(w, r, st, f.Encoding, false, f.Buf)
+	w, f.Buf, i, err = base64Apply(w, r, st, f.Encoding, false, f.Buf[:0])
 
 	return w, i, err
 }
@@ -44,7 +44,7 @@ func base64Apply(w, r []byte, st int, e *base64.Encoding, enc bool, buf []byte) 
 	}
 
 	if e == nil {
-		e = base64.RawStdEncoding
+		e = base64.StdEncoding
 	}
 
 	if enc {
@@ -65,6 +65,7 @@ func base64Apply(w, r []byte, st int, e *base64.Encoding, enc bool, buf []byte) 
 		s = grow(s, ssize+n)
 
 		n, err = e.Decode(s[ssize:], s[:ssize])
+		//	log.Printf("decoded base64 (err %v): %q -> %q", err, s[:ssize], s[ssize:ssize+n])
 		if err != nil {
 			return w, s, i, err
 		}

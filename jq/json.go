@@ -22,18 +22,17 @@ func (f *JSONDecoder) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 		return w, st, nil
 	}
 
-	s, i, err := p.DecodeString(r, st, f.Buf[:0])
-	f.Buf = s
+	f.Buf, i, err = p.DecodeString(r, st, f.Buf[:0])
 	if err != nil {
 		return w, i, pe(err, i)
 	}
 
-	//	log.Printf("decoded string\n%s", s)
+	//	log.Printf("JSONDecoder string\n%s", f.Buf)
 
 	var raw []byte
 
-	for j := p.SkipSpaces(s, 0); j < len(s); j = p.SkipSpaces(s, j) {
-		raw, j, err = p.Raw(s, j)
+	for j := p.SkipSpaces(f.Buf, 0); j < len(f.Buf); j = p.SkipSpaces(f.Buf, j) {
+		raw, j, err = p.Raw(f.Buf, j)
 		if errors.Is(err, json.ErrEndOfBuffer) {
 			break
 		}
