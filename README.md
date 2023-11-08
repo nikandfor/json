@@ -83,6 +83,8 @@ jq package is a set of Filters that take data from one buffer, process it, and a
 Filters take destination buffer, source buffer, and starting index in a source buffer
 and return updated destination buffer, ending index, and possible error.
 
+None of methods make a copy or allocate except these which take destination buffer in arguments.
+
 Destination buffer is returned even in case of error.
 This is mostly for avoiding allocs in case the buffer was grown but error happened.
 
@@ -91,7 +93,7 @@ This is mostly for avoiding allocs in case the buffer was grown but error happen
 
 data := []byte(`{"key0":"skip it", "key1": {"next_key": ["array", null, {"obj":"val"}, "trailing element"]}}  "next"`)
 
-f := jq.Selector{"key1", "next_key", 2} // string keys and int array indexes are supported
+f := jq.Index{"key1", "next_key", 2} // string keys and int array indexes are supported
 
 var res []byte // reusable buffer
 var i int      // start index
@@ -103,7 +105,7 @@ if err != nil {
 	// i is an index in a source buffer where the error occured.
 }
 
-fmt.Printf("value: %s", res)                           // res ends on newline
+fmt.Printf("value: %s", res)
 fmt.Printf("final position: %d of %d\n", i, len(data)) // object was parsed to the end to be able to read next
 _ = data                                               // but not the next value
 ```
@@ -117,14 +119,14 @@ Yes, I've seen such cases.
 data := []byte(`{"key1":"eyJrZXkyIjoie1wia2V5M1wiOlwidmFsdWVcIn0ifQ=="}`)
 
 f := jq.NewPipe(
-	jq.Selector{"key1"},
+	jq.Index{"key1"},
 	&jq.Base64d{
 		Encoding: base64.StdEncoding,
 	},
 	&jq.JSONDecoder{},
-	jq.Selector{"key2"},
+	jq.Index{"key2"},
 	&jq.JSONDecoder{},
-	jq.Selector{"key3"},
+	jq.Index{"key3"},
 )
 
 res, _, err := f.Apply(nil, data, 0)

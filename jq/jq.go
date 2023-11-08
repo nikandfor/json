@@ -14,7 +14,11 @@ type (
 
 	Dot struct{}
 
-	Selector []interface{}
+	Empty struct{}
+
+	Literal []byte
+
+	Index []interface{}
 
 	Comma []Filter
 
@@ -22,6 +26,8 @@ type (
 		Filters []Filter
 		Bufs    [2][]byte
 	}
+
+	First struct{}
 
 	Func func(w, r []byte, st int) ([]byte, int, error)
 
@@ -35,12 +41,21 @@ type (
 
 func ApplyToAll(f Filter, w, r []byte, st int) ([]byte, error) {
 	var err error
+	newline := false
 
 	for i := json.SkipSpaces(r, st); i < len(r); i = json.SkipSpaces(r, i) {
+		if newline {
+			w = append(w, '\n')
+		}
+
+		was := len(w)
+
 		w, i, err = f.Apply(w, r, i)
 		if err != nil {
 			return w, err
 		}
+
+		newline = len(w) != was
 	}
 
 	return w, nil
@@ -60,12 +75,12 @@ func (f Dot) Apply(w, r []byte, st int) ([]byte, int, error) {
 	}
 
 	w = append(w, raw...)
-	w = append(w, '\n')
+	//	w = append(w, '\n')
 
 	return w, i, nil
 }
 
-func (f Selector) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
+func (f Index) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 	var p json.Parser
 
 	st = p.SkipSpaces(r, st)
@@ -80,7 +95,7 @@ func (f Selector) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 		}
 
 		w = append(w, raw...)
-		w = append(w, '\n')
+		//	w = append(w, '\n')
 
 		return w, i, nil
 	}
@@ -149,7 +164,7 @@ func (f Selector) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 		return w, i, pe(err, i)
 	}
 
-	w = append(w, "null\n"...)
+	w = append(w, "null"...) // \n
 
 	return w, i, nil
 }
@@ -214,12 +229,63 @@ func (f Comma) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 		return w, st, nil
 	}
 
-	for _, ff := range f {
+	for fi, ff := range f {
+		if fi != 0 {
+			w = append(w, '\n')
+		}
+
 		w, i, err = ff.Apply(w, r, st)
 		if err != nil {
 			return w, i, err
 		}
 	}
+
+	return w, i, nil
+}
+
+func (f Empty) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
+	var p json.Parser
+
+	i, err = p.Skip(r, st)
+
+	return w, i, err
+}
+
+func (f Literal) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
+	var p json.Parser
+
+	i, err = p.Skip(r, st)
+	if err != nil {
+		return w, i, err
+	}
+
+	w = append(w, f...)
+
+	return w, i, nil
+}
+
+func (f First) Apply(w, r []byte, st int) ([]byte, int, error) {
+	var p json.Parser
+
+	st = p.SkipSpaces(r, st)
+	if st == len(r) {
+		return w, st, nil
+	}
+
+	raw, i, err := p.Raw(r, st)
+	if err != nil {
+		return w, i, pe(err, i)
+	}
+
+	for i = p.SkipSpaces(r, i); i < len(r); i = p.SkipSpaces(r, i) {
+		i, err = p.Skip(r, i)
+		if err != nil {
+			return w, i, pe(err, i)
+		}
+	}
+
+	w = append(w, raw...)
+	//	w = append(w, '\n')
 
 	return w, i, nil
 }

@@ -171,6 +171,10 @@ func (p *Parser) break_(b []byte, st, depth int) (i, maxDepth int, err error) {
 }
 
 func (p *Parser) Enter(b []byte, st int, typ byte) (i int, err error) {
+	if typ != Array && typ != Object {
+		return st, ErrType
+	}
+
 	tp, i, err := p.Type(b, st)
 	if err != nil {
 		return

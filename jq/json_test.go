@@ -13,15 +13,15 @@ func TestJSON(t *testing.T) {
 
 	res, i, err := e.Apply(nil, []byte(data), 0)
 	assert.NoError(t, err)
-	assert.Equal(t, `"abcd"`+"\n", string(res))
+	assert.Equal(t, `"abcd"`, string(res))
 
 	res, i, err = e.Apply(nil, []byte(data), i)
 	assert.NoError(t, err)
-	assert.Equal(t, `1`+"\n", string(res))
+	assert.Equal(t, `1`, string(res))
 
 	res, i, err = e.Apply(nil, []byte(data), i)
 	assert.NoError(t, err)
-	assert.Equal(t, `{"a":"b"}`+"\n", string(res))
+	assert.Equal(t, `{"a":"b"}`, string(res))
 
 	assert.Equal(t, len(data), i)
 }

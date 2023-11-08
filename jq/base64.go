@@ -51,13 +51,13 @@ func base64Apply(w, r []byte, st int, e *base64.Encoding, enc bool, buf []byte) 
 		n := e.EncodedLen(len(s))
 
 		wst := len(w) + 1 // open "
-		w = grow(w, n+3)
+		w = grow(w, n+2)
 
 		e.Encode(w[wst:], s)
 
 		w[wst-1] = '"'
-		w[len(w)-2] = '"'
-		w[len(w)-1] = '\n'
+		w[len(w)-1] = '"'
+		//	w[len(w)-1] = '\n'
 	} else {
 		n := e.DecodedLen(len(s))
 
@@ -71,7 +71,7 @@ func base64Apply(w, r []byte, st int, e *base64.Encoding, enc bool, buf []byte) 
 		}
 
 		w = (&json.Generator{}).EncodeString(w, s[ssize:ssize+n])
-		w = append(w, '\n')
+		//	w = append(w, '\n')
 	}
 
 	return w, s, i, nil

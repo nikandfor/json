@@ -36,7 +36,7 @@ func (f Length) Apply(w, r []byte, st int) ([]byte, int, error) {
 	}
 
 	w = strconv.AppendInt(w, int64(n), 10)
-	w = append(w, '\n')
+	//	w = append(w, '\n')
 
 	return w, i, nil
 }
@@ -90,7 +90,7 @@ func (f *Slice) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 		}
 	}
 
-	w = append(w, ']', '\n')
+	w = append(w, ']') //, '\n')
 
 	return w, i, nil
 }
@@ -160,7 +160,7 @@ func (f *Slice) applyString(w, r []byte, st int) (_ []byte, i int, err error) {
 		}
 	}
 
-	w = append(w, '"', '\n')
+	w = append(w, '"') //, '\n')
 
 	return w, i, nil
 }
@@ -205,12 +205,15 @@ func (f *Array) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 		return w, st, nil
 	}
 
-	f.Buf = f.Buf[:0]
+	var vals []byte
 
 	if f.Filter != nil {
+		f.Buf = f.Buf[:0]
 		f.Buf, i, err = f.Filter.Apply(f.Buf, r, st)
+
+		vals = f.Buf
 	} else {
-		i, err = p.Skip(r, st)
+		vals, i, err = p.Raw(r, st)
 	}
 	if err != nil {
 		return w, i, err
@@ -220,12 +223,12 @@ func (f *Array) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 
 	w = append(w, '[')
 
-	for j := p.SkipSpaces(f.Buf, 0); j < len(f.Buf); j = p.SkipSpaces(f.Buf, j) {
+	for j := p.SkipSpaces(vals, 0); j < len(vals); j = p.SkipSpaces(vals, j) {
 		if j != 0 {
 			w = append(w, ',')
 		}
 
-		raw, j, err = p.Raw(f.Buf, j)
+		raw, j, err = p.Raw(vals, j)
 		if err != nil {
 			return w, i, pe(err, i)
 		}
@@ -233,7 +236,7 @@ func (f *Array) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 		w = append(w, raw...)
 	}
 
-	w = append(w, ']', '\n')
+	w = append(w, ']') //, '\n')
 
 	return w, i, nil
 }

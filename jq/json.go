@@ -41,7 +41,7 @@ func (f *JSONDecoder) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 		}
 
 		w = append(w, raw...)
-		w = append(w, '\n')
+		//	w = append(w, '\n')
 	}
 
 	return w, i, nil

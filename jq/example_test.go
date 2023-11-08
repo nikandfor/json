@@ -7,10 +7,10 @@ import (
 	"github.com/nikandfor/json/jq"
 )
 
-func ExampleSelector() {
+func ExampleIndex() {
 	data := []byte(`{"key0":"skip it", "key1": {"next_key": ["array", null, {"obj":"val"}, "trailing element"]}}  "next"`)
 
-	f := jq.Selector{"key1", "next_key", 2} // string keys and int array indexes are supported
+	f := jq.Index{"key1", "next_key", 2} // string keys and int array indexes are supported
 
 	var res []byte // reusable buffer
 	var i int      // start index
@@ -22,7 +22,7 @@ func ExampleSelector() {
 		// i is an index in a source buffer where the error occured.
 	}
 
-	fmt.Printf("value: %s", res)                           // res ends on newline
+	fmt.Printf("value: %s\n", res)
 	fmt.Printf("final position: %d of %d\n", i, len(data)) // object was parsed to the end to be able to read next
 	_ = data                                               // but not the next value
 
@@ -37,14 +37,14 @@ func ExampleBase64d() {
 	data := []byte(`{"key1":"eyJrZXkyIjoie1wia2V5M1wiOlwidmFsdWVcIn0ifQ=="}`)
 
 	f := jq.NewPipe(
-		jq.Selector{"key1"},
+		jq.Index{"key1"},
 		&jq.Base64d{
 			Encoding: base64.StdEncoding,
 		},
 		&jq.JSONDecoder{},
-		jq.Selector{"key2"},
+		jq.Index{"key2"},
 		&jq.JSONDecoder{},
-		jq.Selector{"key3"},
+		jq.Index{"key3"},
 	)
 
 	res, _, err := f.Apply(nil, data, 0)

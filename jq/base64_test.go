@@ -17,7 +17,7 @@ func TestBase64(t *testing.T) {
 	res1, i, err := e.Apply(nil, []byte(data), 0)
 	assert.NoError(t, err)
 	assert.Equal(t, len(data), i)
-	assert.Equal(t, `"YWIKY2Q"`+"\n", string(res1))
+	assert.Equal(t, `"YWIKY2Q"`, string(res1))
 
 	d := Base64d{
 		Encoding: base64.RawStdEncoding,
@@ -25,6 +25,6 @@ func TestBase64(t *testing.T) {
 
 	res2, i, err := d.Apply(nil, res1, 0)
 	assert.NoError(t, err)
-	assert.Equal(t, len(res1)-1, i) // newline is not parsed
-	assert.Equal(t, data+"\n", string(res2))
+	assert.Equal(t, len(res1), i)
+	assert.Equal(t, data, string(res2))
 }
