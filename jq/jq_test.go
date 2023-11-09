@@ -75,6 +75,34 @@ func TestComma(t *testing.T) {
 	assert.Equal(t, `"e"`, string(b))
 }
 
+func TestCommaPipe(t *testing.T) {
+	data := `{"a":"b","c":4,"d":["e",null,true,false,{"f":3.4}]}`
+
+	f := NewComma(
+		NewPipe(Index{"a"}),
+		NewPipe(Index{"c"}),
+		NewPipe(Index{"d"}, Index{0}),
+	)
+
+	b, i, state, err := f.Next(nil, []byte(data), 0, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, state)
+	//	assert.Equal(t, len(data), i)
+	assert.Equal(t, `"b"`, string(b))
+
+	b, i, state, err = f.Next(nil, []byte(data), i, state)
+	assert.NoError(t, err)
+	assert.NotNil(t, state)
+	//	assert.Equal(t, len(data), i)
+	assert.Equal(t, `4`, string(b))
+
+	b, i, state, err = f.Next(nil, []byte(data), i, state)
+	assert.NoError(t, err)
+	assert.Nil(t, state)
+	assert.Equal(t, len(data), i)
+	assert.Equal(t, `"e"`, string(b))
+}
+
 func TestPipeIndex(t *testing.T) {
 	data := `{"a":"b","c":4,"d":["e",null,true,false,{"f":3.4}]}`
 
