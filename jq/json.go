@@ -7,8 +7,9 @@ import (
 )
 
 type (
-	//	JSONEncode struct{}
+	//	JSONEncoder struct{}
 
+	// JSONDecoder reads decoded string, parses it a JSON, and returns the raw value.
 	JSONDecoder struct {
 		Buf []byte
 	}

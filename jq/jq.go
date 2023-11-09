@@ -8,6 +8,26 @@ import (
 )
 
 type (
+	// Filter is a general filter interface.
+	// Filter parses single value from r buffer starting from st index,
+	// processes it, appends result to the w buffer and returns it as the first return parameter.
+	//
+	// Filters are stateless,
+	// but some of them may have temporary buffer they use for internal processing.
+	// It a filter needs to carry a state it returns it from the first call and
+	// expects to get it back on the next call.
+	// The first time the filter is called on a new value state must be nil.
+	//
+	// Filter may not add anything to w buffer if there is an empty result,
+	// iterating over empty array for example.
+	//
+	// Filter also may have more than one result, iterating over long array for example.
+	// In that case Next returns only one value at a time and non-nil state.
+	// Non-nil returned state means there are more values possible, but not guaranteed.
+	// To get them call the Next once again passing returned state back to the Filter.
+	// Second return value is a position where parsing ended,
+	// it must be passed back unchanged when iterating over result values.
+	// If returned state is nil, there are no more values to return.
 	Filter interface {
 		Next(w, r []byte, st int, state State) ([]byte, int, State, error)
 	}
@@ -16,16 +36,27 @@ type (
 		Next(w, r []byte, st int, state State) ([]byte, []byte, int, State, error)
 	}
 
+	// State is a general state of a Filter stored outside of it.
+	// It's opaque value for the caller and only should be used to pass it back
+	// to the same Filter with the same buffer and position returned with the state.
 	State interface{}
 
+	// Dot is a trivial filter that parses the values and returns it unchanged.
 	Dot struct{}
 
+	// Empty is a filter returning nothing on any input value.
+	// It parses the input value though.
 	Empty struct{}
 
+	// Literal is a filter returning the same values on any input.
+	// It parses the input value though.
 	Literal []byte
 
+	// Index returns given Object key value or Array element at the index.
+	// Supported index types: string (object key) and int (array index).
 	Index []interface{}
 
+	// Comma passes the same input to each of the Filters and combines returned values.
 	Comma struct {
 		Filters []Filter
 		pool    []*commaState
@@ -36,6 +67,9 @@ type (
 		sub State
 	}
 
+	// Pipe passes the input to the first Filter.
+	// Then it passes the prevoius filter result(s) ot the input of the next Filter.
+	// And then it returns the last filter result(s).
 	Pipe struct {
 		Filters []Filter
 		pool    []*pipeState
@@ -52,22 +86,42 @@ type (
 		Bst   int
 	}
 
+	// First returns at most one value of the input.
 	First struct{}
 
 	Func func(w, r []byte, st int, state State) ([]byte, int, State, error)
 
 	Dumper func(w, r []byte, st, end int)
 
+	// ParseError contains error and position returned by json.Parser.
 	ParseError struct {
 		Err error
 		Pos int
 	}
 )
 
+// ApplyToAll applies the filter f to all the values from the input buffer
+// and returns all the results separated by sep sequence ('\n' by default).
+//
+// NextAll reads only the first value from the input and processes it
+// while ApplyToAll does that for each input value until end of buffer reached.
 func ApplyToAll(f Filter, w, r []byte, st int, sep []byte) ([]byte, error) {
 	var err error
 
-	for i := json.SkipSpaces(r, st); i < len(r); i = json.SkipSpaces(r, i) {
+	st = json.SkipSpaces(r, st)
+	if st == len(r) {
+		return w, nil
+	}
+
+	wst := len(w)
+
+	for i := st; i < len(r); i = json.SkipSpaces(r, i) {
+		if wst != len(w) {
+			w = append(w, sep...)
+		}
+
+		wst = len(w)
+
 		w, i, err = NextAll(f, w, r, i, sep)
 		if err != nil {
 			return w, err
@@ -77,6 +131,10 @@ func ApplyToAll(f Filter, w, r []byte, st int, sep []byte) ([]byte, error) {
 	return w, nil
 }
 
+// NextAll applies filter to the first value in input and return all the result values.
+//
+// NextAll reads only the first value from the input and processes it
+// while ApplyToAll does that for each input value until end of buffer reached.
 func NextAll(f Filter, w, r []byte, st int, sep []byte) ([]byte, int, error) {
 	var err error
 	var state State

@@ -7,11 +7,13 @@ import (
 )
 
 type (
+	// Base64 reads decoded string, encodes it into base64 format, and returns it as a string.
 	Base64 struct {
 		*base64.Encoding
 		Buf []byte
 	}
 
+	// Base64d reads decoded string, decodes if from base64 format, and returns it as a string.
 	Base64d struct {
 		*base64.Encoding
 		Buf []byte

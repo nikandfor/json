@@ -6,8 +6,9 @@ import (
 	"unicode/utf8"
 )
 
+// Value types returned by Parser.
 const (
-	None   = 0
+	None   = 0 // never returned in successful case
 	Null   = 'n'
 	Bool   = 'b'
 	String = 's'
@@ -17,9 +18,16 @@ const (
 )
 
 type (
+	// Parser is a group of methods to parse JSON buffers.
+	// Parser is stateless.
+	// All the needed state is passed though arguments and return values.
+	//
+	// Most of the methods take buffer with json and start position
+	// and return a value, end position and possible error.
 	Parser struct{}
 )
 
+// Errors returned by Parser.
 var (
 	ErrEndOfBuffer = errors.New("unexpected end of buffer")
 	ErrSyntax      = errors.New("syntax error")
@@ -28,6 +36,8 @@ var (
 	ErrType        = errors.New("incompatible type")
 )
 
+// Type finds the beginning of the next value and detects its type.
+// It doesn't parse the value so it can't detect if it's incorrect.
 func (p *Parser) Type(b []byte, st int) (tp byte, i int, err error) {
 	for i = st; i < len(b); i++ {
 		switch b[i] {
@@ -53,11 +63,13 @@ func (p *Parser) Type(b []byte, st int) (tp byte, i int, err error) {
 	return None, i, ErrEndOfBuffer
 }
 
+// Skip skips the next value.
 func (p *Parser) Skip(b []byte, st int) (i int, err error) {
 	i, _, err = p.break_(b, st, 0)
 	return
 }
 
+// Raw skips the next value and returns subslice with the value trimming whitespaces.
 func (p *Parser) Raw(b []byte, st int) (v []byte, i int, err error) {
 	_, st, err = p.Type(b, st)
 	if err != nil {
@@ -72,11 +84,21 @@ func (p *Parser) Raw(b []byte, st int) (v []byte, i int, err error) {
 	return b[st:i], i, nil
 }
 
+// Break breaks from inside the object to the end of it on depth levels.
+// As a special case with depth=0 it skips the next value.
+// Skip and Raw do exactly that.
+//
+// It's intended for exiting out of arrays and objects when their content is not needed anymore
+// (all the needed indexes or keys are already parsed) and we want to parse the next array or object.
 func (p *Parser) Break(b []byte, st, depth int) (i int, err error) {
 	i, _, err = p.break_(b, st, depth)
 	return
 }
 
+// Key reads the next string removing quotes but not decoding the string value.
+// So escape sequences (\n, \uXXXX) are not decoded. They are returned as is.
+// This is intended for object keys as they usually contain alpha-numeric symbols only.
+// This is faster and does not require additional buffer for decoding.
 func (p *Parser) Key(b []byte, st int) (k []byte, i int, err error) {
 	tp, i, err := p.Type(b, st)
 	if err != nil {
@@ -95,6 +117,7 @@ func (p *Parser) Key(b []byte, st int) (k []byte, i int, err error) {
 	return raw[1 : len(raw)-1], i, nil
 }
 
+// DecodeString reads and the next string, decodes escape sequences (\n \uXXXX), and appends the result to the buf.
 func (p *Parser) DecodeString(b []byte, st int, buf []byte) (s []byte, i int, err error) {
 	tp, i, err := p.Type(b, st)
 	if err != nil {
@@ -114,6 +137,8 @@ func (p *Parser) DecodeString(b []byte, st int, buf []byte) (s []byte, i int, er
 	return
 }
 
+// DecodedStringLength reads and decodes the next string but only return the result length.
+// It doesn't allocate while DecodeString does.
 func (p *Parser) DecodedStringLength(b []byte, st int) (n, i int, err error) {
 	tp, i, err := p.Type(b, st)
 	if err != nil {
@@ -170,6 +195,9 @@ func (p *Parser) break_(b []byte, st, depth int) (i, maxDepth int, err error) {
 	return i, maxDepth, ErrEndOfBuffer
 }
 
+// Enter enters an Array or an Object. typ is checked to match with the actual container type.
+// Use More or, more convenient form, ForMore to iterate over container.
+// See examples to understand the usage pattern more.
 func (p *Parser) Enter(b []byte, st int, typ byte) (i int, err error) {
 	if typ != Array && typ != Object {
 		return st, ErrType
@@ -188,6 +216,7 @@ func (p *Parser) Enter(b []byte, st int, typ byte) (i int, err error) {
 	return i, ErrType
 }
 
+// More iterates over an Array or an Object elements entered by the Enter method.
 func (p *Parser) More(b []byte, st int, typ byte) (more bool, i int, err error) {
 	for i = st; i < len(b); i++ {
 		switch b[i] {
@@ -224,6 +253,7 @@ func (p *Parser) More(b []byte, st int, typ byte) (more bool, i int, err error) 
 	return true, i, nil
 }
 
+// ForMore is a convenient wrapper for More which makes iterating code shorter and simpler.
 func (p *Parser) ForMore(b []byte, i *int, typ byte, errp *error) bool {
 	more, j, err := p.More(b, *i, typ)
 	*i = j
@@ -235,6 +265,7 @@ func (p *Parser) ForMore(b []byte, i *int, typ byte, errp *error) bool {
 	return more
 }
 
+// Length calculates String length (runes in decoded form) or number of elements in Array or Object.
 func (p *Parser) Length(b []byte, st int) (n, i int, err error) {
 	tp, i, err := p.Type(b, st)
 	if err != nil {
@@ -277,6 +308,7 @@ func (p *Parser) Length(b []byte, st int) (n, i int, err error) {
 	return n, i, nil
 }
 
+// SkipSpaces skips whitespaces.
 func (p *Parser) SkipSpaces(b []byte, i int) int {
 	for i < len(b) && (b[i] == ' ' || b[i] == '\n' || b[i] == '\t') {
 		i++
@@ -301,7 +333,7 @@ func (p *Parser) skipString(b []byte, st int) (i int, err error) {
 			wid := 0
 
 			switch b[i] {
-			case '\\', 'n', 't', '"':
+			case '"', '\\', '/', 'n', 'r', 't', 'b', 'f':
 			case 'x':
 				wid = 2
 			case 'u':
@@ -368,12 +400,18 @@ func (p *Parser) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, e
 			switch b[i] {
 			case '\\':
 				w = add(w, '\\')
-			case '"':
-				w = add(w, '"')
+			case '"', '/':
+				w = add(w, b[i])
 			case 'n':
 				w = add(w, '\n')
+			case 'r':
+				w = add(w, '\r')
 			case 't':
 				w = add(w, '\t')
+			case 'b':
+				w = add(w, '\b')
+			case 'f':
+				w = add(w, '\f')
 			case 'x', 'u', 'U':
 				w, i, err = decodeRune(w, b, i)
 				if err != nil {
@@ -503,6 +541,7 @@ func (p *Parser) skipNum(b []byte, st int) (i int, err error) {
 	return i, nil
 }
 
+// SkipSpaces skips whitespaces.
 func SkipSpaces(b []byte, i int) int {
 	return (&Parser{}).SkipSpaces(b, i)
 }
