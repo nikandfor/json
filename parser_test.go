@@ -1,6 +1,7 @@
 package json
 
 import (
+	"encoding/json"
 	"strconv"
 	"testing"
 
@@ -32,18 +33,37 @@ func TestParser(t *testing.T) {
 func TestString(t *testing.T) {
 	var p Parser
 
-	for _, d := range []string{
-		`""`, `"a"`, `"a\"b\nc\td"`,
+	for j, d := range []string{
+		`""`, `"a"`, `"a\"b\nc\tde\"f\\g"`,
+		//	`"\xab\xac\xf3"`,
+		`"\u00ab\u00ac\u00f3"`,
+		`"\u0100\u017e"`,
+		//	`"\U00e4b896\U00e7958c"`,
 	} {
-		s, i, err := p.DecodeString([]byte(d), 0, nil)
+		i, err := p.Skip([]byte(d), 0)
 		if !assert.NoError(t, err) || !assert.Equal(t, len(d), i) {
-			t.Logf("pos: %d (%[1]x)  data: %q", i, d)
+			t.Logf("pos: %d (%[1]x)  data: %d %q", i, j, d)
+			continue
 		}
 
-		q, err := strconv.Unquote(d)
-		assert.NoError(t, err)
+		s, i, err := p.DecodeString([]byte(d), 0, nil)
+		if !assert.NoError(t, err) || !assert.Equal(t, len(d), i) {
+			t.Logf("pos: %d (%[1]x)  data: %d %q", i, j, d)
+			continue
+		}
 
+		var q string
+
+		err = json.Unmarshal([]byte(d), &q)
+		assert.NoError(t, err)
 		assert.Equal(t, q, string(s))
+
+		if false {
+			q, err := strconv.Unquote(d)
+			assert.NoError(t, err)
+
+			assert.Equal(t, q, string(s))
+		}
 	}
 }
 

@@ -298,12 +298,27 @@ func (p *Parser) skipString(b []byte, st int) (i int, err error) {
 				return i, ErrEndOfBuffer
 			}
 
+			wid := 0
+
 			switch b[i] {
 			case '\\', 'n', 't', '"':
-				i++
+			case 'x':
+				wid = 2
+			case 'u':
+				wid = 4
+			case 'U':
+				wid = 8
 			default:
 				return i, ErrBadString
 			}
+
+			i++
+
+			if i+wid > len(b) {
+				return i - 2, ErrEndOfBuffer
+			}
+
+			i += wid
 		case '\n':
 			return i, ErrBadString
 		default:
@@ -359,6 +374,13 @@ func (p *Parser) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, e
 				w = add(w, '\n')
 			case 't':
 				w = add(w, '\t')
+			case 'x', 'u', 'U':
+				w, i, err = decodeRune(w, b, i)
+				if err != nil {
+					return w, n, i, err
+				}
+
+				i--
 			default:
 				return w, n, i, ErrBadString
 			}
@@ -502,4 +524,54 @@ func skipDec(b []byte, i int) (int, bool) {
 	}
 
 	return i, ok
+}
+
+func decodeRune(w, r []byte, i int) ([]byte, int, error) {
+	wid := 0
+
+	switch r[i] {
+	case 'x':
+		wid = 2
+	case 'u':
+		wid = 4
+	case 'U':
+		wid = 8
+	default:
+		panic(r[i])
+	}
+
+	i++
+
+	if i+wid > len(r) {
+		return w, i - 2, ErrEndOfBuffer
+	}
+
+	var x rune
+
+	sym := func(c byte) bool {
+		switch {
+		case c >= '0' && c <= '9':
+			c -= '0'
+		case c >= 'a' && c <= 'f':
+			c = 10 + c - 'a'
+		case c >= 'A' && c <= 'F':
+			c = 10 + c - 'A'
+		default:
+			return false
+		}
+
+		x = x<<4 | rune(c)
+
+		return true
+	}
+
+	for j := 0; j < wid; j += 2 {
+		if !sym(r[i+j]) || !sym(r[i+j+1]) {
+			return w, i - 2, ErrBadRune
+		}
+	}
+
+	w = utf8.AppendRune(w, x)
+
+	return w, i + wid, nil
 }
