@@ -8,7 +8,7 @@
 
 # json
 
-This is one more json library.
+Yet another json library.
 It's created to process unstructured json in a convenient and efficient way.
 
 There is also some set of [jq](https://jqlang.github.io/jq/manual/) filters implemented on top of `json.Parser`.

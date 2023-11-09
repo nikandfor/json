@@ -3,7 +3,6 @@ package jq
 import (
 	"fmt"
 
-	"github.com/nikandfor/errors"
 	"github.com/nikandfor/json"
 )
 
@@ -208,7 +207,7 @@ func (f Index) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State,
 		typ = json.Object
 		key = x
 	default:
-		return nil, i, state, errors.New("unsupported selector type: %T", f[0])
+		return nil, i, state, fmt.Errorf("unsupported index type: %T", f[0])
 	}
 
 	i, err = p.Enter(r, st, typ)
