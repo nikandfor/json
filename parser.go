@@ -3,6 +3,8 @@ package json
 import (
 	"errors"
 	"fmt"
+	"unicode"
+	"unicode/utf16"
 	"unicode/utf8"
 )
 
@@ -27,6 +29,14 @@ type (
 	Parser struct{}
 )
 
+var whitespaces uint64
+
+func init() {
+	for _, b := range []byte{'\n', '\r', '\t', ' '} {
+		whitespaces |= 1 << b
+	}
+}
+
 // Errors returned by Parser.
 var (
 	ErrEndOfBuffer = errors.New("unexpected end of buffer")
@@ -40,9 +50,12 @@ var (
 // It doesn't parse the value so it can't detect if it's incorrect.
 func (p *Parser) Type(b []byte, st int) (tp byte, i int, err error) {
 	for i = st; i < len(b); i++ {
+		if isWhitespace(b[i]) {
+			continue
+		}
+
 		switch b[i] {
-		case ' ', '\t', '\n', '\v',
-			',', ':':
+		case ',', ':':
 			continue
 		case 't', 'f':
 			return Bool, i, nil
@@ -160,9 +173,13 @@ func (p *Parser) break_(b []byte, st, depth int) (i, maxDepth int, err error) {
 	maxDepth = depth
 
 	for i < len(b) {
+		if isWhitespace(b[i]) {
+			i++
+			continue
+		}
+
 		switch b[i] {
-		case ' ', '\t', '\n', '\v',
-			',', ':':
+		case ',', ':':
 			i++
 			continue
 		case '"':
@@ -219,9 +236,7 @@ func (p *Parser) Enter(b []byte, st int, typ byte) (i int, err error) {
 // More iterates over an Array or an Object elements entered by the Enter method.
 func (p *Parser) More(b []byte, st int, typ byte) (more bool, i int, err error) {
 	for i = st; i < len(b); i++ {
-		switch b[i] {
-		case ' ', '\n', '\t', '\v',
-			',':
+		if isWhitespace(b[i]) || b[i] == ',' {
 			continue
 		}
 
@@ -310,7 +325,7 @@ func (p *Parser) Length(b []byte, st int) (n, i int, err error) {
 
 // SkipSpaces skips whitespaces.
 func (p *Parser) SkipSpaces(b []byte, i int) int {
-	for i < len(b) && (b[i] == ' ' || b[i] == '\n' || b[i] == '\t') {
+	for i < len(b) && isWhitespace(b[i]) {
 		i++
 	}
 
@@ -351,7 +366,7 @@ func (p *Parser) skipString(b []byte, st int) (i int, err error) {
 			}
 
 			i += wid
-		case '\n':
+		case '\n', '\r', '\b':
 			return i, ErrBadString
 		default:
 			if b[i] < utf8.RuneSelf {
@@ -398,9 +413,7 @@ func (p *Parser) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, e
 			}
 
 			switch b[i] {
-			case '\\':
-				w = add(w, '\\')
-			case '"', '/':
+			case '\\', '"', '/':
 				w = add(w, b[i])
 			case 'n':
 				w = add(w, '\n')
@@ -426,7 +439,7 @@ func (p *Parser) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, e
 			i++
 			n++
 			done = i
-		case '\n':
+		case '\n', '\r', '\b':
 			return w, n, i, ErrBadString
 		default:
 			if b[i] < utf8.RuneSelf {
@@ -435,12 +448,20 @@ func (p *Parser) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, e
 				break
 			}
 
-			r, wid := utf8.DecodeRune(b[i:])
-			if r == utf8.RuneError {
-				return w, n, i, ErrBadRune
+			r, size := utf8.DecodeRune(b[i:])
+			if r == utf8.RuneError && size == 1 {
+				w = add(w, b[done:i]...)
+				w = utf8.AppendRune(w, utf8.RuneError)
+
+				i += size
+				n++
+				done = i
+
+				break
+				//	return w, n, i, ErrBadRune
 			}
 
-			i += wid
+			i += size
 			n++
 		}
 	}
@@ -565,52 +586,71 @@ func skipDec(b []byte, i int) (int, bool) {
 	return i, ok
 }
 
-func decodeRune(w, r []byte, i int) ([]byte, int, error) {
-	wid := 0
+func decodeRune(w, b []byte, i int) ([]byte, int, error) {
+	size := 0
 
-	switch r[i] {
+	switch b[i] {
 	case 'x':
-		wid = 2
+		size = 2
 	case 'u':
-		wid = 4
+		size = 4
 	case 'U':
-		wid = 8
+		size = 8
 	default:
-		panic(r[i])
+		panic(b[i])
 	}
 
 	i++
 
-	if i+wid > len(r) {
+	if i+size > len(b) {
 		return w, i - 2, ErrEndOfBuffer
 	}
 
-	var x rune
+	decode := func(i, size int) (r rune) {
+		for j := 0; j < size; j++ {
+			c := b[i+j]
 
-	sym := func(c byte) bool {
-		switch {
-		case c >= '0' && c <= '9':
-			c -= '0'
-		case c >= 'a' && c <= 'f':
-			c = 10 + c - 'a'
-		case c >= 'A' && c <= 'F':
-			c = 10 + c - 'A'
-		default:
-			return false
+			switch {
+			case c >= '0' && c <= '9':
+				c -= '0'
+			case c >= 'a' && c <= 'f':
+				c = 10 + c - 'a'
+			case c >= 'A' && c <= 'F':
+				c = 10 + c - 'A'
+			default:
+				return -1
+			}
+
+			r = r<<4 | rune(c)
 		}
 
-		x = x<<4 | rune(c)
-
-		return true
+		return r
 	}
 
-	for j := 0; j < wid; j += 2 {
-		if !sym(r[i+j]) || !sym(r[i+j+1]) {
-			return w, i - 2, ErrBadRune
+	r := decode(i, size)
+	if r < 0 {
+		return w, i - 2, ErrBadRune
+	}
+
+	// we are after first \u
+	if b[i-1] == 'u' && utf16.IsSurrogate(r) &&
+		i+size+6 <= len(b) &&
+		b[i+4] == '\\' && b[i+5] == 'u' {
+
+		r1 := decode(i+6, size)
+		dec := utf16.DecodeRune(r, r1)
+
+		if dec != unicode.ReplacementChar {
+			r = dec
+			i += 6
 		}
 	}
 
-	w = utf8.AppendRune(w, x)
+	w = utf8.AppendRune(w, r)
 
-	return w, i + wid, nil
+	return w, i + size, nil
+}
+
+func isWhitespace(b byte) bool {
+	return b <= 0x20 && whitespaces&(1<<b) != 0
 }
