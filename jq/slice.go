@@ -56,7 +56,7 @@ func (f *Slice) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State
 	switch tp {
 	case json.String:
 		w, i, err = f.applyString(w, r, st)
-		return w, i, nil, nil
+		return w, i, nil, err
 	case json.Array:
 	default:
 		return w, i, state, pe(json.ErrType, i)

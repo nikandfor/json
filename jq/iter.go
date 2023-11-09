@@ -53,7 +53,7 @@ func (f Iter) Next(w, r []byte, st int, state State) ([]byte, int, State, error)
 
 		w = append(w, raw...)
 
-		return w, i, state, nil
+		return w, i, state, nil //nolint:staticcheck
 	}
 	if err != nil {
 		return w, i, state, err

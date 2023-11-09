@@ -209,8 +209,6 @@ func BenchmarkNextAll(b *testing.B) {
 }
 
 func (f TestFilter) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	i = st
-
 	var p json.Parser
 
 	i, err = p.Skip(r, st)
