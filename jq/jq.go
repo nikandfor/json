@@ -115,7 +115,6 @@ func (f Dot) Next(w, r []byte, st int, state State) ([]byte, int, State, error) 
 	}
 
 	w = append(w, raw...)
-	//	w = append(w, '\n')
 
 	return w, i, nil, nil
 }

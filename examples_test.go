@@ -67,7 +67,7 @@ func ExampleParser_multipleValues() {
 		return i, err
 	}
 
-	for i := 0; i < len(data); i = p.SkipSpaces(data, i) { // eat trailing spaces and not try to read the value from string "\n"
+	for i := p.SkipSpaces(data, 0); i < len(data); i = p.SkipSpaces(data, i) { // eat trailing spaces and not try to read the value from string "\n"
 		i, err = processOneObject(data, i) // do not use := here as it shadow i and loop will restart from the same index
 		if err != nil {
 			// ...

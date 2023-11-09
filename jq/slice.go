@@ -160,7 +160,7 @@ func (f *Slice) applyString(w, r []byte, st int) (_ []byte, i int, err error) {
 		}
 	}
 
-	w = append(w, '"') //, '\n')
+	w = append(w, '"')
 
 	return w, i, nil
 }
