@@ -112,7 +112,7 @@ var i int      // start index
 // Use jq.ApplyToAll(f, res[:0], data, 0, []byte("\n")) to process all values in a buffer.
 res, i, _, err := f.Next(res[:0], data, i, nil)
 if err != nil {
-	// i is an index in a source buffer where the error occured.
+	// i is an index in a source buffer where the error occurred.
 }
 
 fmt.Printf("value: %s\n", res)
