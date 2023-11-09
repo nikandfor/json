@@ -40,9 +40,9 @@ func BenchmarkIndex(b *testing.B) {
 			var res []byte
 
 			for i := 0; i < b.N; i++ {
-				res, _, err = tc.Filter.Apply(res[:0], tc.Data, 0)
+				res, _, _, err = tc.Filter.Next(res[:0], tc.Data, 0, nil)
 				if err != nil {
-					b.Errorf("selector: %v", err)
+					b.Errorf("index: %v", err)
 				}
 			}
 

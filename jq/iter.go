@@ -6,26 +6,34 @@ type (
 	Iter struct{}
 )
 
-func (f Iter) Apply(w, r []byte, st int) ([]byte, int, error) {
+func (f Iter) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
 	var p json.Parser
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
-		return w, st, nil
+		return w, st, nil, nil
 	}
 
-	tp, i, err := p.Type(r, st)
-	if err != nil {
-		return w, i, pe(err, i)
-	}
+	var err error
+	i := st
+	tp, _ := state.(byte)
 
-	if tp != json.Array && tp != json.Object {
-		return w, i, pe(json.ErrType, i)
-	}
+	if state == nil {
+		tp, i, err = p.Type(r, i)
+		if err != nil {
+			return w, i, state, pe(err, i)
+		}
 
-	i, err = p.Enter(r, st, tp)
-	if err != nil {
-		return w, i, pe(err, i)
+		if tp != json.Array && tp != json.Object {
+			return w, i, state, pe(json.ErrType, i)
+		}
+
+		i, err = p.Enter(r, i, tp)
+		if err != nil {
+			return w, i, state, pe(err, i)
+		}
+
+		state = tp
 	}
 
 	var raw []byte
@@ -34,21 +42,22 @@ func (f Iter) Apply(w, r []byte, st int) ([]byte, int, error) {
 		if tp == json.Object {
 			i, err = p.Skip(r, i)
 			if err != nil {
-				return w, i, err
+				return w, i, state, err
 			}
 		}
 
 		raw, i, err = p.Raw(r, i)
 		if err != nil {
-			return w, i, err
+			return w, i, state, err
 		}
 
 		w = append(w, raw...)
-		w = append(w, '\n')
+
+		return w, i, state, nil
 	}
 	if err != nil {
-		return w, i, err
+		return w, i, state, err
 	}
 
-	return w, i, nil
+	return w, i, nil, nil
 }

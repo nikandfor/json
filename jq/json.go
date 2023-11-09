@@ -14,17 +14,17 @@ type (
 	}
 )
 
-func (f *JSONDecoder) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
+func (f *JSONDecoder) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
 	var p json.Parser
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
-		return w, st, nil
+		return w, st, nil, nil
 	}
 
 	f.Buf, i, err = p.DecodeString(r, st, f.Buf[:0])
 	if err != nil {
-		return w, i, pe(err, i)
+		return w, i, state, pe(err, i)
 	}
 
 	//	log.Printf("JSONDecoder string\n%s", f.Buf)
@@ -37,12 +37,11 @@ func (f *JSONDecoder) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 			break
 		}
 		if err != nil {
-			return w, st, pe(pe(err, j), st)
+			return w, st, state, pe(pe(err, j), st)
 		}
 
 		w = append(w, raw...)
-		//	w = append(w, '\n')
 	}
 
-	return w, i, nil
+	return w, i, nil, nil
 }

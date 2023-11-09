@@ -16,15 +16,15 @@ func ExampleIndex() {
 	var i int      // start index
 
 	// Most filters only parse single value and return index where the value ended.
-	// Use jq.ApplyToAll(f, res[:0], data, 0) to process all values in a buffer.
-	res, i, err := f.Apply(res[:0], data, i)
+	// Use jq.ApplyToAll(f, res[:0], data, 0, []byte("\n")) to process all values in a buffer.
+	res, i, _, err := f.Next(res[:0], data, i, nil)
 	if err != nil {
 		// i is an index in a source buffer where the error occured.
 	}
 
 	fmt.Printf("value: %s\n", res)
 	fmt.Printf("final position: %d of %d\n", i, len(data)) // object was parsed to the end to be able to read next
-	_ = data                                               // but not the next value
+	_ = i < len(data)                                      // but not the next value
 
 	// Output:
 	// value: {"obj":"val"}
@@ -47,7 +47,7 @@ func ExampleBase64d() {
 		jq.Index{"key3"},
 	)
 
-	res, _, err := f.Apply(nil, data, 0)
+	res, _, _, err := f.Next(nil, data, 0, nil)
 	if err != nil {
 		panic(err)
 	}

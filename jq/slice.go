@@ -22,49 +22,49 @@ type (
 	}
 )
 
-func (f Length) Apply(w, r []byte, st int) ([]byte, int, error) {
+func (f Length) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
 	var p json.Parser
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
-		return w, st, nil
+		return w, st, nil, nil
 	}
 
 	n, i, err := p.Length(r, st)
 	if err != nil {
-		return w, i, pe(err, i)
+		return w, i, state, pe(err, i)
 	}
 
 	w = strconv.AppendInt(w, int64(n), 10)
-	//	w = append(w, '\n')
 
-	return w, i, nil
+	return w, i, nil, nil
 }
 
-func (f *Slice) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
+func (f *Slice) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
 	var p json.Parser
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
-		return w, st, nil
+		return w, st, nil, nil
 	}
 
 	tp, i, err := p.Type(r, st)
 	if err != nil {
-		return w, i, pe(err, i)
+		return w, i, nil, pe(err, i)
 	}
 
 	switch tp {
 	case json.String:
-		return f.applyString(w, r, st)
+		w, i, err = f.applyString(w, r, st)
+		return w, i, nil, nil
 	case json.Array:
 	default:
-		return w, i, pe(json.ErrType, i)
+		return w, i, state, pe(json.ErrType, i)
 	}
 
 	n, i, err := p.Length(r, st)
 	if err != nil {
-		return w, i, pe(err, i)
+		return w, i, nil, pe(err, i)
 	}
 
 	left, right := f.leftRight(n)
@@ -90,9 +90,9 @@ func (f *Slice) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 		}
 	}
 
-	w = append(w, ']') //, '\n')
+	w = append(w, ']')
 
-	return w, i, nil
+	return w, i, nil, nil
 }
 
 func (f *Slice) applyPart(w, r []byte, st, left, right int, first bool) ([]byte, error) {
@@ -197,46 +197,43 @@ func (f *Slice) leftRight(n int) (l, r int) {
 	return
 }
 
-func (f *Array) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
+func (f *Array) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
 	var p json.Parser
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
-		return w, st, nil
+		return w, st, nil, nil
 	}
 
-	var vals []byte
-
-	if f.Filter != nil {
-		f.Buf = f.Buf[:0]
-		f.Buf, i, err = f.Filter.Apply(f.Buf, r, st)
-
-		vals = f.Buf
-	} else {
-		vals, i, err = p.Raw(r, st)
-	}
-	if err != nil {
-		return w, i, err
-	}
-
-	var raw []byte
+	ff := cfilter(f.Filter, Dot{})
 
 	w = append(w, '[')
 
-	for j := p.SkipSpaces(vals, 0); j < len(vals); j = p.SkipSpaces(vals, j) {
-		if j != 0 {
+	var sub State
+	wst := len(w)
+
+	for i = st; ; {
+		if wst != len(w) {
 			w = append(w, ',')
 		}
 
-		raw, j, err = p.Raw(vals, j)
-		if err != nil {
-			return w, i, pe(err, i)
-		}
+		wst = len(w)
 
-		w = append(w, raw...)
+		w, i, sub, err = ff.Next(w, r, i, sub)
+		//	log.Printf("array next %q  i %d  state %v  err %v", w[wst:], i, sub, err)
+		if err != nil {
+			return w, i, state, err
+		}
+		if sub == nil {
+			break
+		}
 	}
 
-	w = append(w, ']') //, '\n')
+	if l := len(w) - 1; w[l] == ',' {
+		w[l] = ']'
+	} else {
+		w = append(w, ']')
+	}
 
-	return w, i, nil
+	return w, i, nil, nil
 }

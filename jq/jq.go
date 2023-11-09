@@ -9,8 +9,14 @@ import (
 
 type (
 	Filter interface {
-		Apply(w, r []byte, st int) ([]byte, int, error)
+		Next(w, r []byte, st int, state State) ([]byte, int, State, error)
 	}
+
+	MapFilter interface {
+		Next(w, r []byte, st int, state State) ([]byte, []byte, int, State, error)
+	}
+
+	State interface{}
 
 	Dot struct{}
 
@@ -20,16 +26,35 @@ type (
 
 	Index []interface{}
 
-	Comma []Filter
+	Comma struct {
+		Filters []Filter
+		pool    []*commaState
+	}
+
+	commaState struct {
+		fi  int
+		sub State
+	}
 
 	Pipe struct {
 		Filters []Filter
-		Bufs    [2][]byte
+		pool    []*pipeState
+	}
+
+	pipeState struct {
+		b   []byte
+		sub []pipeSub
+	}
+
+	pipeSub struct {
+		St    int
+		State State
+		Bst   int
 	}
 
 	First struct{}
 
-	Func func(w, r []byte, st int) ([]byte, int, error)
+	Func func(w, r []byte, st int, state State) ([]byte, int, State, error)
 
 	Dumper func(w, r []byte, st, end int)
 
@@ -39,65 +64,79 @@ type (
 	}
 )
 
-func ApplyToAll(f Filter, w, r []byte, st int) ([]byte, error) {
+func ApplyToAll(f Filter, w, r []byte, st int, sep []byte) ([]byte, error) {
 	var err error
-	newline := false
 
 	for i := json.SkipSpaces(r, st); i < len(r); i = json.SkipSpaces(r, i) {
-		if newline {
-			w = append(w, '\n')
-		}
-
-		was := len(w)
-
-		w, i, err = f.Apply(w, r, i)
+		w, i, err = NextAll(f, w, r, i, sep)
 		if err != nil {
 			return w, err
 		}
-
-		newline = len(w) != was
 	}
 
 	return w, nil
 }
 
-func (f Dot) Apply(w, r []byte, st int) ([]byte, int, error) {
+func NextAll(f Filter, w, r []byte, st int, sep []byte) ([]byte, int, error) {
+	var err error
+	var state State
+
+	if sep == nil {
+		sep = []byte{'\n'}
+	}
+
+	wst := len(w)
+
+	for {
+		if wst != len(w) {
+			w = append(w, sep...)
+		}
+
+		wst = len(w)
+
+		w, st, state, err = f.Next(w, r, st, state)
+		if err != nil || state == nil {
+			return w, st, err
+		}
+	}
+}
+
+func (f Dot) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
 	var p json.Parser
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
-		return w, st, nil
+		return w, st, nil, nil
 	}
 
 	raw, i, err := p.Raw(r, st)
 	if err != nil {
-		return w, i, pe(err, i)
+		return w, i, state, pe(err, i)
 	}
 
 	w = append(w, raw...)
 	//	w = append(w, '\n')
 
-	return w, i, nil
+	return w, i, nil, nil
 }
 
-func (f Index) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
+func (f Index) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
 	var p json.Parser
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
-		return w, st, nil
+		return w, st, nil, nil
 	}
 
 	if len(f) == 0 {
 		raw, i, err := p.Raw(r, st)
 		if err != nil {
-			return w, i, pe(err, i)
+			return w, i, state, pe(err, i)
 		}
 
 		w = append(w, raw...)
-		//	w = append(w, '\n')
 
-		return w, i, nil
+		return w, i, nil, nil
 	}
 
 	var typ byte
@@ -112,12 +151,12 @@ func (f Index) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 		typ = json.Object
 		key = x
 	default:
-		return nil, i, errors.New("unsupported selector type: %T", f[0])
+		return nil, i, state, errors.New("unsupported selector type: %T", f[0])
 	}
 
 	i, err = p.Enter(r, st, typ)
 	if err != nil {
-		return w, i, pe(err, i)
+		return w, i, state, pe(err, i)
 	}
 
 	var k []byte
@@ -126,13 +165,13 @@ func (f Index) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 		if typ == json.Object {
 			k, i, err = p.Key(r, i)
 			if err != nil {
-				return w, i, pe(err, i)
+				return w, i, state, pe(err, i)
 			}
 
 			if string(k) != key {
 				i, err = p.Skip(r, i)
 				if err != nil {
-					return w, i, pe(err, i)
+					return w, i, state, pe(err, i)
 				}
 
 				continue
@@ -142,31 +181,31 @@ func (f Index) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 
 			i, err = p.Skip(r, i)
 			if err != nil {
-				return w, i, pe(err, i)
+				return w, i, state, pe(err, i)
 			}
 
 			continue
 		}
 
-		w, i, err = f[1:].Apply(w, r, i)
+		w, i, state, err = f[1:].Next(w, r, i, state) // TODO: use sub state if .[] support added
 		if err != nil {
-			return
+			return w, i, state, err
 		}
 
 		i, err = p.Break(r, i, 1)
 		if err != nil {
-			return w, i, pe(err, i)
+			return w, i, state, pe(err, i)
 		}
 
-		return w, i, nil
+		return w, i, nil, nil
 	}
 	if err != nil {
-		return w, i, pe(err, i)
+		return w, i, state, pe(err, i)
 	}
 
 	w = append(w, "null"...) // \n
 
-	return w, i, nil
+	return w, i, nil, nil
 }
 
 func NewPipe(fs ...Filter) *Pipe {
@@ -175,139 +214,208 @@ func NewPipe(fs ...Filter) *Pipe {
 	}
 }
 
-func (f *Pipe) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
+func (f *Pipe) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
+	ss, _ := state.(*pipeState)
+	if ss == nil {
+		ss = f.state()
+	}
+
+	last := len(f.Filters) - 1
+	fi := last
+
+	for fi >= 0 && ss.sub[fi].State == nil {
+		fi--
+	}
+
+	if fi == -1 && state == nil {
+		fi++
+	}
+
+	if fi == -1 {
+		return w, st, nil, nil
+	}
+
+	for ; fi < len(f.Filters); fi++ {
+		ff := f.Filters[fi]
+
+		if ss.sub[fi].State == nil {
+			ss.sub[fi].Bst = len(ss.b)
+		}
+
+		wbst := ss.sub[fi].Bst
+		ss.b = ss.b[:wbst]
+
+		wb := cbuf(fi == last, w, ss.b)
+		rb := cbuf(fi == 0, r, ss.b)
+		rbst := cint(fi == 0, st, ss.sub[fi].St)
+
+		if fi < last {
+			ss.sub[fi+1].St = len(ss.b)
+		}
+
+		//	log.Printf("pipe args   #%d  %3v  %-30q  %q  sub %+v", fi, rbst, rb, ss.b, ss.sub)
+
+		wb, ss.sub[fi].St, ss.sub[fi].State, err = ff.Next(wb, rb, rbst, ss.sub[fi].State)
+		//	log.Printf("pipe filter #%d  %3v  %-30q  %q  err %v", fi, ss.sub[fi].St, wb, ss.b, err)
+		if err != nil {
+			return w, i, state, err
+		}
+
+		w = cbuf(fi == last, wb, w)
+		ss.b = cbuf(fi != last, wb, ss.b)
+	}
+
+	i = ss.sub[0].St
+	state = nil
+
+	for _, sub := range ss.sub {
+		if sub.State != nil {
+			state = ss
+			break
+		}
+	}
+
+	if state == nil {
+		f.pool = append(f.pool, ss)
+	}
+
+	return w, i, state, nil
+}
+
+func (f *Pipe) state() (ss *pipeState) {
+	l := len(f.pool)
+
+	if l == 0 {
+		ss = &pipeState{}
+	} else {
+		ss = f.pool[l-1]
+		f.pool = f.pool[:l-1]
+
+		ss.b = ss.b[:0]
+	}
+
+	if cap(ss.sub) < len(f.Filters) {
+		ss.sub = make([]pipeSub, len(f.Filters))
+	}
+
+	ss.sub = ss.sub[:len(f.Filters)]
+
+	return ss
+}
+
+func NewComma(fs ...Filter) *Comma {
+	return &Comma{
+		Filters: fs,
+	}
+}
+
+func (f *Comma) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
 	st = json.SkipSpaces(r, st)
 	if st == len(r) {
-		return w, st, nil
+		return w, st, nil, nil
 	}
 
-	switch len(f.Filters) {
-	case 0:
-		// TODO: what to do here?
-		return Dot{}.Apply(w, r, st)
-	case 1:
-		return f.Filters[0].Apply(w, r, st)
+	ss, _ := state.(*commaState)
+	if ss == nil {
+		ss = f.state()
+		state = ss
 	}
 
-	fi := 0
-	l := len(f.Filters) - 1
-
-	f.Bufs[fi&1], i, err = f.Filters[0].Apply(f.Bufs[fi&1][:0], r, st)
+	w, i, ss.sub, err = f.Filters[ss.fi].Next(w, r, st, ss.sub)
 	if err != nil {
-		return w, i, err
+		return w, i, state, err
 	}
 
-	for fi = 1; fi < len(f.Filters); fi++ {
-		bw, br := fi&1, 1-fi&1
-
-		var wb []byte
-
-		if fi == l {
-			wb = w
-		} else {
-			wb = f.Bufs[bw][:0]
-		}
-
-		wb, err = ApplyToAll(f.Filters[fi], wb, f.Bufs[br], 0)
-		if err != nil {
-			return w, i, err
-		}
-
-		if fi == l {
-			w = wb
-		} else {
-			f.Bufs[bw] = wb
-		}
+	if ss.sub == nil {
+		ss.fi++
 	}
 
-	return w, i, nil
+	if ss.fi == len(f.Filters) {
+		state = nil
+		f.pool = append(f.pool, ss)
+	}
+
+	return w, cint(state != nil, st, i), state, nil
 }
 
-func (f Comma) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
-	st = json.SkipSpaces(r, st)
-	if st == len(r) {
-		return w, st, nil
+func (f *Comma) state() (ss *commaState) {
+	l := len(f.pool)
+	if l == 0 {
+		ss = &commaState{}
+	} else {
+		ss = f.pool[l-1]
+		f.pool = f.pool[:l-1]
+
+		ss.fi = 0
 	}
 
-	for fi, ff := range f {
-		if fi != 0 {
-			w = append(w, '\n')
-		}
-
-		w, i, err = ff.Apply(w, r, st)
-		if err != nil {
-			return w, i, err
-		}
-	}
-
-	return w, i, nil
+	return ss
 }
 
-func (f Empty) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
+func (f Empty) Next(w, r []byte, st int, state *State) (_ []byte, i int, _ *State, err error) {
 	var p json.Parser
 
 	i, err = p.Skip(r, st)
 
-	return w, i, err
+	return w, i, nil, err
 }
 
-func (f Literal) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
+func (f Literal) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
 	var p json.Parser
 
 	i, err = p.Skip(r, st)
 	if err != nil {
-		return w, i, err
+		return w, i, state, err
 	}
 
 	w = append(w, f...)
 
-	return w, i, nil
+	return w, i, nil, nil
 }
 
-func (f First) Apply(w, r []byte, st int) ([]byte, int, error) {
+func (f First) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
 	var p json.Parser
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
-		return w, st, nil
+		return w, st, nil, nil
 	}
 
 	raw, i, err := p.Raw(r, st)
 	if err != nil {
-		return w, i, pe(err, i)
+		return w, i, state, pe(err, i)
 	}
 
 	for i = p.SkipSpaces(r, i); i < len(r); i = p.SkipSpaces(r, i) {
 		i, err = p.Skip(r, i)
 		if err != nil {
-			return w, i, pe(err, i)
+			return w, i, state, pe(err, i)
 		}
 	}
 
 	w = append(w, raw...)
-	//	w = append(w, '\n')
 
-	return w, i, nil
+	return w, i, nil, nil
 }
 
-func (f Func) Apply(w, r []byte, st int) ([]byte, int, error) {
-	return f(w, r, st)
+func (f Func) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
+	return f(w, r, st, state)
 }
 
-func (f Dumper) Apply(w, r []byte, st int) ([]byte, int, error) {
+func (f Dumper) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
 	st = json.SkipSpaces(r, st)
 	if st == len(r) {
-		return w, st, nil
+		return w, st, nil, nil
 	}
 
-	raw, i, err := (&json.Parser{}).Raw(r, st)
+	i, err := (&json.Parser{}).Skip(r, st)
 	if err != nil {
-		return w, i, err
+		return w, st, state, err
 	}
 
 	f(w, r, st, i)
 
-	return append(w, raw...), i, nil
+	return w, i, nil, nil
 }
 
 func pe(err error, i int) error {
@@ -320,3 +428,27 @@ func (e ParseError) Error() string {
 }
 
 func (e ParseError) Unwrap() error { return e.Err }
+
+func cint(c bool, x, y int) int {
+	if c {
+		return x
+	}
+
+	return y
+}
+
+func cbuf(c bool, x, y []byte) []byte {
+	if c {
+		return x
+	}
+
+	return y
+}
+
+func cfilter(f0, f1 Filter) Filter {
+	if f0 != nil {
+		return f0
+	}
+
+	return f1
+}

@@ -11,15 +11,15 @@ func TestJSON(t *testing.T) {
 
 	var e JSONDecoder
 
-	res, i, err := e.Apply(nil, []byte(data), 0)
+	res, i, _, err := e.Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, `"abcd"`, string(res))
 
-	res, i, err = e.Apply(nil, []byte(data), i)
+	res, i, _, err = e.Next(nil, []byte(data), i, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, `1`, string(res))
 
-	res, i, err = e.Apply(nil, []byte(data), i)
+	res, i, _, err = e.Next(nil, []byte(data), i, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, `{"a":"b"}`, string(res))
 

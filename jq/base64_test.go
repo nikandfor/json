@@ -14,7 +14,7 @@ func TestBase64(t *testing.T) {
 		Encoding: base64.RawStdEncoding,
 	}
 
-	res1, i, err := e.Apply(nil, []byte(data), 0)
+	res1, i, _, err := e.Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, len(data), i)
 	assert.Equal(t, `"YWIKY2Q"`, string(res1))
@@ -23,7 +23,7 @@ func TestBase64(t *testing.T) {
 		Encoding: base64.RawStdEncoding,
 	}
 
-	res2, i, err := d.Apply(nil, res1, 0)
+	res2, i, _, err := d.Next(nil, res1, 0, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, len(res1), i)
 	assert.Equal(t, data, string(res2))

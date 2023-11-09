@@ -17,38 +17,47 @@ type (
 	}
 )
 
-func (f *Select) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
+func (f *Select) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
 	var p json.Parser
 
 	raw, i, err := p.Raw(r, st)
 	if err != nil {
-		return w, i, err
+		return w, i, state, err
 	}
 
-	val := raw
+	ff := cfilter(f.Filter, Dot{})
 
-	if f.Filter != nil {
-		f.Buf, i, err = f.Filter.Apply(f.Buf[:0], r, st)
+	var sub State
+	ok := false
+
+	for {
+		f.Buf, i, sub, err = ff.Next(f.Buf[:0], r, st, sub)
 		if err != nil {
-			return w, i, err
+			return w, i, state, err
 		}
 
-		val = f.Buf
-	}
+		ok, _, err = IsTrue(f.Buf, 0)
+		//	log.Printf("select istrue %v %v <- %q", ok, err, f.Buf)
+		if err != nil {
+			return w, i, state, err
+		}
+		if ok {
+			break
+		}
 
-	ok, _, err := IsTrue(val, 0)
-	if err != nil {
-		return w, st, err
+		if sub == nil {
+			break
+		}
 	}
 
 	if ok {
 		w = append(w, raw...)
 	}
 
-	return w, i, nil
+	return w, i, nil, nil
 }
 
-func (f *Map) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
+func (f *Map) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
 	var p json.Parser
 
 	ff := f.Filter
@@ -58,16 +67,15 @@ func (f *Map) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 
 	tp, i, err := p.Type(r, st)
 	if err != nil {
-		return w, i, err
+		return w, i, state, err
 	}
 
 	i, err = p.Enter(r, i, tp)
 	if err != nil {
-		return w, i, err
+		return w, i, state, err
 	}
 
 	var key []byte
-	comma := false
 
 	restp := byte(json.Array)
 
@@ -76,20 +84,19 @@ func (f *Map) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 	}
 
 	w = append(w, restp)
+	wkey := len(w)
 
 	for p.ForMore(r, &i, tp, &err) {
-		if comma {
+		if wkey != len(w) {
 			w = append(w, ',')
 		}
 
-		comma = true
-
-		wkey := len(w)
+		wkey = len(w)
 
 		if tp == json.Object {
 			key, i, err = p.Key(r, i)
 			if err != nil {
-				return w, i, err
+				return w, i, state, err
 			}
 		}
 
@@ -98,42 +105,53 @@ func (f *Map) Apply(w, r []byte, st int) (_ []byte, i int, err error) {
 			w = append(w, ':')
 		}
 
+		var sub State
 		wst := len(w)
 
-		w, i, err = ff.Apply(w, r, i)
+		w, i, sub, err = ff.Next(w, r, i, sub)
 		if err != nil {
-			return w, i, err
+			return w, i, state, err
 		}
 
 		//	log.Printf("map f: %s", w[wst:])
 
 		switch {
-		case p.SkipSpaces(w, wst) == len(w):
-			w = w[:wkey]
-
-			comma = false
+		case wst == len(w):
+			w = w[:wkey-1]
+			continue
 		case f.Values:
-			wend, err := p.Skip(w, wst)
-			if err != nil {
-				return w, i, err
+			continue
+		}
+
+		for sub != nil {
+			if wst != len(w) {
+				w = append(w, ',')
 			}
 
-			w = w[:wend]
-		default:
-			// TODO
+			wst = len(w)
+
+			w, i, sub, err = ff.Next(w, r, i, sub)
+			if err != nil {
+				return w, i, state, err
+			}
 		}
 	}
 	if err != nil {
-		return w, i, err
+		return w, i, state, err
 	}
 
 	w = append(w, restp+2)
 
-	return w, i, nil
+	return w, i, nil, nil
 }
 
 func IsTrue(val []byte, st int) (bool, int, error) {
 	var p json.Parser
+
+	st = p.SkipSpaces(val, st)
+	if st == len(val) {
+		return false, st, nil
+	}
 
 	tp, i, err := p.Type(val, st)
 	if err != nil {
