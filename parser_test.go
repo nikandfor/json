@@ -98,3 +98,17 @@ cases:
 		}
 	}
 }
+
+func BenchmarkIsDigit(b *testing.B) {
+	b.Run("RangeCmp", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			isDigit1('f', true)
+		}
+	})
+
+	b.Run("BitOps", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			isDigit1('f', true)
+		}
+	})
+}

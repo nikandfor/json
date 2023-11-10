@@ -28,12 +28,27 @@ type (
 	Parser struct{}
 )
 
-var whitespaces uint64
+var (
+	whitespaces uint64
+	decimals    uint64
+	hexdecimals uint64 // -64 offset
+)
 
 func init() {
 	for _, b := range []byte{'\n', '\r', '\t', ' '} {
 		whitespaces |= 1 << b
 	}
+
+	for b := '0'; b <= '9'; b++ {
+		decimals |= 1 << b
+	}
+
+	for b := 'a'; b <= 'z'; b++ {
+		hexdecimals |= 1 << b
+		hexdecimals |= 1 << (b - 'a' + 'A')
+	}
+
+	_, _ = isDigit1('f', true), isDigit2('f', true) // keep it used
 }
 
 // Errors returned by Parser.
@@ -567,16 +582,6 @@ func SkipSpaces(b []byte, i int) int {
 	return (&Parser{}).SkipSpaces(b, i)
 }
 
-func skipInt(b []byte, i int, hex bool) (_ int, ok bool) {
-	for i < len(b) && (b[i] >= '0' && b[i] <= '9' || b[i] == '_' ||
-		hex && (b[i] >= 'a' && b[i] <= 'f' || b[i] >= 'A' && b[i] <= 'F')) {
-		ok = true
-		i++
-	}
-
-	return i, ok
-}
-
 func skipSign(b []byte, i int) int {
 	if i < len(b) && (b[i] == '+' || b[i] == '-') {
 		i++
@@ -585,10 +590,8 @@ func skipSign(b []byte, i int) int {
 	return i
 }
 
-func skipDec(b []byte, i int) (int, bool) {
-	ok := false
-
-	for i < len(b) && b[i] >= '0' && b[i] <= '9' {
+func skipInt(b []byte, i int, hex bool) (_ int, ok bool) {
+	for i < len(b) && (b[i] == '_' || isDigit1(b[i], hex)) {
 		ok = true
 		i++
 	}
@@ -663,4 +666,12 @@ func decodeRune(w, b []byte, i int) ([]byte, int, error) {
 
 func isWhitespace(b byte) bool {
 	return b <= 0x20 && whitespaces&(1<<b) != 0
+}
+
+func isDigit1(b byte, hex bool) bool {
+	return b >= '0' && b <= '9' || hex && (b >= 'a' && b <= 'f' || b >= 'A' && b <= 'F')
+}
+
+func isDigit2(b byte, hex bool) bool {
+	return b < 64 && decimals&(1<<b) != 0 || b >= 64 && b < 128 && hexdecimals&(1<<b) != 0
 }
