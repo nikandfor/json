@@ -2,7 +2,6 @@ package json
 
 import (
 	"errors"
-	"fmt"
 	"unicode"
 	"unicode/utf16"
 	"unicode/utf8"
@@ -39,10 +38,11 @@ func init() {
 
 // Errors returned by Parser.
 var (
+	ErrBadNumber   = errors.New("bad number")
+	ErrBadRune     = errors.New("bad rune")
+	ErrBadString   = errors.New("bad string")
 	ErrEndOfBuffer = errors.New("unexpected end of buffer")
 	ErrSyntax      = errors.New("syntax error")
-	ErrBadString   = errors.New("bad string")
-	ErrBadRune     = errors.New("bad rune")
 	ErrType        = errors.New("incompatible type")
 )
 
@@ -66,7 +66,7 @@ func (p *Parser) Type(b []byte, st int) (tp byte, i int, err error) {
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 			'+', '-', '.',
 			'N',      // NaN
-			'i', 'I': // inf
+			'i', 'I': // Inf
 			return Number, i, nil
 		}
 
@@ -130,7 +130,8 @@ func (p *Parser) Key(b []byte, st int) (k []byte, i int, err error) {
 	return raw[1 : len(raw)-1], i, nil
 }
 
-// DecodeString reads and the next string, decodes escape sequences (\n \uXXXX), and appends the result to the buf.
+// DecodeString reads the next string, decodes escape sequences (\n, \uXXXX),
+// and appends the result to the buf.
 func (p *Parser) DecodeString(b []byte, st int, buf []byte) (s []byte, i int, err error) {
 	tp, i, err := p.Type(b, st)
 	if err != nil {
@@ -216,21 +217,18 @@ func (p *Parser) break_(b []byte, st, depth int) (i, maxDepth int, err error) {
 // Use More or, more convenient form, ForMore to iterate over container.
 // See examples to understand the usage pattern more.
 func (p *Parser) Enter(b []byte, st int, typ byte) (i int, err error) {
-	if typ != Array && typ != Object {
-		return st, ErrType
-	}
-
 	tp, i, err := p.Type(b, st)
 	if err != nil {
 		return
 	}
 
-	if tp == typ {
-		i++
-		return
+	if tp != typ || typ != Array && typ != Object {
+		return i, ErrType
 	}
 
-	return i, ErrType
+	i++
+
+	return
 }
 
 // More iterates over an Array or an Object elements entered by the Enter method.
@@ -252,7 +250,7 @@ func (p *Parser) More(b []byte, st int, typ byte) (more bool, i int, err error) 
 		return false, i, nil
 	}
 
-	if typ != Object {
+	if typ == Array {
 		return true, i, nil
 	}
 
@@ -303,7 +301,7 @@ func (p *Parser) Length(b []byte, st int) (n, i int, err error) {
 
 	for p.ForMore(b, &i, tp, &err) {
 		if tp == Object {
-			i, err = p.Skip(b, i)
+			_, i, err = p.Key(b, i)
 			if err != nil {
 				return n, i, err
 			}
@@ -333,7 +331,7 @@ func (p *Parser) SkipSpaces(b []byte, i int) int {
 }
 
 func (p *Parser) skipString(b []byte, st int) (i int, err error) {
-	i = st + 1 // open "
+	i = st + 1 // opening "
 
 	for i < len(b) {
 		switch b[i] {
@@ -345,27 +343,27 @@ func (p *Parser) skipString(b []byte, st int) (i int, err error) {
 				return i, ErrEndOfBuffer
 			}
 
-			wid := 0
+			size := 0
 
 			switch b[i] {
 			case '"', '\\', '/', 'n', 'r', 't', 'b', 'f':
 			case 'x':
-				wid = 2
+				size = 2
 			case 'u':
-				wid = 4
+				size = 4
 			case 'U':
-				wid = 8
+				size = 8
 			default:
 				return i, ErrBadString
 			}
 
 			i++
 
-			if i+wid > len(b) {
+			if i+size > len(b) {
 				return i - 2, ErrEndOfBuffer
 			}
 
-			i += wid
+			i += size
 		case '\n', '\r', '\b':
 			return i, ErrBadString
 		default:
@@ -374,12 +372,12 @@ func (p *Parser) skipString(b []byte, st int) (i int, err error) {
 				break
 			}
 
-			r, w := utf8.DecodeRune(b[i:])
-			if r == utf8.RuneError {
-				return i, ErrBadRune
-			}
+			_, size := utf8.DecodeRune(b[i:])
+			//	if r == utf8.RuneError && size == 1 {
+			//		return i, ErrBadRune
+			//	}
 
-			i += w
+			i += size
 		}
 	}
 
@@ -387,7 +385,7 @@ func (p *Parser) skipString(b []byte, st int) (i int, err error) {
 }
 
 func (p *Parser) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, err error) {
-	i = st + 1 // open "
+	i = st + 1 // opening "
 	done := i
 
 	add := func(d []byte, s ...byte) []byte {
@@ -458,7 +456,6 @@ func (p *Parser) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, e
 				done = i
 
 				break
-				//	return w, n, i, ErrBadRune
 			}
 
 			i += size
@@ -470,20 +467,23 @@ func (p *Parser) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, e
 }
 
 func (p *Parser) skipLit(b []byte, st int) (i int, err error) {
+	var lit string
+
 	switch b[st] {
 	case 't':
-		return p.skipVal(b, st, "true")
+		lit = "true"
 	case 'f':
-		return p.skipVal(b, st, "false")
+		lit = "false"
 	case 'n':
-		return p.skipVal(b, st, "null")
-	default:
-		panic(fmt.Sprintf("%q", b[st]))
+		lit = "null"
 	}
+
+	return p.skipVal(b, st, lit)
 }
 
 func (p *Parser) skipVal(b []byte, st int, val string) (i int, err error) {
 	end := st + len(val)
+
 	if end <= len(b) && string(b[st:end]) == val {
 		return end, nil
 	}
@@ -499,7 +499,6 @@ func (p *Parser) skipNum(b []byte, st int) (i int, err error) {
 	i = st
 
 	// NaN
-
 	if i+3 < len(b) && string(b[i:i+3]) == "NaN" {
 		return i + 3, nil
 	}
@@ -507,8 +506,7 @@ func (p *Parser) skipNum(b []byte, st int) (i int, err error) {
 	// sign
 	i = skipSign(b, i)
 
-	// infinity
-
+	// Infinity
 	if i+3 < len(b) && (b[i] == 'i' || b[i] == 'I') && string(b[i+1:i+3]) == "nf" {
 		i += 3
 
@@ -520,7 +518,6 @@ func (p *Parser) skipNum(b []byte, st int) (i int, err error) {
 	}
 
 	// 0x
-
 	hex := false
 
 	if i+2 < len(b) && b[i] == '0' && (b[i+1] == 'x' || b[i+1] == 'X') {
@@ -529,34 +526,37 @@ func (p *Parser) skipNum(b []byte, st int) (i int, err error) {
 	}
 
 	// integer
+	i, digit := skipInt(b, i, hex)
 
-	digit := false
+	dot := false
 
-	for i < len(b) && (b[i] >= '0' && b[i] <= '9' || hex && (b[i] >= 'a' && b[i] <= 'f' || b[i] >= 'A' && b[i] <= 'F')) {
-		digit = true
+	if dot = i < len(b) && b[i] == '.'; dot {
 		i++
+		i, _ = skipInt(b, i, hex)
 	}
 
-	tail := false
+	exp, exptail := false, false
 
-	switch {
-	case i == len(b):
-	case b[i] == '.':
-		i++
-		i, tail = skipDec(b, i)
-	case b[i] == 'e' || b[i] == 'E':
+	if exp = i < len(b) && (b[i] == 'e' || b[i] == 'E'); exp {
 		i++
 		i = skipSign(b, i)
-		i, tail = skipDec(b, i)
-	case b[i] == 'p' || b[i] == 'P':
-		i++
-		i = skipSign(b, i)
-		i, tail = skipDec(b, i)
-	default:
+		i, exptail = skipInt(b, i, false)
 	}
 
-	if !(digit || tail) {
-		return st, ErrSyntax
+	pexp, pexptail := false, false
+
+	if pexp = i < len(b) && (b[i] == 'p' || b[i] == 'P'); pexp {
+		i++
+		i = skipSign(b, i)
+		i, pexptail = skipInt(b, i, false)
+	}
+
+	ok := (digit || dot) && (!exp || !pexp) && (hex || !pexp) && exp == exptail && pexp == pexptail
+
+	//	log.Printf("parseNum %10q -> %5v  ditdot %5v %5v  hex %5v  exp %5v %5v  pexp %5v %5v", b[st:i], ok, digit, dot, hex, exp, exptail, pexp, pexptail)
+
+	if !ok {
+		return st, ErrBadNumber
 	}
 
 	return i, nil
@@ -565,6 +565,16 @@ func (p *Parser) skipNum(b []byte, st int) (i int, err error) {
 // SkipSpaces skips whitespaces.
 func SkipSpaces(b []byte, i int) int {
 	return (&Parser{}).SkipSpaces(b, i)
+}
+
+func skipInt(b []byte, i int, hex bool) (_ int, ok bool) {
+	for i < len(b) && (b[i] >= '0' && b[i] <= '9' || b[i] == '_' ||
+		hex && (b[i] >= 'a' && b[i] <= 'f' || b[i] >= 'A' && b[i] <= 'F')) {
+		ok = true
+		i++
+	}
+
+	return i, ok
 }
 
 func skipSign(b []byte, i int) int {

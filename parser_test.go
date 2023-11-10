@@ -13,16 +13,11 @@ func TestParser(t *testing.T) {
 
 	for _, d := range []string{
 		"null", "true", "false",
-		"1", "1.1", "1e1", "+1", "-1", "-1.4", "1p+1", "-1p-2", "0x3", "0xf", "0XF",
+		"1", "1.1", "1e1", "+1", "-1", "-1.4", "0x1p+1", "-0x1p-2", "0x3", "0xf", "0XF",
 		`""`, `"a"`, `"abc def"`, `"a\"b\nc\td"`,
 		"[]", "[1, 2, 3]", `[null, "str"]`,
 		"{}", `{"key":"val"}`, `{"k": "v", "k2": 3, "k3": [], "k4": {}, "k5": null}`,
 	} {
-		i, err := p.Skip([]byte(d), 0)
-		if !assert.NoError(t, err) || !assert.Equal(t, len(d), i) {
-			t.Logf("pos: %d (%[1]x)  data: %q", i, d)
-		}
-
 		raw, i, err := p.Raw([]byte(d), 0)
 		if !assert.NoError(t, err) || !assert.Equal(t, len(d), i) || !assert.Equal(t, raw, []byte(d)) {
 			t.Logf("pos: %d (%[1]x)  data: %q", i, d)

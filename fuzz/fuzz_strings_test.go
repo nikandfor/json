@@ -7,6 +7,50 @@ import (
 	"github.com/nikandfor/json"
 )
 
+func FuzzSkip(f *testing.F) {
+	f.Add([]byte(" \t\n"))
+	f.Add([]byte(`null`))
+	f.Add([]byte(`true`))
+	f.Add([]byte(`false`))
+	f.Add([]byte(`NaN`))
+	f.Add([]byte(`Inf`))
+	f.Add([]byte(`-Inf`))
+	f.Add([]byte(`Infinity`))
+	f.Add([]byte(`-Infinity`))
+	f.Add([]byte(`1`))
+	f.Add([]byte(`1.2567`))
+	f.Add([]byte(`-5e+123123`))
+	f.Add([]byte(`6p-10`))
+	f.Add([]byte(`"abc"`))
+	f.Add([]byte(`"a\nbc"`))
+	f.Add([]byte(`[]`))
+	f.Add([]byte(`[1,"str",null,true]`))
+	f.Add([]byte(`{}`))
+	f.Add([]byte(`{"a":"b","c":4}`))
+
+	var p json.Parser
+
+	f.Fuzz(func(t *testing.T, b []byte) {
+		if !stdjson.Valid(b) {
+			return
+		}
+
+		i, err := p.Skip(b, 0)
+		if err != nil {
+			t.Errorf("skip: %v", err)
+		}
+
+		i = p.SkipSpaces(b, i)
+		if i != len(b) {
+			t.Errorf("uncomplete read: %v / %v", i, len(b))
+		}
+
+		if t.Failed() {
+			t.Logf("input: %s", b)
+		}
+	})
+}
+
 func FuzzStringEncodeDecode(f *testing.F) {
 	f.Add([]byte(`abcdef`))
 	f.Add([]byte(`\"/'`))
