@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"unicode/utf8"
 
-	"github.com/nikandfor/json"
+	"nikand.dev/go/json"
 )
 
 type (

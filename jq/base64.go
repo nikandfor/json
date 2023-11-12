@@ -3,7 +3,7 @@ package jq
 import (
 	"encoding/base64"
 
-	"github.com/nikandfor/json"
+	"nikand.dev/go/json"
 )
 
 type (

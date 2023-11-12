@@ -3,7 +3,7 @@ package json
 import (
 	"testing"
 
-	"github.com/nikandfor/json/benchmarks_data"
+	"nikand.dev/go/json/benchmarks_data"
 )
 
 func BenchmarkSkip(b *testing.B) {

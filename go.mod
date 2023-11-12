@@ -1,4 +1,4 @@
-module github.com/nikandfor/json
+module nikand.dev/go/json
 
 go 1.18
 

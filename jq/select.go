@@ -1,7 +1,7 @@
 package jq
 
 import (
-	"github.com/nikandfor/json"
+	"nikand.dev/go/json"
 )
 
 type (

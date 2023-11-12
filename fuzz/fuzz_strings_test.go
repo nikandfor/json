@@ -4,7 +4,7 @@ import (
 	stdjson "encoding/json"
 	"testing"
 
-	"github.com/nikandfor/json"
+	"nikand.dev/go/json"
 )
 
 func FuzzSkip(f *testing.F) {

@@ -3,7 +3,7 @@ package jq
 import (
 	"testing"
 
-	"github.com/nikandfor/json"
+	"nikand.dev/go/json"
 	"github.com/stretchr/testify/assert"
 )
 

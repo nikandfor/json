@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/nikandfor/json/jq"
+	"nikand.dev/go/json/jq"
 )
 
 func ExampleIndex() {

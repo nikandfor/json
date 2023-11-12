@@ -1,6 +1,6 @@
 package jq
 
-import "github.com/nikandfor/json"
+import "nikand.dev/go/json"
 
 type (
 	Iter struct{}

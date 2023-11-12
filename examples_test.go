@@ -3,7 +3,7 @@ package json_test
 import (
 	"fmt"
 
-	"github.com/nikandfor/json"
+	"nikand.dev/go/json"
 )
 
 func ExampleParser() {

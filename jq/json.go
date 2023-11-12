@@ -3,7 +3,7 @@ package jq
 import (
 	"errors"
 
-	"github.com/nikandfor/json"
+	"nikand.dev/go/json"
 )
 
 type (
