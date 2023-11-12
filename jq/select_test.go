@@ -19,7 +19,7 @@ func TestSelect(t *testing.T) {
 	} {
 		w, i, state, err = (&Select{}).Next(w[:0], []byte(data), i, state)
 		assert.NoError(t, err)
-		//	assert.Equal(t, len(data), i)
+		//	assert.Len(t, data, i)
 		assert.Equal(t, exp, string(w))
 	}
 
@@ -38,7 +38,7 @@ func TestMap(t *testing.T) {
 	w, i, state, err := f.Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
 	assert.Nil(t, state)
-	assert.Equal(t, len(data), i)
+	assert.Len(t, data, i)
 	assert.Equal(t, `[5,5,5,5,5]`, string(w))
 
 	f = Map{
@@ -51,6 +51,6 @@ func TestMap(t *testing.T) {
 	w, i, state, err = f.Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
 	assert.Nil(t, state)
-	assert.Equal(t, len(data), i)
+	assert.Len(t, data, i)
 	assert.Equal(t, `[5,6,5,6,5,6,5,6,5,6]`, string(w))
 }

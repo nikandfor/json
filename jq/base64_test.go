@@ -16,7 +16,7 @@ func TestBase64(t *testing.T) {
 
 	res1, i, _, err := e.Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
-	assert.Equal(t, len(data), i)
+	assert.Len(t, data, i)
 	assert.Equal(t, `"YWIKY2Q"`, string(res1))
 
 	d := Base64d{
@@ -25,6 +25,6 @@ func TestBase64(t *testing.T) {
 
 	res2, i, _, err := d.Next(nil, res1, 0, nil)
 	assert.NoError(t, err)
-	assert.Equal(t, len(res1), i)
+	assert.Len(t, res1, i)
 	assert.Equal(t, data, string(res2))
 }

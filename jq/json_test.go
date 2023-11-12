@@ -23,5 +23,5 @@ func TestJSON(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, `{"a":"b"}`, string(res))
 
-	assert.Equal(t, len(data), i)
+	assert.Len(t, data, i)
 }

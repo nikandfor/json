@@ -17,6 +17,8 @@ func BenchmarkSkip(b *testing.B) {
 		{Name: "Medium", Data: benchmarks_data.MediumFixture},
 		{Name: "Large", Data: benchmarks_data.LargeFixture},
 	} {
+		tc := tc
+
 		b.Run(tc.Name, func(b *testing.B) {
 			b.ReportAllocs()
 

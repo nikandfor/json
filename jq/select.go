@@ -28,7 +28,7 @@ func (f *Select) Next(w, r []byte, st int, state State) (_ []byte, i int, _ Stat
 	ff := cfilter(f.Filter, Dot{})
 
 	var sub State
-	ok := false
+	var ok bool
 
 	for {
 		f.Buf, i, sub, err = ff.Next(f.Buf[:0], r, st, sub)

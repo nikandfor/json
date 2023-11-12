@@ -218,7 +218,7 @@ func (f Index) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State,
 	var k []byte
 
 	for p.ForMore(r, &i, typ, &err) {
-		if typ == json.Object {
+		if typ == json.Object { //nolint:nestif
 			k, i, err = p.Key(r, i)
 			if err != nil {
 				return w, i, state, pe(err, i)
@@ -408,7 +408,7 @@ func (f *Comma) state() (ss *commaState) {
 	return ss
 }
 
-func (f Empty) Next(w, r []byte, st int, state *State) (_ []byte, i int, _ *State, err error) {
+func (f Empty) Next(w, r []byte, st int, _ State) (_ []byte, i int, _ State, err error) {
 	var p json.Parser
 
 	i, err = p.Skip(r, st)

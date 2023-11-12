@@ -33,6 +33,8 @@ func BenchmarkIndex(b *testing.B) {
 			Result: []byte(`52`),
 		},
 	} {
+		tc := tc
+
 		b.Run(tc.Name, func(b *testing.B) {
 			b.ReportAllocs()
 

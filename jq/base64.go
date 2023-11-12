@@ -20,13 +20,13 @@ type (
 	}
 )
 
-func (f *Base64) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
+func (f *Base64) Next(w, r []byte, st int, _ State) (_ []byte, i int, _ State, err error) {
 	w, f.Buf, i, err = base64Apply(w, r, st, f.Encoding, true, f.Buf[:0])
 
 	return w, i, nil, err
 }
 
-func (f *Base64d) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
+func (f *Base64d) Next(w, r []byte, st int, _ State) (_ []byte, i int, _ State, err error) {
 	w, f.Buf, i, err = base64Apply(w, r, st, f.Encoding, false, f.Buf[:0])
 
 	return w, i, nil, err

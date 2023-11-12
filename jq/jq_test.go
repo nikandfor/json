@@ -3,8 +3,9 @@ package jq
 import (
 	"testing"
 
-	"nikand.dev/go/json"
 	"github.com/stretchr/testify/assert"
+
+	"nikand.dev/go/json"
 )
 
 type (
@@ -16,32 +17,32 @@ func TestSimple(t *testing.T) {
 
 	b, i, _, err := Dot{}.Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
-	assert.Equal(t, len(data), i)
+	assert.Len(t, data, i)
 	assert.Equal(t, data, string(b))
 
 	b, i, _, err = Index{"a"}.Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
-	assert.Equal(t, len(data), i)
+	assert.Len(t, data, i)
 	assert.Equal(t, `"b"`, string(b))
 
 	b, i, _, err = Index{"c"}.Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
-	assert.Equal(t, len(data), i)
+	assert.Len(t, data, i)
 	assert.Equal(t, `4`, string(b))
 
 	b, i, _, err = Index{"non"}.Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
-	assert.Equal(t, len(data), i)
+	assert.Len(t, data, i)
 	assert.Equal(t, `null`, string(b))
 
 	b, i, _, err = Index{"d", 2}.Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
-	assert.Equal(t, len(data), i)
+	assert.Len(t, data, i)
 	assert.Equal(t, `true`, string(b))
 
 	b, i, _, err = Index{"d", 4, "f"}.Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
-	assert.Equal(t, len(data), i)
+	assert.Len(t, data, i)
 	assert.Equal(t, `3.4`, string(b))
 }
 
@@ -59,19 +60,19 @@ func TestComma(t *testing.T) {
 	b, i, state, err := f.Next(nil, []byte(data), 0, state)
 	assert.NoError(t, err)
 	assert.NotNil(t, state)
-	//	assert.Equal(t, len(data), i)
+	//	assert.Len(t, data, i)
 	assert.Equal(t, `"b"`, string(b))
 
 	b, i, state, err = f.Next(nil, []byte(data), i, state)
 	assert.NoError(t, err)
 	assert.NotNil(t, state)
-	//	assert.Equal(t, len(data), i)
+	//	assert.Len(t, data, i)
 	assert.Equal(t, `4`, string(b))
 
 	b, i, state, err = f.Next(nil, []byte(data), i, state)
 	assert.NoError(t, err)
 	assert.Nil(t, state)
-	assert.Equal(t, len(data), i)
+	assert.Len(t, data, i)
 	assert.Equal(t, `"e"`, string(b))
 }
 
@@ -87,19 +88,19 @@ func TestCommaPipe(t *testing.T) {
 	b, i, state, err := f.Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, state)
-	//	assert.Equal(t, len(data), i)
+	//	assert.Len(t, data, i)
 	assert.Equal(t, `"b"`, string(b))
 
 	b, i, state, err = f.Next(nil, []byte(data), i, state)
 	assert.NoError(t, err)
 	assert.NotNil(t, state)
-	//	assert.Equal(t, len(data), i)
+	//	assert.Len(t, data, i)
 	assert.Equal(t, `4`, string(b))
 
 	b, i, state, err = f.Next(nil, []byte(data), i, state)
 	assert.NoError(t, err)
 	assert.Nil(t, state)
-	assert.Equal(t, len(data), i)
+	assert.Len(t, data, i)
 	assert.Equal(t, `"e"`, string(b))
 }
 
@@ -115,7 +116,7 @@ func TestPipeIndex(t *testing.T) {
 	b, i, state, err := f.Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
 	assert.Nil(t, state)
-	assert.Equal(t, len(data), i)
+	assert.Len(t, data, i)
 	assert.Equal(t, "3.4", string(b))
 
 	//	assert.True(t, cap(f.Bufs[0]) != 0)

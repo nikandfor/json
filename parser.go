@@ -282,7 +282,7 @@ func (p *Parser) More(b []byte, st int, typ byte) (more bool, i int, err error) 
 }
 
 // ForMore is a convenient wrapper for More which makes iterating code shorter and simpler.
-func (p *Parser) ForMore(b []byte, i *int, typ byte, errp *error) bool {
+func (p *Parser) ForMore(b []byte, i *int, typ byte, errp *error) bool { //nolint:gocritic
 	more, j, err := p.More(b, *i, typ)
 	*i = j
 
@@ -533,7 +533,7 @@ func (p *Parser) skipNum(b []byte, st int) (i int, err error) {
 	}
 
 	// 0x
-	hex := false
+	var hex bool
 
 	if i+2 < len(b) && b[i] == '0' && (b[i+1] == 'x' || b[i+1] == 'X') {
 		hex = true
@@ -543,14 +543,14 @@ func (p *Parser) skipNum(b []byte, st int) (i int, err error) {
 	// integer
 	i, digit := skipInt(b, i, hex)
 
-	dot := false
+	var dot bool
 
 	if dot = i < len(b) && b[i] == '.'; dot {
 		i++
 		i, _ = skipInt(b, i, hex)
 	}
 
-	exp, exptail := false, false
+	var exp, exptail bool
 
 	if exp = i < len(b) && (b[i] == 'e' || b[i] == 'E'); exp {
 		i++
@@ -558,7 +558,7 @@ func (p *Parser) skipNum(b []byte, st int) (i int, err error) {
 		i, exptail = skipInt(b, i, false)
 	}
 
-	pexp, pexptail := false, false
+	var pexp, pexptail bool
 
 	if pexp = i < len(b) && (b[i] == 'p' || b[i] == 'P'); pexp {
 		i++
@@ -600,7 +600,7 @@ func skipInt(b []byte, i int, hex bool) (_ int, ok bool) {
 }
 
 func decodeRune(w, b []byte, i int) ([]byte, int, error) {
-	size := 0
+	var size int
 
 	switch b[i] {
 	case 'x':
