@@ -7,7 +7,7 @@ import (
 )
 
 func BenchmarkSkip(b *testing.B) {
-	var p Parser
+	var d Decoder
 
 	for _, tc := range []struct {
 		Name string
@@ -23,7 +23,7 @@ func BenchmarkSkip(b *testing.B) {
 			b.ReportAllocs()
 
 			for i := 0; i < b.N; i++ {
-				_, err := p.Skip(tc.Data, 0)
+				_, err := d.Skip(tc.Data, 0)
 				if err != nil {
 					b.Errorf("skip: %v", err)
 				}

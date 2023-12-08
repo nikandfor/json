@@ -5,7 +5,7 @@ import (
 )
 
 type (
-	Generator struct {
+	Encoder struct {
 		//	ASCII bool // escape Unicode symbols except printable ASCII range.
 	}
 )
@@ -28,9 +28,9 @@ func init() {
 
 // EncodeString encodes string in a JSON compatible way.
 // It also adds quotes.
-func (g *Generator) EncodeString(w, s []byte) []byte {
+func (e *Encoder) EncodeString(w, s []byte) []byte {
 	w = append(w, '"')
-	w = g.EncodeStringContent(w, s)
+	w = e.EncodeStringContent(w, s)
 	w = append(w, '"')
 
 	return w
@@ -40,7 +40,7 @@ func (g *Generator) EncodeString(w, s []byte) []byte {
 // It can be used to generate the string from multiple parts.
 // Yet if a symbol designated to be escaped is split between parts
 // it encodes each part of the symbol separately.
-func (g *Generator) EncodeStringContent(w, s []byte) []byte {
+func (e *Encoder) EncodeStringContent(w, s []byte) []byte {
 	done := 0
 
 	for i := 0; i < len(s); {

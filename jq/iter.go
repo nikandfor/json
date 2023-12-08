@@ -7,7 +7,7 @@ type (
 )
 
 func (f Iter) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
-	var p json.Parser
+	var p json.Decoder
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {

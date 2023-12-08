@@ -6,12 +6,12 @@ import (
 	"nikand.dev/go/json"
 )
 
-func ExampleParser() {
-	var p json.Parser
+func ExampleDecoder() {
+	var d json.Decoder
 	data := []byte(`{"key": "value", "another": 1234}`)
 
 	i := 0 // initial position
-	i, err := p.Enter(data, i, json.Object)
+	i, err := d.Enter(data, i, json.Object)
 	if err != nil {
 		// not an object
 	}
@@ -21,19 +21,19 @@ func ExampleParser() {
 	// extracted values
 	var value, another []byte
 
-	for p.ForMore(data, &i, json.Object, &err) {
-		key, i, err = p.Key(data, i) // key decodes a string but don't decode '\n', '\"', '\xXX' and others
+	for d.ForMore(data, &i, json.Object, &err) {
+		key, i, err = d.Key(data, i) // key decodes a string but don't decode '\n', '\"', '\xXX' and others
 		if err != nil {
 			// ...
 		}
 
 		switch string(key) {
 		case "key":
-			value, i, err = p.DecodeString(data, i, value[:0]) // reuse value buffer if we are in a loop or something
+			value, i, err = d.DecodeString(data, i, value[:0]) // reuse value buffer if we are in a loop or something
 		case "another":
-			another, i, err = p.Raw(data, i)
+			another, i, err = d.Raw(data, i)
 		default: // skip additional keys
-			i, err = p.Skip(data, i)
+			i, err = d.Skip(data, i)
 		}
 
 		// check error for all switch cases
@@ -52,22 +52,22 @@ func ExampleParser() {
 	// another: 1234
 }
 
-func ExampleParser_multipleValues() {
+func ExampleDecoder_multipleValues() {
 	var err error // to not to shadow i in a loop
-	var p json.Parser
+	var d json.Decoder
 	data := []byte(`"a", 2 3
 ["array"]
 `)
 
 	processOneObject := func(data []byte, st int) (int, error) {
-		raw, i, err := p.Raw(data, st)
+		raw, i, err := d.Raw(data, st)
 
 		fmt.Printf("value: %s\n", raw)
 
 		return i, err
 	}
 
-	for i := p.SkipSpaces(data, 0); i < len(data); i = p.SkipSpaces(data, i) { // eat trailing spaces and not try to read the value from string "\n"
+	for i := d.SkipSpaces(data, 0); i < len(data); i = d.SkipSpaces(data, i) { // eat trailing spaces and not try to read the value from string "\n"
 		i, err = processOneObject(data, i) // do not use := here as it shadow i and loop will restart from the same index
 		if err != nil {
 			// ...

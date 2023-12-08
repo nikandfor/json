@@ -28,7 +28,7 @@ func FuzzSkip(f *testing.F) {
 	f.Add([]byte(`{}`))
 	f.Add([]byte(`{"a":"b","c":4}`))
 
-	var p json.Parser
+	var p json.Decoder
 
 	f.Fuzz(func(t *testing.T, b []byte) {
 		if !stdjson.Valid(b) {
@@ -58,8 +58,8 @@ func FuzzStringEncodeDecode(f *testing.F) {
 	f.Add([]byte("\x13"))
 	f.Add([]byte("\xf8"))
 
-	var g json.Generator
-	var p json.Parser
+	var g json.Encoder
+	var p json.Decoder
 
 	//	g.ASCII = true
 
@@ -136,7 +136,7 @@ func FuzzStringDecode(f *testing.F) {
 	f.Add([]byte(`"\ufffd"`))
 	f.Add([]byte(`"\u2028"`))
 
-	var p json.Parser
+	var p json.Decoder
 
 	f.Fuzz(func(t *testing.T, data []byte) {
 		b, i, err := p.DecodeString(data, 0, nil)

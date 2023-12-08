@@ -18,7 +18,7 @@ type (
 )
 
 func (f *Select) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var p json.Parser
+	var p json.Decoder
 
 	raw, i, err := p.Raw(r, st)
 	if err != nil {
@@ -58,7 +58,7 @@ func (f *Select) Next(w, r []byte, st int, state State) (_ []byte, i int, _ Stat
 }
 
 func (f *Map) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var p json.Parser
+	var p json.Decoder
 
 	ff := f.Filter
 	if ff == nil {
@@ -146,7 +146,7 @@ func (f *Map) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, 
 }
 
 func IsTrue(val []byte, st int) (bool, int, error) {
-	var p json.Parser
+	var p json.Decoder
 
 	st = p.SkipSpaces(val, st)
 	if st == len(val) {

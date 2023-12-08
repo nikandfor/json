@@ -10,11 +10,11 @@
 Yet another json library.
 It's created to process unstructured json in a convenient and efficient way.
 
-There is also some set of [jq](https://jqlang.github.io/jq/manual/) filters implemented on top of `json.Parser`.
+There is also some set of [jq](https://jqlang.github.io/jq/manual/) filters implemented on top of `json.Decoder`.
 
 ## json usage
 
-`Parser` is stateless.
+`Decoder` is stateless.
 Most of the methods take source buffer and index where to start parsing and return a result and index where they stopped parsing.
 
 None of methods make a copy or allocate except these which take destination buffer in arguments.
@@ -24,11 +24,11 @@ The code is from [examples](./examples_test.go).
 ```go
 // Parsing single object.
 
-var p json.Parser
+var d json.Decoder
 data := []byte(`{"key": "value", "another": 1234}`)
 
 i := 0 // initial position
-i, err := p.Enter(data, i, json.Object)
+i, err := d.Enter(data, i, json.Object)
 if err != nil {
 	// not an object
 }
@@ -38,19 +38,19 @@ var key []byte // to not to shadow i and err in a loop
 // extracted values
 var value, another []byte
 
-for p.ForMore(data, &i, json.Object, &err) {
-	key, i, err = p.Key(data, i) // key decodes a string but don't decode '\n', '\"', '\xXX' and others
+for d.ForMore(data, &i, json.Object, &err) {
+	key, i, err = d.Key(data, i) // key decodes a string but don't decode '\n', '\"', '\xXX' and others
 	if err != nil {
 		// ...
 	}
 
 	switch string(key) {
 	case "key":
-		value, i, err = p.DecodeString(data, i, value[:0]) // reuse value buffer if we are in a loop or something
+		value, i, err = d.DecodeString(data, i, value[:0]) // reuse value buffer if we are in a loop or something
 	case "another":
-		another, i, err = p.Raw(data, i)
+		another, i, err = d.Raw(data, i)
 	default: // skip additional keys
-		i, err = p.Skip(data, i)
+		i, err = d.Skip(data, i)
 	}
 
 	// check error for all switch cases
@@ -67,12 +67,12 @@ if err != nil {
 // Parsing jsonl: newline (or space, or comma) delimited values.
 
 var err error // to not to shadow i in a loop
-var p json.Parser
+var d json.Decoder
 data := []byte(`"a", 2 3
 ["array"]
 `)
 
-for i := p.SkipSpaces(data, 0); i < len(data); i = p.SkipSpaces(data, i) { // eat trailing spaces and not try to read the value from string "\n"
+for i := d.SkipSpaces(data, 0); i < len(data); i = d.SkipSpaces(data, i) { // eat trailing spaces and not try to read the value from string "\n"
 	i, err = processOneObject(data, i) // do not use := here as it shadow i and loop will restart from the same index
 	if err != nil {
 		// ...

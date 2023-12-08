@@ -9,7 +9,7 @@ type (
 )
 
 func (f Cat) Next(w, r []byte, st int, _ State) (_ []byte, i int, _ State, err error) {
-	var p json.Parser
+	var p json.Decoder
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {

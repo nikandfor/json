@@ -16,7 +16,7 @@ type (
 )
 
 func (f *JSONDecoder) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var p json.Parser
+	var p json.Decoder
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
