@@ -1,0 +1,106 @@
+package json
+
+// Seek seeks to the beginning of the value at the path – list of object keys and array indexes.
+// If you parse multiple object and you only need one value from each,
+// it's good to use Break(len(path)) to move to the beginning of the next object.
+func (d *Decoder) Seek(b []byte, st int, path ...interface{}) (i int, err error) {
+	i = st
+
+	for _, p := range path {
+		switch p := p.(type) {
+		case string:
+			i, err = d.seekObj(b, i, p)
+		case int:
+			i, err = d.seekArr(b, i, p)
+		}
+
+		if err != nil {
+			return i, err
+		}
+	}
+
+	return i, nil
+}
+
+func (d *Decoder) seekObj(b []byte, st int, key string) (i int, err error) {
+	i, err = d.Enter(b, st, Object)
+	if err != nil {
+		return
+	}
+
+	var k []byte
+
+	for err == nil && d.ForMore(b, &i, Object, &err) {
+		k, i, err = d.Key(b, i)
+		if err != nil {
+			return
+		}
+
+		if string(k) != key {
+			i, err = d.Skip(b, i)
+			continue
+		}
+
+		_, i, err = d.Type(b, i)
+		return
+	}
+	if err != nil {
+		return
+	}
+
+	return st, ErrNoSuchKey
+}
+
+func (d *Decoder) seekArr(b []byte, st, idx int) (i int, err error) {
+	if idx < 0 {
+		l, i, err := d.arrayLen(b, st)
+		if err != nil {
+			return i, err
+		}
+
+		idx = l + idx
+	}
+	if idx < 0 {
+		return st, ErrOutOfBounds
+	}
+
+	i, err = d.Enter(b, st, Array)
+	if err != nil {
+		return
+	}
+
+	j := 0
+
+	for err == nil && d.ForMore(b, &i, Array, &err) {
+		if j == idx {
+			_, i, err = d.Type(b, i)
+			return
+		}
+
+		i, err = d.Skip(b, i)
+		j++
+	}
+	if err != nil {
+		return
+	}
+
+	return st, ErrOutOfBounds
+}
+
+func (d *Decoder) arrayLen(b []byte, st int) (l, i int, err error) {
+	i, err = d.Enter(b, st, Array)
+	if err != nil {
+		return
+	}
+
+	for err == nil && d.ForMore(b, &i, Array, &err) {
+		i, err = d.Skip(b, i)
+		if err != nil {
+			break
+		}
+
+		l++
+	}
+
+	return
+}

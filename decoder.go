@@ -57,6 +57,8 @@ var (
 	ErrBadRune     = errors.New("bad rune")
 	ErrBadString   = errors.New("bad string")
 	ErrEndOfBuffer = errors.New("unexpected end of buffer")
+	ErrNoSuchKey   = errors.New("no such object key")
+	ErrOutOfBounds = errors.New("out of array bounds")
 	ErrSyntax      = errors.New("syntax error")
 	ErrType        = errors.New("incompatible type")
 )
