@@ -28,7 +28,7 @@ type (
 	Decoder struct{}
 )
 
-var (
+var ( // bitsets
 	whitespaces uint64
 	decimals    uint64
 	hexdecimals uint64 // -64 offset

@@ -36,13 +36,12 @@ func (d *Decoder) seekObj(b []byte, st int, key string) (i int, err error) {
 			return
 		}
 
-		if string(k) != key {
-			i, err = d.Skip(b, i)
-			continue
+		if string(k) == key {
+			_, i, err = d.Type(b, i)
+			return
 		}
 
-		_, i, err = d.Type(b, i)
-		return
+		i, err = d.Skip(b, i)
 	}
 	if err != nil {
 		return
