@@ -8,9 +8,6 @@ import (
 )
 
 func TestReflect(tb *testing.T) {
-	var x int
-	var xp *int
-
 	f := func(x interface{}) {
 		r := reflect.TypeOf(x)
 		tp, d := unpack(x)
@@ -18,9 +15,19 @@ func TestReflect(tb *testing.T) {
 		tb.Logf("type %T: ptr %5v  indir %5v  tp/d %x %x", x, r.Kind() == reflect.Pointer, ifaceIndir(tp), tp, d)
 	}
 
+	var x int
+	var xp *int
+
 	f(x)
 	f(xp)
 	f(&xp)
+
+	var s string
+	var sp *string
+
+	f(s)
+	f(sp)
+	f(&sp)
 }
 
 func TestUnmarshal(tb *testing.T) {
