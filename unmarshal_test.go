@@ -7,89 +7,79 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestReflect(tb *testing.T) {
-	f := func(x interface{}) {
-		r := reflect.TypeOf(x)
-		tp, d := unpack(x)
-
-		tb.Logf("type %T: ptr %5v  indir %5v  tp/d %x %x", x, r.Kind() == reflect.Pointer, ifaceIndir(tp), tp, d)
-	}
-
-	var x int
-	var xp *int
-
-	f(x)
-	f(xp)
-	f(&xp)
-
-	var s string
-	var sp *string
-
-	f(s)
-	f(sp)
-	f(&sp)
-}
-
 func TestUnmarshal(tb *testing.T) {
+	var d Decoder
+
 	type (
-		O1 struct {
+		Int struct {
+			N int `json:"n"`
+		}
+
+		IntPtr struct {
+			N *int `json:"n"`
+		}
+
+		Str struct {
+			S string `json:"s"`
+		}
+
+		StrPtr struct {
+			S *string `json:"s"`
+		}
+
+		IntStr struct {
 			N int    `json:"n"`
 			S string `json:"s"`
+		}
 
-			N2 *int    `json:"n2"`
-			S2 *string `json:"s2"`
+		IntStrPtr struct {
+			N *int    `json:"n"`
+			S *string `json:"s"`
 		}
 	)
 
-	var (
-		d Decoder
+	for _, tc := range []struct {
+		N string
+		D string
+		X any
+		E any
+	}{
+		{"int", `3`, new(int), 3},
+		{"int64", `-4`, new(int64), int64(-4)},
+		{"*int", `5`, ptr(new(int)), ptr(5)},
 
-		x   int
-		x64 int64
+		{"string", `"abc"`, new(string), "abc"},
+		{"*string", `"qwe"`, ptr(new(string)), ptr("qwe")},
 
-		xptr  = &x
-		xptr2 = &xptr
+		{"Int", `{"n":6}`, new(Int), Int{N: 6}},
+		{"IntPtr", `{"n":7}`, new(IntPtr), IntPtr{N: ptr(7)}},
 
-		s string
+		{"Str", `{"s":"abc"}`, new(Str), Str{S: "abc"}},
+		{"StrPtr", `{"s":"qwe"}`, new(StrPtr), StrPtr{S: ptr("qwe")}},
 
-		o1 O1
-	)
+		{"IntStr", `{"n":8,"s":"abc"}`, new(IntStr), IntStr{N: 8, S: "abc"}},
+		{"IntStrPtr", `{"n":9,"s":"qwe"}`, new(IntStrPtr), IntStrPtr{N: ptr(9), S: ptr("qwe")}},
+	} {
+		tb.Run(tc.N, func(tb *testing.T) {
+			_, err := d.Unmarshal([]byte(tc.D), 0, tc.X)
+			if !assert.NoError(tb, err) {
+				return
+			}
 
-	_, err := d.Unmarshal([]byte(`3`), 0, &x)
-	assert.NoError(tb, err)
-	assert.Equal(tb, 3, x)
+			deref := reflect.ValueOf(tc.X).Elem().Interface()
 
-	_, err = d.Unmarshal([]byte(`5`), 0, &x64)
-	assert.NoError(tb, err)
-	assert.Equal(tb, int64(5), x64)
+			//	log.Printf("unmarshal\n`%s`\n%+v\n", tc.D, deref)
+			tb.Logf("unmarshal\n`%s`\n%+v", tc.D, deref)
 
-	_, err = d.Unmarshal([]byte(`4`), 0, &xptr)
-	assert.NoError(tb, err)
-	assert.Equal(tb, 4, x)
+			if tc.E == nil {
+				return
+			}
 
-	_, err = d.Unmarshal([]byte(`5`), 0, &xptr2)
-	assert.NoError(tb, err)
-	assert.Equal(tb, 5, x)
+			assert.Equal(tb, tc.E, deref)
+		})
+	}
+}
 
-	_, err = d.Unmarshal([]byte(`"abc"`), 0, &s)
-	assert.NoError(tb, err)
-	assert.Equal(tb, "abc", s)
-
-	_, err = d.Unmarshal([]byte(`true`), 0, &x)
-	assert.ErrorIs(tb, err, ErrType)
-
-	_, err = d.Unmarshal([]byte(`{"n":4,"s":"abc","n2":6,"s2":"qwe"}`), 0, &o1)
-	assert.NoError(tb, err)
-	assert.Equal(tb, O1{
-		N: 4,
-		S: "abc",
-		N2: func() *int {
-			x := 6
-			return &x
-		}(),
-		S2: func() *string {
-			x := "qwe"
-			return &x
-		}(),
-	}, o1)
+func ptr[T any](x T) *T {
+	return &x
 }

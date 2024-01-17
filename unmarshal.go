@@ -1,8 +1,8 @@
 package json
 
 import (
-	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"strconv"
 	"sync"
@@ -14,7 +14,7 @@ type (
 		UnmarshalJSON(b []byte, st int) (i int, err error)
 	}
 
-	unmarshaler = func(d *Decoder, b []byte, st int, x interface{}) (int, error)
+	unmarshaler = func(d *Decoder, b []byte, st int, tp, p unsafe.Pointer) (int, error)
 
 	anyInt interface {
 		~int | ~int64 | ~int32 | ~int16 | ~int8
@@ -30,75 +30,60 @@ type (
 )
 
 var (
-	mu    sync.Mutex
-	uns   = map[unsafe.Pointer]unmarshaler{}
-	progs = map[reflect.Type]*structProg{}
+	mu  sync.Mutex
+	uns = map[unsafe.Pointer]unmarshaler{}
 )
 
 func (d *Decoder) Unmarshal(b []byte, st int, v interface{}) (int, error) {
-	un, err := d.unmarshaler(v)
+	tp, p := unpack(v)
+
+	un, err := d.unmarshaler(tp)
 	if err != nil {
 		return st, errWrap(err, "get decoder")
 	}
 
-	return un(d, b, st, v)
+	return un(d, b, st, tp, p)
 }
 
-func (d *Decoder) un(tp unsafe.Pointer) unmarshaler {
+func (d *Decoder) unmarshaler(tp unsafe.Pointer) (un unmarshaler, err error) {
 	defer mu.Unlock()
 	mu.Lock()
 
-	return uns[tp]
+	un, err = d.compile(tp)
+	if err != nil {
+		return nil, err
+	}
+
+	return un, nil
 }
 
-func (d *Decoder) unmarshaler(v interface{}) (unmarshaler, error) {
-	tp, _ := unpack(v)
+func (d *Decoder) compile(tp unsafe.Pointer) (un unmarshaler, err error) {
+	log.Printf("compile %14v [%10x]", tpString(tp), tp)
 
-	defer mu.Unlock()
-	mu.Lock()
-
-	un := uns[tp]
-	if un != nil {
+	if un, ok := uns[tp]; ok {
 		return un, nil
 	}
 
-	r := reflect.TypeOf(v)
-
-	if r.Kind() != reflect.Pointer {
-		return nil, errors.New("expected pointer to a value")
-	}
-
-	return d.compile(r)
-}
-
-func (d *Decoder) compile(r reflect.Type) (un unmarshaler, err error) {
-	orig := r
-
-	_, tp := unpack(r)
-	//	log.Printf("compile %10v  ptr %5v  indir %5v", r, r.Kind() == reflect.Pointer, ifaceIndir(tp))
-
-	uns[tp] = nil // break recursion circle
-
-	defer func() {
+	uns[tp] = nil
+	defer func(tp unsafe.Pointer) {
 		uns[tp] = un
-	}()
 
-	if r.Kind() == reflect.Pointer {
-		r = r.Elem()
+		if err != nil {
+			delete(uns, tp)
+		}
+	}(tp)
 
-		un, err := d.compile(r)
+	switch tpKind(tp) {
+	case reflect.Pointer:
+		tp := tpElem(tp)
+
+		un, err := d.compile(tp)
 		if err != nil {
 			return nil, err
 		}
 
-		if r.Kind() != reflect.Pointer {
-			return un, nil
-		}
-
 		return unPtr(tp, un), nil
-	}
 
-	switch r.Kind() {
 	case reflect.Int:
 		return unInt[int], nil
 	case reflect.Int64:
@@ -133,19 +118,26 @@ func (d *Decoder) compile(r reflect.Type) (un unmarshaler, err error) {
 		return unString, nil
 
 	case reflect.Struct:
-		return d.compileStruct(r)
+		return d.compileStruct(tp)
 
 	default:
-		return nil, errNew("unsupported type: %v", orig)
+		return nil, errNew("unsupported type: %v", tpString(tp))
 	}
 }
 
-func unInt[T anyInt](d *Decoder, b []byte, st int, v interface{}) (i int, err error) {
-	tp, i, err := d.Type(b, st)
+func un(tp unsafe.Pointer) unmarshaler {
+	defer mu.Unlock()
+	mu.Lock()
+
+	return uns[tp]
+}
+
+func unInt[T anyInt](d *Decoder, b []byte, st int, tp, p unsafe.Pointer) (i int, err error) {
+	jtp, i, err := d.Type(b, st)
 	if err != nil {
 		return i, err
 	}
-	if tp != Number {
+	if jtp != Number {
 		return i, ErrType
 	}
 
@@ -154,27 +146,24 @@ func unInt[T anyInt](d *Decoder, b []byte, st int, v interface{}) (i int, err er
 		return i, err
 	}
 
-	//	{
-	//		t, d := unpack(v)
-	//		log.Printf("unmarshal %q to %T  %x %x", tp, T(0), t, d)
-	//	}
+	undbg[T](Number, tp, p)
 
 	x, err := strconv.ParseInt(string(raw), 10, 8*int(unsafe.Sizeof(T(0))))
 	if err != nil {
 		return st, err
 	}
 
-	*(*T)(vptr(v)) = T(x)
+	*(*T)(p) = T(x)
 
 	return i, nil
 }
 
-func unUint[T anyUint](d *Decoder, b []byte, st int, v interface{}) (i int, err error) {
-	tp, i, err := d.Type(b, st)
+func unUint[T anyUint](d *Decoder, b []byte, st int, tp, p unsafe.Pointer) (i int, err error) {
+	jtp, i, err := d.Type(b, st)
 	if err != nil {
 		return i, err
 	}
-	if tp != Number {
+	if jtp != Number {
 		return i, ErrType
 	}
 
@@ -188,17 +177,17 @@ func unUint[T anyUint](d *Decoder, b []byte, st int, v interface{}) (i int, err 
 		return st, err
 	}
 
-	*(*T)(vptr(v)) = T(x)
+	*(*T)(p) = T(x)
 
 	return i, nil
 }
 
-func unFloat[T anyFloat](d *Decoder, b []byte, st int, v interface{}) (i int, err error) {
-	tp, i, err := d.Type(b, st)
+func unFloat[T anyFloat](d *Decoder, b []byte, st int, tp, p unsafe.Pointer) (i int, err error) {
+	jtp, i, err := d.Type(b, st)
 	if err != nil {
 		return i, err
 	}
-	if tp != Number {
+	if jtp != Number {
 		return i, ErrType
 	}
 
@@ -212,17 +201,17 @@ func unFloat[T anyFloat](d *Decoder, b []byte, st int, v interface{}) (i int, er
 		return st, err
 	}
 
-	*(*T)(vptr(v)) = T(x)
+	*(*T)(p) = T(x)
 
 	return i, nil
 }
 
-func unBool(d *Decoder, b []byte, st int, v interface{}) (i int, err error) {
-	tp, i, err := d.Type(b, st)
+func unBool(d *Decoder, b []byte, st int, tp, p unsafe.Pointer) (i int, err error) {
+	jtp, i, err := d.Type(b, st)
 	if err != nil {
 		return i, err
 	}
-	if tp != Bool {
+	if jtp != Bool {
 		return i, ErrType
 	}
 
@@ -236,31 +225,53 @@ func unBool(d *Decoder, b []byte, st int, v interface{}) (i int, err error) {
 		return st, err
 	}
 
-	*(*bool)(vptr(v)) = x
+	*(*bool)(p) = x
 
 	return i, nil
 }
 
-func unString(d *Decoder, b []byte, st int, v interface{}) (i int, err error) {
+func unString(d *Decoder, b []byte, st int, tp, p unsafe.Pointer) (i int, err error) {
 	x, i, err := d.DecodeString(b, st, nil)
 	if err != nil {
 		return
 	}
 
-	*(*string)(vptr(v)) = string(x)
+	undbg[string](String, tp, p)
+
+	s := string(x)
+
+	*(**byte)(p) = *(**byte)(unsafe.Pointer(&s))
+	*(*int)(unsafe.Add(p, unsafe.Sizeof((*byte)(nil)))) = len(s)
 
 	return i, nil
 }
 
 func unPtr(tp unsafe.Pointer, un unmarshaler) unmarshaler {
-	return func(d *Decoder, b []byte, st int, v interface{}) (i int, err error) {
-		ptr := (*unsafe.Pointer)(vptr(v))
+	//	ptp := ptrTo(tp)
+	indir := ifaceIndir(tp)
 
-		if *ptr == nil {
-			*ptr = unsafeNew(tp)
+	return func(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error) {
+		pp := (*unsafe.Pointer)(p)
+
+		al := '.'
+		if *pp == nil && !indir {
+			al = 'a'
+			*pp = unsafeNew(tp)
 		}
 
-		return un(d, b, st, pack(tp, *ptr))
+		p2 := *pp
+		if indir {
+			p2 = p
+		}
+
+		id := 'e'
+		if indir {
+			id = '*'
+		}
+
+		log.Printf("unPtr   %14v %10x => %14v %10x  ptr %x -> %x : %x %c%c", tpString(t), t, tpString(tp), tp, p, *pp, p2, id, al)
+
+		return un(d, b, st, tp, p2)
 	}
 }
 
@@ -270,4 +281,14 @@ func errNew(f string, args ...interface{}) error {
 
 func errWrap(err error, f string) error {
 	return fmt.Errorf("%v: %w", f, err)
+}
+
+func undbg[T any](jtp byte, tp, p unsafe.Pointer) {
+	//	t, d := unpack(v)
+	//	size := tpSize(tp)
+	//	val := *(*unsafe.Pointer)(p)
+	//	base, _, _ := findObject(p, 0, 0)
+	//	endBase, _, _ := findObject(unsafe.Add(p, size-1), 0, 0)
+	log.Printf("unm %c   %14v %10x -> %10x", jtp, tpString(tp), tp, p)
+	// log.Printf("unmarshal %q to %14v  %x %x  base %x %x  size %x  val %x", jtp, tpString(tp), tp, p, base, endBase, size, val)
 }

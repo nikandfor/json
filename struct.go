@@ -1,109 +1,81 @@
 package json
 
 import (
-	"fmt"
-	"reflect"
+	"log"
 	"strings"
 	"unsafe"
 )
 
 type (
 	structProg struct {
-		dec map[string]*field
+		enc []*structField
+		dec map[string]*structField
 	}
 
-	field struct {
-		name string
+	structField struct {
+		tp unsafe.Pointer
 
-		tp  unsafe.Pointer
 		off uintptr
-
-		make func(unsafe.Pointer) unsafe.Pointer
-
-		bits fieldBits
 	}
-
-	fieldBits uint8
 )
 
-const (
-	fieldPtr = 1 << iota
+var (
+	// protected by mu
+	progs = map[unsafe.Pointer]*structProg{}
 )
 
-func (d *Decoder) compileStruct(r reflect.Type) (unmarshaler, error) {
-	if p, ok := progs[r]; ok {
+func (d *Decoder) compileStruct(tp unsafe.Pointer) (unmarshaler, error) {
+	if p, ok := progs[tp]; ok {
 		return p.unmarshal, nil
 	}
 
 	p := &structProg{
-		dec: map[string]*field{},
+		dec: map[string]*structField{},
 	}
 
-	progs[r] = p
-
-	err := d.compileStructFields(p, r)
+	err := d.compileStructFields(tp, p)
 	if err != nil {
 		return nil, err
 	}
 
-	//	log.Printf("compiled struct %v %+v", r, p)
+	progs[tp] = p
 
 	return p.unmarshal, nil
 }
 
-func (d *Decoder) compileStructFields(p *structProg, r reflect.Type) error {
+func (d *Decoder) compileStructFields(tp unsafe.Pointer, p *structProg) error {
+	r := toType(tp)
+
 	for i := 0; i < r.NumField(); i++ {
 		sf := r.Field(i)
 
-		//	log.Printf("field %+v", sf)
-
 		tag := strings.Split(sf.Tag.Get("json"), ",")
 
-		if len(tag) != 0 && tag[0] == "-" {
+		if len(tag) == 0 || tag[0] == "-" {
 			continue
 		}
 
-		if sf.Anonymous {
-			err := d.compileStructFields(p, sf.Type)
-			if err != nil {
-				return err
-			}
+		_, tp := unpack(sf.Type)
 
-			continue
-		}
-
-		_, err := d.compile(sf.Type)
+		_, err := d.compile(ptrTo(tp))
 		if err != nil {
-			return fmt.Errorf("%v: %w", sf.Name, err)
+			return err
 		}
 
-		f := &field{
-			name: sf.Name,
-			off:  sf.Offset,
+		f := &structField{
+			tp: tp,
+
+			off: sf.Offset,
 		}
 
-		_, f.tp = unpack(sf.Type)
-
-		if sf.Type.Kind() == reflect.Pointer {
-			f.bits |= fieldPtr
-			f.make = unsafeNew
-		}
-
-		if len(tag) != 0 {
-			f.name = tag[0]
-		}
-
-		p.dec[f.name] = f
+		p.enc = append(p.enc, f)
+		p.dec[tag[0]] = f
 	}
 
 	return nil
 }
 
-func (p *structProg) unmarshal(d *Decoder, b []byte, st int, v interface{}) (i int, err error) {
-	_, ptr := unpack(v)
-
-	//	log.Printf("unmarshal struct %15T  ptr %12x", v, ptr)
-
+func (pr *structProg) unmarshal(d *Decoder, b []byte, st int, tp, p unsafe.Pointer) (i int, err error) {
 	i, err = d.Enter(b, st, Object)
 	if err != nil {
 		return
@@ -117,33 +89,18 @@ func (p *structProg) unmarshal(d *Decoder, b []byte, st int, v interface{}) (i i
 			return
 		}
 
-		f, ok := p.dec[string(k)]
+		f, ok := pr.dec[string(k)]
 		if !ok {
 			i, err = d.Skip(b, i)
 			continue
 		}
 
-		fptr := unsafe.Add(ptr, f.off)
+		fp := unsafe.Add(p, f.off)
+		un := un(f.tp)
 
-		//	log.Printf("unmarshal struct %15T  ptr %12x  off %12x  bits %x  field %s", v, fptr, f.off, f.bits, k)
+		log.Printf("field   %14v %10x -> %10x is %10x + %4x  name %s", tpString(f.tp), f.tp, fp, p, f.off, k)
 
-		if f.bits&fieldPtr != 0 {
-			fptr2 := (*unsafe.Pointer)(fptr) // cast field offset to a pointer
-
-			if *fptr2 == nil {
-				*fptr2 = f.make(f.tp)
-				//	log.Printf("allocated new object for field at %x -> %x", fptr2, *fptr2)
-			}
-
-			fptr = *fptr2
-
-			//	log.Printf("unmarshal field pointer dereferenced to %x", fptr)
-		}
-
-		vf := pack(f.tp, fptr)
-
-		un := d.un(f.tp)
-		i, err = un(d, b, i, vf)
+		i, err = un(d, b, i, f.tp, fp)
 	}
 
 	if err != nil {
