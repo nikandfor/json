@@ -6,6 +6,10 @@ issues:
     - "undbg"
     - "flags"
   exclude-rules:
+    - path: benchmarks_data
+      linters:
+        - stylecheck
+        - lll
     - path: "(.*)_test\\.go"
       linters:
         - goconst

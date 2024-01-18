@@ -7,6 +7,8 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+
+	"nikand.dev/go/json/benchmarks_data"
 )
 
 func TestUnmarshal(tb *testing.T) {
@@ -160,6 +162,29 @@ func TestUnmarshal(tb *testing.T) {
 			assert.Equal(tb, exp, res)
 		})
 	}
+}
+
+func TestUnmarshalData(tb *testing.T) {
+	var d Decoder
+
+	var small benchmarks_data.SmallPayload
+
+	i, err := d.Unmarshal(benchmarks_data.SmallFixture, 0, &small)
+	assert.NoError(tb, err)
+	assert.Equal(tb, len(benchmarks_data.SmallFixture), i)
+
+	var medium benchmarks_data.MediumPayload
+
+	i, err = d.Unmarshal(benchmarks_data.MediumFixture, 0, &medium)
+	assert.NoError(tb, err)
+	assert.Equal(tb, len(benchmarks_data.MediumFixture), i)
+
+	var large benchmarks_data.LargePayload
+
+	i, err = d.Unmarshal(benchmarks_data.LargeFixture, 0, &large)
+	assert.NoError(tb, err)
+	i = SkipSpaces(benchmarks_data.LargeFixture, i)
+	assert.Equal(tb, len(benchmarks_data.LargeFixture), i)
 }
 
 func ptr[T any](x T) *T {
