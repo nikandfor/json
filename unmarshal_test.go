@@ -42,6 +42,14 @@ func TestUnmarshal(tb *testing.T) {
 
 			Next *Rec `json:"next"`
 		}
+
+		Arr   [3]int
+		Slice []Arr
+
+		SlArr struct {
+			Slice Slice `json:"slice"`
+			Arr   Arr   `json:"arr"`
+		}
 	)
 
 	var d Decoder
@@ -93,14 +101,26 @@ func TestUnmarshal(tb *testing.T) {
 				},
 			},
 		}},
+
+		{"ArrayShort", `[1,2]`, new([3]int), [3]int{1, 2, 0}},
+		{"ArrayEq", `[1,2,3]`, new([3]int), [3]int{1, 2, 3}},
+		{"ArrayLong", `[1,2,3,4]`, new([3]int), [3]int{1, 2, 3}},
+
+		{"Slice", `[1,2,3]`, new([]int), []int{1, 2, 3}},
+
+		{"SlArr", `{"slice":[[1,2,3],[4,5,6]], "arr": [7,8,9]}`, new(SlArr), SlArr{Slice: Slice{Arr{1, 2, 3}, Arr{4, 5, 6}}, Arr: Arr{7, 8, 9}}},
+
+		{"[]byte", `"YWIgMTIgW10="`, new([]byte), []byte("ab 12 []")},
 	} {
 		tb.Run(tc.N, func(tb *testing.T) {
 			uns = map[unsafe.Pointer]unmarshaler{}
 
-			_, err := d.Unmarshal([]byte(tc.D), 0, tc.X)
+			i, err := d.Unmarshal([]byte(tc.D), 0, tc.X)
 			if !assert.NoError(tb, err) {
 				return
 			}
+
+			assert.Equal(tb, len(tc.D), i)
 
 			rres := reflect.ValueOf(tc.X).Elem()
 			rexp := reflect.ValueOf(tc.E)

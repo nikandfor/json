@@ -1,6 +1,7 @@
 package json
 
 import (
+	"encoding/base64"
 	"fmt"
 	"log"
 	"reflect"
@@ -84,6 +85,33 @@ func (d *Decoder) compile(tp unsafe.Pointer) (un unmarshaler, err error) {
 
 		return unPtr, nil
 
+	case reflect.Array:
+		tp := tpElem(tp)
+
+		_, err := d.compile(tp)
+		if err != nil {
+			return nil, err
+		}
+
+		return unArr, nil
+
+	case reflect.Slice:
+		if tpElem(tp) == vtp(byte(0)) {
+			return unBytes, nil
+		}
+
+		tp := tpElem(tp)
+
+		_, err := d.compile(tp)
+		if err != nil {
+			return nil, err
+		}
+
+		return unSlice, nil
+
+	case reflect.Struct:
+		return d.compileStruct(tp)
+
 	case reflect.Int:
 		return unInt[int], nil
 	case reflect.Int64:
@@ -117,9 +145,6 @@ func (d *Decoder) compile(tp unsafe.Pointer) (un unmarshaler, err error) {
 	case reflect.String:
 		return unString, nil
 
-	case reflect.Struct:
-		return d.compileStruct(tp)
-
 	default:
 		return nil, errNew("unsupported type: %v", tpString(tp))
 	}
@@ -146,7 +171,7 @@ func unInt[T anyInt](d *Decoder, b []byte, st int, tp, p unsafe.Pointer) (i int,
 		return i, err
 	}
 
-	//	undbg[T](Number, tp, p)
+	//	undbg[T](Number, tp, p, raw)
 
 	x, err := strconv.ParseInt(string(raw), 10, 8*int(unsafe.Sizeof(T(0))))
 	if err != nil {
@@ -238,12 +263,35 @@ func unString(d *Decoder, b []byte, st int, tp, p unsafe.Pointer) (i int, err er
 
 	//	undbg[string](String, tp, p)
 
-	s := string(x)
-
-	*(**byte)(p) = *(**byte)(unsafe.Pointer(&s))
-	*(*int)(unsafe.Add(p, unsafe.Sizeof((*byte)(nil)))) = len(s)
+	*(*string)(p) = string(x)
 
 	return i, nil
+}
+
+func unBytes(d *Decoder, b []byte, st int, tp, p unsafe.Pointer) (i int, err error) {
+	x, i, err := d.DecodeString(b, st, nil)
+	if err != nil {
+		return
+	}
+
+	dl := base64.StdEncoding.DecodedLen(len(x))
+
+	dec := *(*[]byte)(p)
+
+	if dl <= cap(dec) {
+		dec = dec[:dl]
+	} else {
+		dec = make([]byte, dl)
+	}
+
+	n, err := base64.StdEncoding.Decode(dec, x)
+	if err != nil {
+		return st, err
+	}
+
+	*(*[]byte)(p) = dec[:n]
+
+	return
 }
 
 func unPtr(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error) {
@@ -285,6 +333,66 @@ func unPtr(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error)
 	return un(d, b, st, tp, p2)
 }
 
+func unArr(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error) {
+	tp := tpElem(t)
+	ptp := tpPtrTo(tp)
+	size := tpSize(tp)
+
+	l := arrLen(t)
+
+	i, err = d.Enter(b, st, Array)
+	if err != nil {
+		return
+	}
+
+	for j := 0; err == nil && d.ForMore(b, &i, Array, &err); j++ {
+		fp := unsafe.Add(p, uintptr(j)*size)
+
+		if j >= l {
+			typedmemclr(tp, fp)
+			i, err = d.Skip(b, i)
+			continue
+		}
+
+		i, err = unPtr(d, b, i, ptp, fp)
+	}
+
+	return
+}
+
+func unSlice(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error) {
+	tp := tpElem(t)
+	ptp := tpPtrTo(tp)
+	size := tpSize(tp)
+
+	s := *(*sliceHeader)(p)
+
+	i, err = d.Enter(b, st, Array)
+	if err != nil {
+		return
+	}
+
+	j := 0
+
+	for err == nil && d.ForMore(b, &i, Array, &err) {
+		if j == s.l {
+			s = growslice(tp, s, 1)
+		}
+
+		fp := unsafe.Add(s.p, uintptr(j)*size)
+		i, err = unPtr(d, b, i, ptp, fp)
+
+		s.l++
+		j++
+	}
+
+	s.l = j
+
+	*(*sliceHeader)(p) = s
+
+	return
+}
+
 func errNew(f string, args ...interface{}) error {
 	return fmt.Errorf(f, args...)
 }
@@ -293,8 +401,8 @@ func errWrap(err error, f string) error {
 	return fmt.Errorf("%v: %w", f, err)
 }
 
-func undbg[T any](jtp byte, tp, p unsafe.Pointer) {
-	log.Printf("unm %c   %14v %10x    -> %10x", jtp, tpString(tp), tp, p)
+func undbg[T any](jtp byte, tp, p unsafe.Pointer, raw []byte) {
+	log.Printf("unm %c   %14v %10x    -> %10x  (%s)", jtp, tpString(tp), tp, p, raw)
 }
 
 func flags(tp unsafe.Pointer) string {
