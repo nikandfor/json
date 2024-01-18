@@ -88,7 +88,7 @@ func (d *Decoder) compile(tp unsafe.Pointer) (un unmarshaler, err error) {
 		}
 	}(tp)
 
-	if un = d.unCustom(tp); un != nil {
+	if un := d.unCustom(tp); un != nil {
 		return un, nil
 	}
 
