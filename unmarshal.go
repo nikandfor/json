@@ -11,11 +11,21 @@ import (
 )
 
 type (
+	UnmarshalerAt interface {
+		UnmarshalJSONAt(b []byte, st int) (i int, err error)
+	}
+
+	UnmarshalerAtDecoder interface {
+		UnmarshalJSONAt(d *Decoder, b []byte, st int) (i int, err error)
+	}
+
 	Unmarshaler interface {
-		UnmarshalJSON(b []byte, st int) (i int, err error)
+		UnmarshalJSON(b []byte) (err error)
 	}
 
 	unmarshaler = func(d *Decoder, b []byte, st int, tp, p unsafe.Pointer) (int, error)
+
+	RawMessage []byte
 
 	anyInt interface {
 		~int | ~int64 | ~int32 | ~int16 | ~int8
@@ -33,6 +43,10 @@ type (
 var (
 	mu  sync.Mutex
 	uns = map[unsafe.Pointer]unmarshaler{}
+
+	u0tp = tpElem(vtp((*UnmarshalerAt)(nil)))
+	u1tp = tpElem(vtp((*UnmarshalerAtDecoder)(nil)))
+	u2tp = tpElem(vtp((*Unmarshaler)(nil)))
 )
 
 func (d *Decoder) Unmarshal(b []byte, st int, v interface{}) (int, error) {
@@ -73,6 +87,10 @@ func (d *Decoder) compile(tp unsafe.Pointer) (un unmarshaler, err error) {
 			delete(uns, tp)
 		}
 	}(tp)
+
+	if un = d.unCustom(tp); un != nil {
+		return un, nil
+	}
 
 	switch tpKind(tp) {
 	case reflect.Pointer:
@@ -148,6 +166,19 @@ func (d *Decoder) compile(tp unsafe.Pointer) (un unmarshaler, err error) {
 	default:
 		return nil, errNew("unsupported type: %v", tpString(tp))
 	}
+}
+
+func (d *Decoder) unCustom(tp unsafe.Pointer) unmarshaler {
+	switch {
+	case toType(tp).Implements(toType(u0tp)):
+		return unUnmarshaler
+	case toType(tp).Implements(toType(u1tp)):
+		return unUnmarshalerDecoder
+	case toType(tp).Implements(toType(u2tp)):
+		return unJSONUnmarshaler
+	}
+
+	return nil
 }
 
 func (d *Decoder) un(tp unsafe.Pointer) unmarshaler {
@@ -261,7 +292,7 @@ func unString(d *Decoder, b []byte, st int, tp, p unsafe.Pointer) (i int, err er
 		return
 	}
 
-	//	undbg[string](String, tp, p)
+	//	undbg[string](String, tp, p, x)
 
 	*(*string)(p) = string(x)
 
@@ -302,7 +333,6 @@ func unPtr(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error)
 
 	tp := tpElem(t)
 	isptr := tpKind(tp) == reflect.Pointer
-	//indir := ifaceIndir(tp)
 
 	pp := (*unsafe.Pointer)(p)
 
@@ -315,9 +345,7 @@ func unPtr(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error)
 		return
 	}
 
-	//	al := '.'
 	if isptr && *pp == nil {
-		//		al = 'a'
 		*pp = unsafe_New(tpElem(tp))
 	}
 
@@ -391,6 +419,40 @@ func unSlice(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err erro
 	*(*sliceHeader)(p) = s
 
 	return
+}
+
+func unUnmarshaler(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error) {
+	return pack(t, p).(UnmarshalerAt).UnmarshalJSONAt(b, st)
+}
+
+func unUnmarshalerDecoder(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error) {
+	return pack(t, p).(UnmarshalerAtDecoder).UnmarshalJSONAt(d, b, st)
+}
+
+func unJSONUnmarshaler(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error) {
+	raw, i, err := d.Raw(b, st)
+	if err != nil {
+		return
+	}
+
+	err = pack(t, p).(Unmarshaler).UnmarshalJSON(raw)
+	if err != nil {
+		return st, err
+	}
+
+	return i, nil
+}
+
+func (r *RawMessage) UnmarshalJSONAt(d *Decoder, b []byte, st int) (i int, err error) {
+	raw, i, err := d.Raw(b, st)
+	if err != nil {
+		return
+	}
+
+	*r = (*r)[:0]
+	*r = append(*r, raw...)
+
+	return i, nil
 }
 
 func errNew(f string, args ...interface{}) error {

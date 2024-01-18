@@ -12,9 +12,11 @@ type (
 	}
 
 	structField struct {
-		ptp, tp unsafe.Pointer
+		ptp unsafe.Pointer
 
 		off uintptr
+
+		un unmarshaler
 	}
 )
 
@@ -55,18 +57,31 @@ func (d *Decoder) compileStructFields(tp unsafe.Pointer, p *structProg) error {
 		}
 
 		_, tp := unpack(sf.Type)
-		//tp = tpPtrTo(tp)
 
-		_, err := d.compile(tp)
-		if err != nil {
-			return err
+		if sf.Anonymous {
+			err := d.compileStructFields(tp, p)
+			if err != nil {
+				return err
+			}
+
+			continue
 		}
 
 		f := &structField{
 			ptp: tpPtrTo(tp),
-			tp:  tp,
 
 			off: sf.Offset,
+		}
+
+		if un := d.unCustom(f.ptp); un != nil {
+			f.un = un
+		}
+
+		if f.un == nil {
+			_, err := d.compile(tp)
+			if err != nil {
+				return err
+			}
 		}
 
 		p.enc = append(p.enc, f)
@@ -100,7 +115,11 @@ func (pr *structProg) unmarshal(d *Decoder, b []byte, st int, tp, p unsafe.Point
 
 		//	log.Printf("field   %14v %10x    -> %10x is %10x + %4x  name %s", tpString(f.tp), f.tp, fp, p, f.off, k)
 
-		i, err = unPtr(d, b, i, f.ptp, fp)
+		if f.un != nil {
+			i, err = f.un(d, b, i, f.ptp, fp)
+		} else {
+			i, err = unPtr(d, b, i, f.ptp, fp)
+		}
 	}
 
 	if err != nil {

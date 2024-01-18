@@ -1,6 +1,7 @@
 package json
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 	"unsafe"
@@ -49,6 +50,14 @@ func TestUnmarshal(tb *testing.T) {
 		SlArr struct {
 			Slice Slice `json:"slice"`
 			Arr   Arr   `json:"arr"`
+		}
+
+		Raw struct {
+			Raw RawMessage `json:"raw"`
+		}
+
+		RawPtr struct {
+			Raw *RawMessage `json:"raw"`
 		}
 	)
 
@@ -111,7 +120,15 @@ func TestUnmarshal(tb *testing.T) {
 		{"SlArr", `{"slice":[[1,2,3],[4,5,6]], "arr": [7,8,9]}`, new(SlArr), SlArr{Slice: Slice{Arr{1, 2, 3}, Arr{4, 5, 6}}, Arr: Arr{7, 8, 9}}},
 
 		{"[]byte", `"YWIgMTIgW10="`, new([]byte), []byte("ab 12 []")},
+
+		{"RawMsg", `{"a":"b"}`, new(RawMessage), RawMessage(`{"a":"b"}`)},
+		{"StdRawMsg", `{"a":"b"}`, new(json.RawMessage), json.RawMessage(`{"a":"b"}`)},
+
+		{"Raw", `{"raw":{"a":"b"}}`, new(Raw), Raw{Raw: RawMessage(`{"a":"b"}`)}},
+		{"RawPtr", `{"raw":{"a":"b"}}`, new(RawPtr), RawPtr{Raw: ptr(RawMessage(`{"a":"b"}`))}},
 	} {
+		tc := tc
+
 		tb.Run(tc.N, func(tb *testing.T) {
 			uns = map[unsafe.Pointer]unmarshaler{}
 
