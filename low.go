@@ -8,11 +8,11 @@ import (
 //go:linkname ifaceIndir internal/abi.(*Type).IfaceIndir
 func ifaceIndir(tp unsafe.Pointer) bool
 
-//go:linkname ptrTo reflect.ptrTo
-func ptrTo(tp unsafe.Pointer) unsafe.Pointer
+//go:linkname tpPtrTo reflect.ptrTo
+func tpPtrTo(tp unsafe.Pointer) unsafe.Pointer
 
-//go:linkname unsafeNew reflect.unsafe_New
-func unsafeNew(tp unsafe.Pointer) unsafe.Pointer
+//go:linkname unsafe_New reflect.unsafe_New
+func unsafe_New(tp unsafe.Pointer) unsafe.Pointer
 
 //go:linkname findObject runtime.findObject
 func findObject(ptr unsafe.Pointer, _, _ uintptr) (base, _, _ uintptr)

@@ -77,12 +77,12 @@ func (d *Decoder) compile(tp unsafe.Pointer) (un unmarshaler, err error) {
 	case reflect.Pointer:
 		tp := tpElem(tp)
 
-		un, err := d.compile(tp)
+		_, err := d.compile(tp)
 		if err != nil {
 			return nil, err
 		}
 
-		return unPtr(tp, un), nil
+		return unPtr, nil
 
 	case reflect.Int:
 		return unInt[int], nil
@@ -125,7 +125,7 @@ func (d *Decoder) compile(tp unsafe.Pointer) (un unmarshaler, err error) {
 	}
 }
 
-func un(tp unsafe.Pointer) unmarshaler {
+func (d *Decoder) un(tp unsafe.Pointer) unmarshaler {
 	defer mu.Unlock()
 	mu.Lock()
 
@@ -246,33 +246,43 @@ func unString(d *Decoder, b []byte, st int, tp, p unsafe.Pointer) (i int, err er
 	return i, nil
 }
 
-func unPtr(tp unsafe.Pointer, un unmarshaler) unmarshaler {
-	//	ptp := ptrTo(tp)
-	indir := ifaceIndir(tp)
-
-	return func(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error) {
-		pp := (*unsafe.Pointer)(p)
-
-		al := '.'
-		if *pp == nil && !indir {
-			al = 'a'
-			*pp = unsafeNew(tp)
-		}
-
-		p2 := *pp
-		if indir {
-			p2 = p
-		}
-
-		id := 'e'
-		if indir {
-			id = '*'
-		}
-
-		log.Printf("unPtr   %14v %10x => %14v %10x  ptr %x -> %x : %x %c%c", tpString(t), t, tpString(tp), tp, p, *pp, p2, id, al)
-
-		return un(d, b, st, tp, p2)
+func unPtr(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error) {
+	jtp, i, err := d.Type(b, st)
+	if err != nil {
+		return i, err
 	}
+
+	tp := tpElem(t)
+	isptr := tpKind(tp) == reflect.Pointer
+	//indir := ifaceIndir(tp)
+
+	pp := (*unsafe.Pointer)(p)
+
+	if jtp == Null {
+		if isptr {
+			*pp = nil
+		}
+
+		i, err = d.Skip(b, i)
+		return
+	}
+
+	al := '.'
+	if isptr && *pp == nil {
+		al = 'a'
+		*pp = unsafe_New(tpElem(tp))
+	}
+
+	p2 := p
+	if isptr {
+		p2 = *pp
+	}
+
+	log.Printf("unPtr   %14v %10x %s => %14v %10x %s  ptr %x -> %x : %x %c", tpString(t), t, flags(t), tpString(tp), tp, flags(tp), p, *pp, p2, al)
+
+	un := d.un(tp)
+
+	return un(d, b, st, tp, p2)
 }
 
 func errNew(f string, args ...interface{}) error {
@@ -289,6 +299,23 @@ func undbg[T any](jtp byte, tp, p unsafe.Pointer) {
 	//	val := *(*unsafe.Pointer)(p)
 	//	base, _, _ := findObject(p, 0, 0)
 	//	endBase, _, _ := findObject(unsafe.Add(p, size-1), 0, 0)
-	log.Printf("unm %c   %14v %10x -> %10x", jtp, tpString(tp), tp, p)
+	log.Printf("unm %c   %14v %10x    -> %10x", jtp, tpString(tp), tp, p)
 	// log.Printf("unmarshal %q to %14v  %x %x  base %x %x  size %x  val %x", jtp, tpString(tp), tp, p, base, endBase, size, val)
+}
+
+func flags(tp unsafe.Pointer) string {
+	isptr := tpKind(tp) == reflect.Pointer
+	indir := ifaceIndir(tp)
+
+	ptr := "v"
+	if isptr {
+		ptr = "p"
+	}
+
+	idr := "d"
+	if indir {
+		idr = "i"
+	}
+
+	return ptr + idr
 }
