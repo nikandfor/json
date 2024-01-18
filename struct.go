@@ -1,7 +1,6 @@
 package json
 
 import (
-	"log"
 	"strings"
 	"unsafe"
 )
@@ -13,7 +12,7 @@ type (
 	}
 
 	structField struct {
-		tp unsafe.Pointer
+		ptp, tp unsafe.Pointer
 
 		off uintptr
 	}
@@ -58,13 +57,14 @@ func (d *Decoder) compileStructFields(tp unsafe.Pointer, p *structProg) error {
 		_, tp := unpack(sf.Type)
 		//tp = tpPtrTo(tp)
 
-		_, err := d.compile(tpPtrTo(tp))
+		_, err := d.compile(tp)
 		if err != nil {
 			return err
 		}
 
 		f := &structField{
-			tp: tp,
+			ptp: tpPtrTo(tp),
+			tp:  tp,
 
 			off: sf.Offset,
 		}
@@ -96,15 +96,11 @@ func (pr *structProg) unmarshal(d *Decoder, b []byte, st int, tp, p unsafe.Point
 			continue
 		}
 
-		tp := f.tp
-		tp = tpPtrTo(tp)
-		un := d.un(tp)
-
 		fp := unsafe.Add(p, f.off)
 
-		log.Printf("field   %14v %10x    -> %10x is %10x + %4x  name %s", tpString(f.tp), f.tp, fp, p, f.off, k)
+		//	log.Printf("field   %14v %10x    -> %10x is %10x + %4x  name %s", tpString(f.tp), f.tp, fp, p, f.off, k)
 
-		i, err = un(d, b, i, tp, fp)
+		i, err = unPtr(d, b, i, f.ptp, fp)
 	}
 
 	if err != nil {

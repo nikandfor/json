@@ -8,25 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUnsafe(tb *testing.T) {
-	type Rec struct {
-		X int    `json:"x"`
-		S string `json:"s"`
-
-		Next *Rec `json:"next"`
-	}
-
-	tp, _ := unpack(Rec{})
-
-	tb.Logf("type %v %x", tpString(tp), tp)
-
-	p0 := unsafe_New(tp)
-	p1 := unsafe_New(tp)
-	p2 := unsafe_New(tp)
-
-	tb.Logf("new %v: %p %p %p", tpString(tp), p0, p1, p2)
-}
-
 func TestUnmarshal(tb *testing.T) {
 	type (
 		Int struct {
@@ -62,6 +43,8 @@ func TestUnmarshal(tb *testing.T) {
 			Next *Rec `json:"next"`
 		}
 	)
+
+	var d Decoder
 
 	for _, tc := range []struct {
 		N string
@@ -112,7 +95,6 @@ func TestUnmarshal(tb *testing.T) {
 		}},
 	} {
 		tb.Run(tc.N, func(tb *testing.T) {
-			var d Decoder
 			uns = map[unsafe.Pointer]unmarshaler{}
 
 			_, err := d.Unmarshal([]byte(tc.D), 0, tc.X)

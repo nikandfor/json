@@ -58,7 +58,7 @@ func (d *Decoder) unmarshaler(tp unsafe.Pointer) (un unmarshaler, err error) {
 }
 
 func (d *Decoder) compile(tp unsafe.Pointer) (un unmarshaler, err error) {
-	log.Printf("compile %14v [%10x]", tpString(tp), tp)
+	//	log.Printf("compile %14v [%10x]", tpString(tp), tp)
 
 	if un, ok := uns[tp]; ok {
 		return un, nil
@@ -146,7 +146,7 @@ func unInt[T anyInt](d *Decoder, b []byte, st int, tp, p unsafe.Pointer) (i int,
 		return i, err
 	}
 
-	undbg[T](Number, tp, p)
+	//	undbg[T](Number, tp, p)
 
 	x, err := strconv.ParseInt(string(raw), 10, 8*int(unsafe.Sizeof(T(0))))
 	if err != nil {
@@ -236,7 +236,7 @@ func unString(d *Decoder, b []byte, st int, tp, p unsafe.Pointer) (i int, err er
 		return
 	}
 
-	undbg[string](String, tp, p)
+	//	undbg[string](String, tp, p)
 
 	s := string(x)
 
@@ -267,9 +267,9 @@ func unPtr(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error)
 		return
 	}
 
-	al := '.'
+	//	al := '.'
 	if isptr && *pp == nil {
-		al = 'a'
+		//		al = 'a'
 		*pp = unsafe_New(tpElem(tp))
 	}
 
@@ -278,7 +278,7 @@ func unPtr(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error)
 		p2 = *pp
 	}
 
-	log.Printf("unPtr   %14v %10x %s => %14v %10x %s  ptr %x -> %x : %x %c", tpString(t), t, flags(t), tpString(tp), tp, flags(tp), p, *pp, p2, al)
+	//	log.Printf("unPtr   %14v %10x %s => %14v %10x %s  ptr %x -> %x : %x %c", tpString(t), t, flags(t), tpString(tp), tp, flags(tp), p, *pp, p2, al)
 
 	un := d.un(tp)
 
@@ -294,13 +294,7 @@ func errWrap(err error, f string) error {
 }
 
 func undbg[T any](jtp byte, tp, p unsafe.Pointer) {
-	//	t, d := unpack(v)
-	//	size := tpSize(tp)
-	//	val := *(*unsafe.Pointer)(p)
-	//	base, _, _ := findObject(p, 0, 0)
-	//	endBase, _, _ := findObject(unsafe.Add(p, size-1), 0, 0)
 	log.Printf("unm %c   %14v %10x    -> %10x", jtp, tpString(tp), tp, p)
-	// log.Printf("unmarshal %q to %14v  %x %x  base %x %x  size %x  val %x", jtp, tpString(tp), tp, p, base, endBase, size, val)
 }
 
 func flags(tp unsafe.Pointer) string {
