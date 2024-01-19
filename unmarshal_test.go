@@ -167,24 +167,43 @@ func TestUnmarshal(tb *testing.T) {
 func TestUnmarshalData(tb *testing.T) {
 	var d Decoder
 
-	var small benchmarks_data.SmallPayload
+	var small, smallStd benchmarks_data.SmallPayload
+
+	err := json.Unmarshal(benchmarks_data.SmallFixture, &smallStd)
+	assert.NoError(tb, err)
 
 	i, err := d.Unmarshal(benchmarks_data.SmallFixture, 0, &small)
 	assert.NoError(tb, err)
 	assert.Equal(tb, len(benchmarks_data.SmallFixture), i)
 
-	var medium benchmarks_data.MediumPayload
+	assert.Equal(tb, smallStd, small)
+
+	//
+
+	var medium, mediumStd benchmarks_data.MediumPayload
+
+	err = json.Unmarshal(benchmarks_data.MediumFixture, &mediumStd)
+	assert.NoError(tb, err)
 
 	i, err = d.Unmarshal(benchmarks_data.MediumFixture, 0, &medium)
 	assert.NoError(tb, err)
 	assert.Equal(tb, len(benchmarks_data.MediumFixture), i)
 
-	var large benchmarks_data.LargePayload
+	assert.Equal(tb, mediumStd, medium)
+
+	//
+
+	var large, largeStd benchmarks_data.LargePayload
+
+	err = json.Unmarshal(benchmarks_data.LargeFixture, &largeStd)
+	assert.NoError(tb, err)
 
 	i, err = d.Unmarshal(benchmarks_data.LargeFixture, 0, &large)
 	assert.NoError(tb, err)
 	i = SkipSpaces(benchmarks_data.LargeFixture, i)
 	assert.Equal(tb, len(benchmarks_data.LargeFixture), i)
+
+	assert.Equal(tb, largeStd, large)
 }
 
 func ptr[T any](x T) *T {

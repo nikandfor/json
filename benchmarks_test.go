@@ -3,6 +3,8 @@ package json
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"nikand.dev/go/json/benchmarks_data"
 )
 
@@ -30,4 +32,35 @@ func BenchmarkSkip(b *testing.B) {
 			}
 		})
 	}
+}
+
+func BenchmarkUnmarshal(tb *testing.B) {
+	bench := func(tb *testing.B, b []byte, x interface{}) {
+		var err error
+		var d Decoder
+
+		for i := 0; i < tb.N; i++ {
+			_, err = d.Unmarshal(b, 0, x)
+		}
+
+		assert.NoError(tb, err)
+	}
+
+	tb.Run("Small", func(tb *testing.B) {
+		tb.ReportAllocs()
+
+		bench(tb, benchmarks_data.SmallFixture, new(benchmarks_data.SmallPayload))
+	})
+
+	tb.Run("Medium", func(tb *testing.B) {
+		tb.ReportAllocs()
+
+		bench(tb, benchmarks_data.MediumFixture, new(benchmarks_data.MediumPayload))
+	})
+
+	tb.Run("Large", func(tb *testing.B) {
+		tb.ReportAllocs()
+
+		bench(tb, benchmarks_data.LargeFixture, new(benchmarks_data.LargePayload))
+	})
 }
