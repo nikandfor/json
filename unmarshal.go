@@ -44,9 +44,9 @@ var (
 	mu  sync.Mutex
 	uns = map[unsafe.Pointer]unmarshaler{}
 
-	u0tp = tpElem(vtp((*UnmarshalerAt)(nil)))
-	u1tp = tpElem(vtp((*UnmarshalerAtDecoder)(nil)))
-	u2tp = tpElem(vtp((*Unmarshaler)(nil)))
+	unAt    = tpElem(vtp((*UnmarshalerAt)(nil)))
+	unAtDec = tpElem(vtp((*UnmarshalerAtDecoder)(nil)))
+	unStd   = tpElem(vtp((*Unmarshaler)(nil)))
 )
 
 func (d *Decoder) Unmarshal(b []byte, st int, v interface{}) (int, error) {
@@ -128,7 +128,12 @@ func (d *Decoder) compile(tp unsafe.Pointer) (un unmarshaler, err error) {
 		return unSlice, nil
 
 	case reflect.Struct:
-		return d.compileStruct(tp)
+		p, err := compileStruct(tp, d, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		return p.unmarshal, nil
 
 	case reflect.Int:
 		return unInt[int], nil
@@ -170,11 +175,11 @@ func (d *Decoder) compile(tp unsafe.Pointer) (un unmarshaler, err error) {
 
 func (d *Decoder) unCustom(tp unsafe.Pointer) unmarshaler {
 	switch {
-	case toType(tp).Implements(toType(u0tp)):
-		return unUnmarshaler
-	case toType(tp).Implements(toType(u1tp)):
-		return unUnmarshalerDecoder
-	case toType(tp).Implements(toType(u2tp)):
+	case toType(tp).Implements(toType(unAt)):
+		return unUnmarshalerAt
+	case toType(tp).Implements(toType(unAtDec)):
+		return unUnmarshalerAtDecoder
+	case toType(tp).Implements(toType(unStd)):
 		return unJSONUnmarshaler
 	}
 
@@ -322,7 +327,7 @@ func unBytes(d *Decoder, b []byte, st int, tp, p unsafe.Pointer) (i int, err err
 
 	*(*[]byte)(p) = dec[:n]
 
-	return
+	return i, nil
 }
 
 func unPtr(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error) {
@@ -421,18 +426,18 @@ func unSlice(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err erro
 	return
 }
 
-func unUnmarshaler(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error) {
+func unUnmarshalerAt(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error) {
 	return pack(t, p).(UnmarshalerAt).UnmarshalJSONAt(b, st)
 }
 
-func unUnmarshalerDecoder(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error) {
+func unUnmarshalerAtDecoder(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error) {
 	return pack(t, p).(UnmarshalerAtDecoder).UnmarshalJSONAt(d, b, st)
 }
 
 func unJSONUnmarshaler(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int, err error) {
 	raw, i, err := d.Raw(b, st)
 	if err != nil {
-		return
+		return i, err
 	}
 
 	err = pack(t, p).(Unmarshaler).UnmarshalJSON(raw)
@@ -446,7 +451,7 @@ func unJSONUnmarshaler(d *Decoder, b []byte, st int, t, p unsafe.Pointer) (i int
 func (r *RawMessage) UnmarshalJSONAt(d *Decoder, b []byte, st int) (i int, err error) {
 	raw, i, err := d.Raw(b, st)
 	if err != nil {
-		return
+		return i, err
 	}
 
 	*r = (*r)[:0]

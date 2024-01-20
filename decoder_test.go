@@ -19,13 +19,13 @@ func TestDecoder(t *testing.T) {
 		"{}", `{"key":"val"}`, `{"k": "v", "k2": 3, "k3": [], "k4": {}, "k5": null}`,
 	} {
 		raw, i, err := d.Raw([]byte(data), 0)
-		if !assert.NoError(t, err) || !assert.Equal(t, len(data), i) || !assert.Equal(t, raw, []byte(data)) {
+		if !assert.NoError(t, err) || !assert.Equal(t, len(data), i) || !assert.Equal(t, []byte(data), raw) {
 			t.Logf("pos: %d (%[1]x)  data: %q", i, data)
 		}
 	}
 }
 
-func TestString(t *testing.T) {
+func TestDecoderString(t *testing.T) {
 	var d Decoder
 
 	for j, data := range []string{
@@ -62,7 +62,7 @@ func TestString(t *testing.T) {
 	}
 }
 
-func TestEnterMore(t *testing.T) {
+func TestDecoderEnterMore(t *testing.T) {
 	var d Decoder
 
 cases:

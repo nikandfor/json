@@ -11,66 +11,66 @@ import (
 	"nikand.dev/go/json/benchmarks_data"
 )
 
-func TestUnmarshal(tb *testing.T) {
-	type (
-		Int struct {
-			N int `json:"n"`
-		}
+type (
+	Int struct {
+		N int `json:"n"`
+	}
 
-		IntPtr struct {
-			N *int `json:"n"`
-		}
+	IntPtr struct {
+		N *int `json:"n"`
+	}
 
-		Str struct {
-			S string `json:"s"`
-		}
+	Str struct {
+		S string `json:"s"`
+	}
 
-		StrPtr struct {
-			S *string `json:"s"`
-		}
+	StrPtr struct {
+		S *string `json:"s"`
+	}
 
-		IntStr struct {
-			N int    `json:"n"`
-			S string `json:"s"`
-		}
+	IntStr struct {
+		N int    `json:"n"`
+		S string `json:"s"`
+	}
 
-		IntStrPtr struct {
-			N *int    `json:"n"`
-			S *string `json:"s"`
-		}
+	IntStrPtr struct {
+		N *int    `json:"n"`
+		S *string `json:"s"`
+	}
 
-		Rec struct {
-			X int    `json:"x"`
-			S string `json:"s"`
+	Rec struct {
+		X int    `json:"x"`
+		S string `json:"s"`
 
-			Next *Rec `json:"next"`
-		}
+		Next *Rec `json:"next"`
+	}
 
-		Arr   [3]int
-		Slice []Arr
+	Arr   [3]int
+	Slice []Arr
 
-		SlArr struct {
-			Slice Slice `json:"slice"`
-			Arr   Arr   `json:"arr"`
-		}
+	SlArr struct {
+		Slice Slice `json:"slice"`
+		Arr   Arr   `json:"arr"`
+	}
 
-		Raw struct {
-			Raw RawMessage `json:"raw"`
-		}
+	Raw struct {
+		Raw RawMessage `json:"raw"`
+	}
 
-		RawPtr struct {
-			Raw *RawMessage `json:"raw"`
-		}
-	)
+	RawPtr struct {
+		Raw *RawMessage `json:"raw"`
+	}
 
-	var d Decoder
-
-	for _, tc := range []struct {
+	TC struct {
 		N string
 		D string
 		X any
 		E any
-	}{
+	}
+)
+
+func unmarshalTable() []TC {
+	return []TC{
 		{"int", `3`, new(int), 3},
 		{"int64", `-4`, new(int64), int64(-4)},
 		{"*int", `5`, ptr(new(int)), ptr(5)},
@@ -128,7 +128,13 @@ func TestUnmarshal(tb *testing.T) {
 
 		{"Raw", `{"raw":{"a":"b"}}`, new(Raw), Raw{Raw: RawMessage(`{"a":"b"}`)}},
 		{"RawPtr", `{"raw":{"a":"b"}}`, new(RawPtr), RawPtr{Raw: ptr(RawMessage(`{"a":"b"}`))}},
-	} {
+	}
+}
+
+func TestUnmarshalDecoder(tb *testing.T) {
+	var d Decoder
+
+	for _, tc := range unmarshalTable() {
 		tc := tc
 
 		tb.Run(tc.N, func(tb *testing.T) {
@@ -141,30 +147,12 @@ func TestUnmarshal(tb *testing.T) {
 
 			assert.Equal(tb, len(tc.D), i)
 
-			rres := reflect.ValueOf(tc.X).Elem()
-			rexp := reflect.ValueOf(tc.E)
-
-			for rres.Kind() == reflect.Pointer && !rres.IsNil() {
-				rres = rres.Elem()
-				rexp = rexp.Elem()
-			}
-
-			res := rres.Interface()
-			exp := rexp.Interface()
-
-			//	log.Printf("unmarshal\n`%s`\n%+v\n", tc.D, deref)
-			tb.Logf("unmarshal\n`%s`\n%+v (%[2]T)", tc.D, res)
-
-			if tc.E == nil {
-				return
-			}
-
-			assert.Equal(tb, exp, res)
+			checkUnmarshal(tb, []byte(tc.D), tc.E, tc.X)
 		})
 	}
 }
 
-func TestUnmarshalData(tb *testing.T) {
+func TestUnmarshalDecoderData(tb *testing.T) {
 	var d Decoder
 
 	var small, smallStd benchmarks_data.SmallPayload
@@ -204,6 +192,89 @@ func TestUnmarshalData(tb *testing.T) {
 	assert.Equal(tb, len(benchmarks_data.LargeFixture), i)
 
 	assert.Equal(tb, largeStd, large)
+}
+
+func TestUnmarshalReader(tb *testing.T) {
+	var r Reader
+
+	for _, tc := range unmarshalTable() {
+		tc := tc
+
+		tb.Run(tc.N, func(tb *testing.T) {
+			uns = map[unsafe.Pointer]unmarshaler{}
+
+			r.Reset([]byte(tc.D), nil)
+
+			err := r.Unmarshal(tc.X)
+			if !assert.NoError(tb, err) {
+				return
+			}
+
+			checkUnmarshal(tb, []byte(tc.D), tc.E, tc.X)
+		})
+	}
+}
+
+func TestUnmarshalReaderData(tb *testing.T) {
+	var r Reader
+
+	var small, smallStd benchmarks_data.SmallPayload
+
+	err := json.Unmarshal(benchmarks_data.SmallFixture, &smallStd)
+	assert.NoError(tb, err)
+
+	r.Reset(benchmarks_data.SmallFixture, nil)
+
+	err = r.Unmarshal(&small)
+	assert.NoError(tb, err)
+
+	assert.Equal(tb, smallStd, small)
+
+	//
+
+	var medium, mediumStd benchmarks_data.MediumPayload
+
+	err = json.Unmarshal(benchmarks_data.MediumFixture, &mediumStd)
+	assert.NoError(tb, err)
+
+	r.Reset(benchmarks_data.MediumFixture, nil)
+
+	err = r.Unmarshal(&medium)
+	assert.NoError(tb, err)
+
+	assert.Equal(tb, mediumStd, medium)
+
+	//
+
+	var large, largeStd benchmarks_data.LargePayload
+
+	err = json.Unmarshal(benchmarks_data.LargeFixture, &largeStd)
+	assert.NoError(tb, err)
+
+	r.Reset(benchmarks_data.LargeFixture, nil)
+
+	err = r.Unmarshal(&large)
+	assert.NoError(tb, err)
+
+	assert.Equal(tb, largeStd, large)
+}
+
+func checkUnmarshal(tb *testing.T, data []byte, e, x interface{}) {
+	rres := reflect.ValueOf(x).Elem()
+	rexp := reflect.ValueOf(e)
+
+	for rres.Kind() == reflect.Pointer && !rres.IsNil() {
+		rres = rres.Elem()
+		rexp = rexp.Elem()
+	}
+
+	res := rres.Interface()
+	exp := rexp.Interface()
+
+	//	log.Printf("unmarshal\n`%s`\n%+v\n", tc.D, deref)
+	tb.Logf("unmarshal\n`%s`\n%+v (%[2]T)", data, res)
+
+	assert.Equal(tb, exp, res)
 }
 
 func ptr[T any](x T) *T {

@@ -52,7 +52,7 @@ func (d *Decoder) seekObj(b []byte, st int, key string) (i int, err error) {
 
 func (d *Decoder) seekArr(b []byte, st, idx int) (i int, err error) {
 	if idx < 0 {
-		l, i, err := d.arrayLen(b, st)
+		l, i, err := d.Length(b, st)
 		if err != nil {
 			return i, err
 		}
@@ -84,22 +84,4 @@ func (d *Decoder) seekArr(b []byte, st, idx int) (i int, err error) {
 	}
 
 	return st, ErrOutOfBounds
-}
-
-func (d *Decoder) arrayLen(b []byte, st int) (l, i int, err error) {
-	i, err = d.Enter(b, st, Array)
-	if err != nil {
-		return
-	}
-
-	for err == nil && d.ForMore(b, &i, Array, &err) {
-		i, err = d.Skip(b, i)
-		if err != nil {
-			break
-		}
-
-		l++
-	}
-
-	return
 }

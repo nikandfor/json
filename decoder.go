@@ -95,8 +95,7 @@ func (d *Decoder) Type(b []byte, st int) (tp byte, i int, err error) {
 
 // Skip skips the next value.
 func (d *Decoder) Skip(b []byte, st int) (i int, err error) {
-	i, _, err = d.break_(b, st, 0)
-	return
+	return d.Break(b, st, 0)
 }
 
 // Raw skips the next value and returns subslice with the value trimming whitespaces.
@@ -106,7 +105,7 @@ func (d *Decoder) Raw(b []byte, st int) (v []byte, i int, err error) {
 		return nil, st, err
 	}
 
-	i, _, err = d.break_(b, st, 0)
+	i, err = d.Break(b, st, 0)
 	if err != nil {
 		return
 	}
@@ -121,8 +120,42 @@ func (d *Decoder) Raw(b []byte, st int) (v []byte, i int, err error) {
 // It's intended for exiting out of arrays and objects when their content is not needed anymore
 // (all the needed indexes or keys are already parsed) and we want to parse the next array or object.
 func (d *Decoder) Break(b []byte, st, depth int) (i int, err error) {
-	i, _, err = d.break_(b, st, depth)
-	return
+	i = st
+
+	for i < len(b) {
+		if isWhitespace(b[i]) {
+			i++
+			continue
+		}
+
+		switch b[i] {
+		case ',', ':':
+			i++
+			continue
+		case '"':
+			i, err = d.skipString(b, i)
+		case 'n', 't', 'f':
+			i, err = d.skipLit(b, i)
+		case '[', '{':
+			i++
+			depth++
+		case ']', '}':
+			i++
+			depth--
+		default:
+			i, err = d.skipNum(b, i)
+		}
+
+		if err != nil {
+			return
+		}
+
+		if depth == 0 {
+			return
+		}
+	}
+
+	return st, ErrEndOfBuffer
 }
 
 // Key reads the next string removing quotes but not decoding the string value.
@@ -152,11 +185,11 @@ func (d *Decoder) Key(b []byte, st int) (k []byte, i int, err error) {
 func (d *Decoder) DecodeString(b []byte, st int, buf []byte) (s []byte, i int, err error) {
 	tp, i, err := d.Type(b, st)
 	if err != nil {
-		return
+		return buf, i, err
 	}
 
 	if tp != String {
-		return nil, i, ErrType
+		return buf, i, ErrType
 	}
 
 	if buf == nil {
@@ -183,51 +216,6 @@ func (d *Decoder) DecodedStringLength(b []byte, st int) (n, i int, err error) {
 	_, n, i, err = d.decodeString(b, i, nil)
 
 	return
-}
-
-func (d *Decoder) break_(b []byte, st, depth int) (i, maxDepth int, err error) {
-	i = st
-	dep := depth
-	maxDepth = depth
-
-	for i < len(b) {
-		if isWhitespace(b[i]) {
-			i++
-			continue
-		}
-
-		switch b[i] {
-		case ',', ':':
-			i++
-			continue
-		case '"':
-			i, err = d.skipString(b, i)
-		case 'n', 't', 'f':
-			i, err = d.skipLit(b, i)
-		case '[', '{':
-			i++
-			dep++
-
-			if dep > maxDepth {
-				maxDepth = dep
-			}
-		case ']', '}':
-			i++
-			dep--
-		default:
-			i, err = d.skipNum(b, i)
-		}
-
-		if err != nil {
-			return
-		}
-
-		if dep == 0 {
-			return
-		}
-	}
-
-	return i, maxDepth, ErrEndOfBuffer
 }
 
 // Enter enters an Array or an Object. typ is checked to match with the actual container type.
@@ -295,7 +283,7 @@ func (d *Decoder) ForMore(b []byte, i *int, typ byte, errp *error) bool { //noli
 	return more
 }
 
-// Length calculates String length (runes in decoded form) or number of elements in Array or Object.
+// Length calculates number of elements in Array or Object.
 func (d *Decoder) Length(b []byte, st int) (n, i int, err error) {
 	tp, i, err := d.Type(b, st)
 	if err != nil {
@@ -303,9 +291,6 @@ func (d *Decoder) Length(b []byte, st int) (n, i int, err error) {
 	}
 
 	switch tp {
-	case String:
-		_, n, i, err = d.decodeString(b, i, nil)
-		return
 	case Array, Object:
 	default:
 		return 0, i, ErrType
@@ -357,7 +342,7 @@ func (d *Decoder) skipString(b []byte, st int) (i int, err error) {
 		case '\\':
 			i++
 			if i == len(b) {
-				return i, ErrEndOfBuffer
+				return st, ErrEndOfBuffer
 			}
 
 			size := 0
@@ -377,7 +362,7 @@ func (d *Decoder) skipString(b []byte, st int) (i int, err error) {
 			i++
 
 			if i+size > len(b) {
-				return i - 2, ErrEndOfBuffer
+				return st, ErrEndOfBuffer
 			}
 
 			i += size
@@ -389,6 +374,10 @@ func (d *Decoder) skipString(b []byte, st int) (i int, err error) {
 				break
 			}
 
+			if !utf8.FullRune(b[i:]) {
+				return st, ErrEndOfBuffer
+			}
+
 			_, size := utf8.DecodeRune(b[i:])
 			//	if r == utf8.RuneError && size == 1 {
 			//		return i, ErrBadRune
@@ -398,7 +387,7 @@ func (d *Decoder) skipString(b []byte, st int) (i int, err error) {
 		}
 	}
 
-	return i, ErrEndOfBuffer
+	return st, ErrEndOfBuffer
 }
 
 func (d *Decoder) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, err error) {
@@ -406,6 +395,8 @@ func (d *Decoder) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, 
 	done := i
 
 	add := func(d []byte, s ...byte) []byte {
+		n += len(s)
+
 		if w == nil {
 			return nil
 		}
@@ -418,13 +409,13 @@ func (d *Decoder) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, 
 		case '"':
 			w = add(w, b[done:i]...)
 			i++
-			return w, n, i, err
+			return w, n, i, nil
 		case '\\':
 			w = add(w, b[done:i]...)
 
 			i++
 			if i == len(b) {
-				return w, n, i, ErrEndOfBuffer
+				return w, n, st, ErrEndOfBuffer
 			}
 
 			switch b[i] {
@@ -442,6 +433,9 @@ func (d *Decoder) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, 
 				w = add(w, '\f')
 			case 'x', 'u', 'U':
 				w, i, err = decodeRune(w, b, i)
+				if err == ErrEndOfBuffer {
+					i = st
+				}
 				if err != nil {
 					return w, n, i, err
 				}
@@ -452,15 +446,17 @@ func (d *Decoder) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, 
 			}
 
 			i++
-			n++
 			done = i
 		case '\n', '\r', '\b':
 			return w, n, i, ErrBadString
 		default:
 			if b[i] < utf8.RuneSelf {
 				i++
-				n++
 				break
+			}
+
+			if !utf8.FullRune(b[i:]) {
+				return w, n, st, ErrEndOfBuffer
 			}
 
 			r, size := utf8.DecodeRune(b[i:])
@@ -469,18 +465,16 @@ func (d *Decoder) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, 
 				w = utf8.AppendRune(w, utf8.RuneError)
 
 				i += size
-				n++
 				done = i
 
 				break
 			}
 
 			i += size
-			n++
 		}
 	}
 
-	return w, n, i, ErrEndOfBuffer
+	return w, n, st, ErrEndOfBuffer
 }
 
 func (d *Decoder) skipLit(b []byte, st int) (i int, err error) {
@@ -506,7 +500,7 @@ func (d *Decoder) skipVal(b []byte, st int, val string) (i int, err error) {
 	}
 
 	if end > len(b) && string(b[st:]) == val[:len(b)-st] {
-		return len(b), ErrEndOfBuffer
+		return st, ErrEndOfBuffer
 	}
 
 	return st, ErrSyntax
@@ -601,7 +595,9 @@ func skipInt(b []byte, i int, hex bool) (_ int, ok bool) {
 	return i, ok
 }
 
-func decodeRune(w, b []byte, i int) ([]byte, int, error) {
+func decodeRune(w, b []byte, st int) (_ []byte, i int, err error) {
+	i = st
+
 	var size int
 
 	switch b[i] {
@@ -618,7 +614,7 @@ func decodeRune(w, b []byte, i int) ([]byte, int, error) {
 	i++
 
 	if i+size > len(b) {
-		return w, i - 2, ErrEndOfBuffer
+		return w, st - 1, ErrEndOfBuffer
 	}
 
 	decode := func(i, size int) (r rune) {
@@ -644,7 +640,7 @@ func decodeRune(w, b []byte, i int) ([]byte, int, error) {
 
 	r := decode(i, size)
 	if r < 0 {
-		return w, i - 2, ErrBadRune
+		return w, st - 1, ErrBadRune
 	}
 
 	// we are after first \u

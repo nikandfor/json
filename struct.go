@@ -16,7 +16,8 @@ type (
 
 		off uintptr
 
-		un unmarshaler
+		un  unmarshaler
+		unr unmarshalerReader
 	}
 )
 
@@ -25,30 +26,30 @@ var (
 	progs = map[unsafe.Pointer]*structProg{}
 )
 
-func (d *Decoder) compileStruct(tp unsafe.Pointer) (unmarshaler, error) {
-	if p, ok := progs[tp]; ok {
-		return p.unmarshal, nil
+func compileStruct(tp unsafe.Pointer, d *Decoder, r *Reader) (*structProg, error) {
+	if pr, ok := progs[tp]; ok {
+		return pr, nil
 	}
 
-	p := &structProg{
+	pr := &structProg{
 		dec: map[string]*structField{},
 	}
 
-	err := d.compileStructFields(tp, p)
+	err := compileStructFields(tp, pr, d, r)
 	if err != nil {
 		return nil, err
 	}
 
-	progs[tp] = p
+	progs[tp] = pr
 
-	return p.unmarshal, nil
+	return pr, nil
 }
 
-func (d *Decoder) compileStructFields(tp unsafe.Pointer, p *structProg) error {
-	r := toType(tp)
+func compileStructFields(tp unsafe.Pointer, p *structProg, d *Decoder, r *Reader) error {
+	rt := toType(tp)
 
-	for i := 0; i < r.NumField(); i++ {
-		sf := r.Field(i)
+	for i := 0; i < rt.NumField(); i++ {
+		sf := rt.Field(i)
 
 		tag := strings.Split(sf.Tag.Get("json"), ",")
 
@@ -59,7 +60,7 @@ func (d *Decoder) compileStructFields(tp unsafe.Pointer, p *structProg) error {
 		_, tp := unpack(sf.Type)
 
 		if sf.Anonymous {
-			err := d.compileStructFields(tp, p)
+			err := compileStructFields(tp, p, d, r)
 			if err != nil {
 				return err
 			}
@@ -77,8 +78,19 @@ func (d *Decoder) compileStructFields(tp unsafe.Pointer, p *structProg) error {
 			f.un = un
 		}
 
+		if unr := r.unCustom(f.ptp); unr != nil {
+			f.unr = unr
+		}
+
 		if f.un == nil {
 			_, err := d.compile(tp)
+			if err != nil {
+				return err
+			}
+		}
+
+		if f.unr == nil {
+			_, err := r.compile(tp)
 			if err != nil {
 				return err
 			}
