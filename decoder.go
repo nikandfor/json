@@ -255,16 +255,12 @@ func (d *Decoder) More(b []byte, st int, typ byte) (more bool, i int, err error)
 		return false, i, nil
 	}
 
-	if typ == Array {
-		return true, i, nil
-	}
-
 	tp, i, err := d.Type(b, i)
 	if err != nil {
 		return false, i, err
 	}
 
-	if tp != String {
+	if typ == Object && tp != String {
 		return false, i, ErrSyntax
 	}
 

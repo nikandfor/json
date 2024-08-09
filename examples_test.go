@@ -2,6 +2,7 @@ package json_test
 
 import (
 	"fmt"
+	"strconv"
 
 	"nikand.dev/go/json"
 	"nikand.dev/go/json/benchmarks_data"
@@ -83,14 +84,8 @@ func ExampleDecoder_multipleValues() {
 }
 
 func ExampleDecoder_Seek_unmarshal() {
-	type Topic struct {
-		ID    int    `json:"id"`
-		Title string `json:"title"`
-	}
-
 	err := func(b []byte) error {
 		var d json.Decoder
-		var topic Topic
 
 		i, err := d.Seek(b, 0, "topics", "topics")
 		if err != nil {
@@ -100,12 +95,30 @@ func ExampleDecoder_Seek_unmarshal() {
 		i, err = d.Enter(b, i, json.Array)
 
 		for err == nil && d.ForMore(b, &i, json.Array, &err) {
-			i, err = d.Unmarshal(b, i, &topic)
-			if err != nil {
-				return fmt.Errorf("unmarshal topic: %w", err)
-			}
+			var id int
+			var title []byte
 
-			fmt.Printf("> %3d %s\n", topic.ID, topic.Title)
+			i, err = d.IterFunc(b, i, json.Object, func(k, v []byte) error {
+				switch string(k) {
+				case "id":
+					x, err := strconv.ParseInt(string(v), 10, 64)
+					if err != nil {
+						return fmt.Errorf("parse id: %w", err)
+					}
+
+					id = int(x)
+				case "title":
+					title, _, err = d.DecodeString(v, 0, title[:0])
+					if err != nil {
+						return fmt.Errorf("decode title: %w", err)
+					}
+				}
+
+				return nil
+			})
+
+			fmt.Printf("> %3d %s\n", id, title)
+
 		}
 
 		if err != nil {

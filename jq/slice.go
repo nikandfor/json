@@ -25,12 +25,26 @@ type (
 func (f Length) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
 	var p json.Decoder
 
-	st = p.SkipSpaces(r, st)
+	i := p.SkipSpaces(r, st)
 	if st == len(r) {
 		return w, st, nil, nil
 	}
 
-	n, i, err := p.Length(r, st)
+	tp, i, err := p.Type(r, i)
+	if err != nil {
+		return w, i, state, pe(err, i)
+	}
+
+	var n int
+
+	switch tp {
+	case json.Array, json.Object:
+		n, i, err = p.Length(r, i)
+	case json.String:
+		n, i, err = p.DecodedStringLength(r, i)
+	default:
+		return w, i, state, pe(json.ErrType, i)
+	}
 	if err != nil {
 		return w, i, state, pe(err, i)
 	}

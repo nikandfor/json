@@ -274,16 +274,12 @@ again:
 		return false, nil
 	}
 
-	if typ == Array {
-		return true, nil
-	}
-
 	tp, err := r.Type()
 	if err != nil {
 		return false, err
 	}
 
-	if tp != String {
+	if typ == Object && tp != String {
 		return false, ErrSyntax
 	}
 

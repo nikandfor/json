@@ -1,4 +1,4 @@
-package json
+package json3
 
 import (
 	"encoding/json"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	json2 "nikand.dev/go/json"
 	"nikand.dev/go/json/benchmarks_data"
 )
 
@@ -188,7 +189,7 @@ func TestUnmarshalDecoderData(tb *testing.T) {
 
 	i, err = d.Unmarshal(benchmarks_data.LargeFixture, 0, &large)
 	assert.NoError(tb, err)
-	i = SkipSpaces(benchmarks_data.LargeFixture, i)
+	i = json2.SkipSpaces(benchmarks_data.LargeFixture, i)
 	assert.Equal(tb, len(benchmarks_data.LargeFixture), i)
 
 	assert.Equal(tb, largeStd, large)
@@ -241,6 +242,9 @@ func TestUnmarshalReaderData(tb *testing.T) {
 
 	err = r.Unmarshal(&medium)
 	assert.NoError(tb, err)
+
+	q := benchmarks_data.MediumFixture
+	tb.Logf("%q %q %q", q[2136-6:2136], q[2136:2146], q[2146:2146+10])
 
 	assert.Equal(tb, mediumStd, medium)
 

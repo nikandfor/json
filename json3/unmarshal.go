@@ -1,4 +1,4 @@
-package json
+package json3
 
 import (
 	"encoding/base64"
@@ -8,9 +8,15 @@ import (
 	"strconv"
 	"sync"
 	"unsafe"
+
+	"nikand.dev/go/json"
 )
 
 type (
+	Decoder struct {
+		json.Decoder
+	}
+
 	UnmarshalerAt interface {
 		UnmarshalJSONAt(b []byte, st int) (i int, err error)
 	}
@@ -38,6 +44,27 @@ type (
 	anyFloat interface {
 		~float32 | ~float64
 	}
+)
+
+const (
+	None   = json.None
+	Null   = json.Null
+	Bool   = json.Bool
+	String = json.String
+	Array  = json.Array
+	Object = json.Object
+	Number = json.Number
+)
+
+var (
+	ErrBadNumber   = json.ErrBadNumber
+	ErrBadRune     = json.ErrBadRune
+	ErrBadString   = json.ErrBadString
+	ErrEndOfBuffer = json.ErrEndOfBuffer
+	ErrNoSuchKey   = json.ErrNoSuchKey
+	ErrOutOfBounds = json.ErrOutOfBounds
+	ErrSyntax      = json.ErrSyntax
+	ErrType        = json.ErrType
 )
 
 var (

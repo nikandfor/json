@@ -1,4 +1,4 @@
-package json
+package json3
 
 import (
 	"strings"
@@ -21,10 +21,8 @@ type (
 	}
 )
 
-var (
-	// protected by mu
-	progs = map[unsafe.Pointer]*structProg{}
-)
+// protected by mu
+var progs = map[unsafe.Pointer]*structProg{}
 
 func compileStruct(tp unsafe.Pointer, d *Decoder, r *Reader) (*structProg, error) {
 	if pr, ok := progs[tp]; ok {

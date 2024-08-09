@@ -1,4 +1,4 @@
-package json
+package json3
 
 import (
 	"encoding/base64"
@@ -6,9 +6,15 @@ import (
 	"strconv"
 	"sync"
 	"unsafe"
+
+	"nikand.dev/go/json"
 )
 
 type (
+	Reader struct {
+		json.Reader
+	}
+
 	UnmarshalerFrom interface {
 		UnmarshalJSONFrom(r *Reader) (err error)
 	}
