@@ -134,7 +134,7 @@ again:
 			err = r.skipString()
 		case 'n', 't', 'f':
 			r.i, err = d.skipLit(r.b, r.i)
-			if err == ErrEndOfBuffer {
+			if err == ErrEndOfBuffer { //nolint:errorlint
 				err = nil
 				break again
 			}
@@ -146,7 +146,7 @@ again:
 			depth--
 		default:
 			r.i, err = d.skipNum(r.b, r.i)
-			if err == ErrBadNumber && r.i == len(r.b) {
+			if err == ErrBadNumber && r.i == len(r.b) { //nolint:errorlint
 				err = nil
 				break again
 			}
@@ -262,7 +262,7 @@ again:
 	}
 
 	if r.i == len(r.b) {
-		if err = r.more(); err != nil {
+		if err := r.more(); err != nil {
 			return false, err
 		}
 
@@ -287,7 +287,7 @@ again:
 }
 
 // ForMore is a convenient wrapper for More which makes iterating code shorter and simpler.
-func (r *Reader) ForMore(typ byte, errp *error) bool {
+func (r *Reader) ForMore(typ byte, errp *error) bool { //nolint:gocritic
 	more, err := r.More(typ)
 	if err != nil {
 		*errp = err
@@ -424,7 +424,7 @@ again:
 	goto again
 }
 
-func (r *Reader) decodeString(w []byte) (_ []byte, n int, err error) {
+func (r *Reader) decodeString(w []byte) (_ []byte, n int, err error) { //nolint:gocognit
 	r.i += 1 // opening "
 	done := r.i
 
@@ -469,7 +469,7 @@ again:
 				w = add(w, '\f')
 			case 'x', 'u', 'U':
 				w, r.i, err = decodeRune(w, r.b, r.i)
-				if err == ErrEndOfBuffer {
+				if err == ErrEndOfBuffer { //nolint:errorlint
 					break again
 				}
 				if err != nil {

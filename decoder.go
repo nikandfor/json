@@ -429,7 +429,7 @@ func (d *Decoder) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, 
 				w = add(w, '\f')
 			case 'x', 'u', 'U':
 				w, i, err = decodeRune(w, b, i)
-				if err == ErrEndOfBuffer {
+				if err == ErrEndOfBuffer { //nolint:errorlint
 					i = st
 				}
 				if err != nil {
