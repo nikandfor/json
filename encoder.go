@@ -5,9 +5,7 @@ import (
 )
 
 type (
-	Encoder struct {
-		//	ASCII bool // escape Unicode symbols except printable ASCII range.
-	}
+	Encoder struct{}
 )
 
 const hex = "0123456789abcdef"
@@ -27,10 +25,9 @@ func init() {
 }
 
 // EncodeString encodes string in a JSON compatible way.
-// It also adds quotes.
-func (e *Encoder) EncodeString(w, s []byte) []byte {
+func (e *Encoder) AppendString(w, s []byte) []byte {
 	w = append(w, '"')
-	w = e.EncodeStringContent(w, s)
+	w = e.AppendStringContent(w, s)
 	w = append(w, '"')
 
 	return w
@@ -40,7 +37,7 @@ func (e *Encoder) EncodeString(w, s []byte) []byte {
 // It can be used to generate the string from multiple parts.
 // Yet if a symbol designated to be escaped is split between parts
 // it encodes each part of the symbol separately.
-func (e *Encoder) EncodeStringContent(w, s []byte) []byte {
+func (e *Encoder) AppendStringContent(w, s []byte) []byte {
 	done := 0
 
 	for i := 0; i < len(s); {

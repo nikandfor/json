@@ -1,5 +1,10 @@
 package json
 
+// IterFunc is a little helper on top of Enter and ForMore methonds.
+// It iterates over object or array and calls f for each value.
+// If it iterates over array k will be nil.
+// If it iterates over object k is decoded using Key which doesn't decode escape sequences.
+// It reads object or array to the end unless f returned an error.
 func (d *Decoder) IterFunc(b []byte, st int, tp byte, f func(k, v []byte) error) (i int, err error) {
 	var k, v []byte
 
@@ -33,6 +38,8 @@ func (d *Decoder) IterFunc(b []byte, st int, tp byte, f func(k, v []byte) error)
 	return i, nil
 }
 
+// IterFunc is a little helper on top of Enter and ForMore methonds.
+// See Decoder.IterFunc for more details.
 func (r *Reader) IterFunc(tp byte, f func(k, v []byte) error) (err error) {
 	var k, v []byte
 

@@ -220,7 +220,7 @@ func (d *Decoder) DecodedStringLength(b []byte, st int) (n, i int, err error) {
 
 // Enter enters an Array or an Object. typ is checked to match with the actual container type.
 // Use More or, more convenient form, ForMore to iterate over container.
-// See examples to understand the usage pattern more.
+// See examples to better understand usage pattern.
 func (d *Decoder) Enter(b []byte, st int, typ byte) (i int, err error) {
 	tp, i, err := d.Type(b, st)
 	if err != nil {

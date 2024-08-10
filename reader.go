@@ -233,7 +233,7 @@ func (r *Reader) DecodedStringLength() (n int, err error) {
 
 // Enter enters an Array or an Object. typ is checked to match with the actual container type.
 // Use More or, more convenient form, ForMore to iterate over container.
-// See examples to understand the usage pattern more.
+// See examples to better understand usage pattern.
 func (r *Reader) Enter(typ byte) (err error) {
 	tp, err := r.Type()
 	if err != nil {
@@ -338,14 +338,22 @@ func (r *Reader) Length() (n int, err error) {
 
 // Lock locks the buffer from rewriting by reading more data from Reader.
 // Lock also remembers position in the stream and allows rewinding to it.
+
+// Lock locks internal buffer so the data is not overwritten when more data is read from underlaying reader.
+// It's used to return to the locked position in a stream and reread some part of it.
+// Internal buffer grows to the size of data locked plus additional space for the next Read.
+// Lock must be followed by Unlock just like for sync.Mutex.
+// Rewind is used to return to the latest Lock position.
 // Multiple nested locks are allowed.
+// It returns the number of locks acquired and not released so far; kinda Lock depth.
 func (r *Reader) Lock() int {
 	r.lock = append(r.lock, r.i)
 
 	return len(r.lock)
 }
 
-// Unlock releases buffer lock.
+// Unlock releases the latest buffer Lock.
+// It returns the number of remaining active Locks.
 func (r *Reader) Unlock() int {
 	r.lock = r.lock[:len(r.lock)-1]
 

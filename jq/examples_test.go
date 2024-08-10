@@ -23,8 +23,8 @@ func ExampleIndex() {
 	}
 
 	fmt.Printf("value: %s\n", res)
-	fmt.Printf("final position: %d of %d\n", i, len(data)) // object was parsed to the end to be able to read next
-	_ = i < len(data)                                      // but not the next value
+	fmt.Printf("final position: %d of %d\n", i, len(data)) // filter only parsed first value in the buffer
+	_ = i < len(data)                                      // and stopped immideately after it
 
 	// Output:
 	// value: {"obj":"val"}
