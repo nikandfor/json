@@ -390,7 +390,7 @@ func (d *Decoder) decodeString(b []byte, st int, w []byte) (_ []byte, n, i int, 
 	i = st + 1 // opening "
 	done := i
 
-	add := func(d []byte, s ...byte) []byte {
+	add := func(w []byte, s ...byte) []byte {
 		n += len(s)
 
 		if w == nil {

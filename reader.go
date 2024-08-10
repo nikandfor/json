@@ -436,7 +436,7 @@ func (r *Reader) decodeString(w []byte) (_ []byte, n int, err error) { //nolint:
 	r.i += 1 // opening "
 	done := r.i
 
-	add := func(d []byte, s ...byte) []byte {
+	add := func(w []byte, s ...byte) []byte {
 		n += len(s)
 
 		if w == nil {

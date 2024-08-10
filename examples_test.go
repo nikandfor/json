@@ -83,7 +83,7 @@ func ExampleDecoder_multipleValues() {
 	// value: ["array"]
 }
 
-func ExampleDecoder_Seek_seek_iter() {
+func ExampleDecoder_Seek_seekIter() {
 	err := func(b []byte) error {
 		var d json.Decoder
 
