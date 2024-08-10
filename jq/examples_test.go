@@ -24,7 +24,7 @@ func ExampleIndex() {
 
 	fmt.Printf("value: %s\n", res)
 	fmt.Printf("final position: %d of %d\n", i, len(data)) // filter only parsed first value in the buffer
-	_ = i < len(data)                                      // and stopped immideately after it
+	_ = i < len(data)                                      // and stopped immediately after it
 
 	// Output:
 	// value: {"obj":"val"}

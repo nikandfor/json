@@ -68,7 +68,7 @@ func FuzzStringEncodeDecode(f *testing.F) {
 		//		t.SkipNow()
 		//	}
 
-		b := g.EncodeString(nil, s)
+		b := g.AppendString(nil, s)
 
 		st := len(b)
 		b, i, err := p.DecodeString(b, 0, b)
