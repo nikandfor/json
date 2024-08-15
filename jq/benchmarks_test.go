@@ -17,19 +17,19 @@ func BenchmarkIndex(b *testing.B) {
 		{
 			Name:   "Small",
 			Data:   benchmarks_data.SmallFixture,
-			Filter: &Index{"uuid"},
+			Filter: NewIndex("uuid"),
 			Result: []byte(`"de305d54-75b4-431b-adb2-eb6b9e546014"`),
 		},
 		{
 			Name:   "Medium",
 			Data:   benchmarks_data.MediumFixture,
-			Filter: &Index{"person", "gravatar", "avatars", 0, "url"},
+			Filter: NewIndex("person", "gravatar", "avatars", 0, "url"),
 			Result: []byte(`"http://1.gravatar.com/avatar/f7c8edd577d13b8930d5522f28123510"`),
 		},
 		{
 			Name:   "Large",
 			Data:   benchmarks_data.LargeFixture,
-			Filter: &Index{"topics", "topics", 28, "posters", 0, "user_id"},
+			Filter: NewIndex("topics", "topics", 28, "posters", 0, "user_id"),
 			Result: []byte(`52`),
 		},
 	} {

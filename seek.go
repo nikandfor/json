@@ -47,7 +47,7 @@ func (d *Decoder) seekObj(b []byte, st int, key string) (i int, err error) {
 		return
 	}
 
-	return st, ErrNoSuchKey
+	return i, ErrNoSuchKey
 }
 
 func (d *Decoder) seekArr(b []byte, st, idx int) (i int, err error) {
@@ -83,5 +83,5 @@ func (d *Decoder) seekArr(b []byte, st, idx int) (i int, err error) {
 		return
 	}
 
-	return st, ErrOutOfBounds
+	return i, ErrOutOfBounds
 }

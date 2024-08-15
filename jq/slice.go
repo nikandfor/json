@@ -88,17 +88,19 @@ func (f *Slice) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State
 	switch {
 	case left == right:
 	case left < right:
-		w, err = f.applyPart(w, r, st, left, right, true)
+		w, err = f.applyPart(w, r, st, left, right, false)
 		if err != nil {
 			return
 		}
 	case f.Circle:
-		w, err = f.applyPart(w, r, st, left, n, true)
+		wst := len(w)
+
+		w, err = f.applyPart(w, r, st, left, n, false)
 		if err != nil {
 			return
 		}
 
-		w, err = f.applyPart(w, r, st, 0, right, false)
+		w, err = f.applyPart(w, r, st, 0, right, len(w) != wst)
 		if err != nil {
 			return
 		}
@@ -109,7 +111,7 @@ func (f *Slice) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State
 	return w, i, nil, nil
 }
 
-func (f *Slice) applyPart(w, r []byte, st, left, right int, first bool) ([]byte, error) {
+func (f *Slice) applyPart(w, r []byte, st, left, right int, comma bool) ([]byte, error) {
 	var p json.Decoder
 	var raw []byte
 
@@ -128,7 +130,7 @@ func (f *Slice) applyPart(w, r []byte, st, left, right int, first bool) ([]byte,
 			continue
 		}
 
-		if !first || n != left {
+		if comma || n != left {
 			w = append(w, ',')
 		}
 
@@ -210,6 +212,8 @@ func (f *Slice) leftRight(n int) (l, r int) {
 
 	return
 }
+
+func NewArray(of Filter) *Array { return &Array{Filter: of} }
 
 func (f *Array) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
 	var p json.Decoder

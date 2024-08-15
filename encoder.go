@@ -24,6 +24,14 @@ func init() {
 	}
 }
 
+func (e *Encoder) AppendKey(w, s []byte) []byte {
+	w = append(w, '"')
+	w = append(w, s...)
+	w = append(w, '"')
+
+	return w
+}
+
 // EncodeString encodes string in a JSON compatible way.
 func (e *Encoder) AppendString(w, s []byte) []byte {
 	w = append(w, '"')
