@@ -16,6 +16,9 @@ func TestObject(tb *testing.T) {
 		Key: ObjectKey{Key: "create", Filter: Literal(`"new"`)},
 		Exp: `{"create":"new"}`,
 	}, {
+		Key: ObjectKey{Key: "null", Filter: NewIndex("e")},
+		Exp: `{"null":null}`,
+	}, {
 		Key: ObjectKey{Key: "dot", Filter: Dot{}},
 		Exp: `{"dot":` + string(r) + `}`,
 	}, {

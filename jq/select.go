@@ -36,6 +36,13 @@ func (f *Select) Next(w, r []byte, st int, state State) (_ []byte, i int, _ Stat
 			return w, i, state, err
 		}
 
+		if len(f.Buf) == 0 && sub == nil {
+			break
+		}
+		if len(f.Buf) == 0 {
+			continue
+		}
+
 		ok, _, err = IsTrue(f.Buf, 0)
 		//	log.Printf("select istrue %v %v <- %q", ok, err, f.Buf)
 		if err != nil {

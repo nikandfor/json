@@ -13,27 +13,30 @@ type (
 	//
 	// Filters are stateless,
 	// but some of them may have temporary buffer they use for internal processing.
-	// It a filter needs to carry a state it returns it from the first call and
-	// expects to get it back on the next call.
+	// If a filter needs to carry a state, it returns it from the first call and
+	// expects to receive it back on the next call.
 	// The first time the filter is called on a new value state must be nil.
 	//
 	// Filter may not add anything to w buffer if there is an empty result,
-	// iterating over empty array for example.
+	// iterating over empty array is an example.
 	//
-	// Filter also may have more than one result, iterating over long array for example.
+	// Filter also may have more than one result,
+	// iterating over array with more than one element is an example.
 	// In that case Next returns only one value at a time and non-nil state.
 	// Non-nil returned state means there are more values possible, but not guaranteed.
-	// To get them call the Next once again passing returned state back to the Filter.
-	// Second return value is a position where parsing ended,
-	// it must be passed back unchanged when iterating over result values.
+	// To get them call the Next once again passing returned index and state back to the Filter.
+	// Thus the returned index is a part of the state.
 	// If returned state is nil, there are no more values to return.
+	//
+	// Filter may add no value to w and return non-nil state as many times as it needs.
 	Filter interface {
 		Next(w, r []byte, st int, state State) ([]byte, int, State, error)
 	}
 
-	// State is a general state of a Filter stored outside of it.
+	// State is a state of a Filter stored externally as Filters are stateless by design.
+	//
 	// It's opaque value for the caller and only should be used to pass it back
-	// to the same Filter with the same buffer and position returned with the state.
+	// to the same Filter with the same buffer and index returned with the state.
 	State interface{}
 
 	// Dot is a trivial filter that parses the values and returns it unchanged.
