@@ -45,3 +45,22 @@ func TestIndex(tb *testing.T) {
 	assert.Nil(tb, state)
 	assert.Equal(tb, len(r), i)
 }
+
+func TestIndexIterEmpty(tb *testing.T) {
+	var w []byte
+	r := []byte(`{"a":[],"b":{}}`)
+
+	f := NewIndex("a", Iter{})
+
+	w, _, state, err := f.Next(w[:0], r, 0, nil)
+	assert.NoError(tb, err)
+	assert.Nil(tb, state)
+	assert.Len(tb, w, 0)
+
+	f = NewIndex("b", Iter{})
+
+	w, _, state, err = f.Next(w[:0], r, 0, nil)
+	assert.NoError(tb, err)
+	assert.Nil(tb, state)
+	assert.Len(tb, w, 0)
+}

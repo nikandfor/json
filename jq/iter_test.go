@@ -50,4 +50,26 @@ func TestIter(t *testing.T) {
 	assert.Nil(t, state)
 	assert.Len(t, data, i)
 	assert.Equal(t, "", string(w))
+
+	state = nil
+	i = 0
+
+	data = `{}`
+
+	w, i, state, err = Iter{}.Next(w[:0], []byte(data), i, state)
+	assert.NoError(t, err)
+	assert.Nil(t, state)
+	assert.Len(t, data, i)
+	assert.Equal(t, "", string(w))
+
+	state = nil
+	i = 0
+
+	data = `[]`
+
+	w, i, state, err = Iter{}.Next(w[:0], []byte(data), i, state)
+	assert.NoError(t, err)
+	assert.Nil(t, state)
+	assert.Len(t, data, i)
+	assert.Equal(t, "", string(w))
 }

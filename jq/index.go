@@ -129,6 +129,8 @@ back:
 			fi++
 		}
 
+		first = false
+
 		//	log.Printf("index frwd %d  %d", fi, i)
 
 		for ; fi < len(f.Filters); fi++ {
