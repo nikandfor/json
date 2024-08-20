@@ -17,7 +17,7 @@ func TestSelect(t *testing.T) {
 	for _, exp := range []string{
 		"1", ``, `"a"`, `[4]`, `{"b":true}`,
 	} {
-		w, i, state, err = (&Select{}).Next(w[:0], []byte(data), i, state)
+		w, i, state, err = NewSelect(nil).Next(w[:0], []byte(data), i, state)
 		assert.NoError(t, err)
 		//	assert.Len(t, data, i)
 		assert.Equal(t, exp, string(w))

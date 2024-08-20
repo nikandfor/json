@@ -7,7 +7,6 @@ import (
 type (
 	Select struct {
 		Filter Filter
-		Buf    []byte
 	}
 
 	Map struct {
@@ -17,12 +16,29 @@ type (
 	}
 )
 
+func NewSelect(f Filter) *Select { return &Select{Filter: f} }
+
 func (f *Select) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
 	var p json.Decoder
+
+	wreset := len(w)
 
 	raw, i, err := p.Raw(r, st)
 	if err != nil {
 		return w, i, state, err
+	}
+
+	if f.Filter == nil {
+		ok, _, err := IsTrue(raw, 0)
+		if err != nil {
+			return w, st, state, err
+		}
+
+		if ok {
+			w = append(w, raw...)
+		}
+
+		return w, i, nil, nil
 	}
 
 	ff := cfilter(f.Filter, Dot{})
@@ -31,19 +47,19 @@ func (f *Select) Next(w, r []byte, st int, state State) (_ []byte, i int, _ Stat
 	var ok bool
 
 	for {
-		f.Buf, i, sub, err = ff.Next(f.Buf[:0], r, st, sub)
+		w, i, sub, err = ff.Next(w[:wreset], r, st, sub)
 		if err != nil {
 			return w, i, state, err
 		}
 
-		if len(f.Buf) == 0 && sub == nil {
+		if len(w[wreset:]) == 0 && sub == nil {
 			break
 		}
-		if len(f.Buf) == 0 {
+		if len(w[wreset:]) == 0 {
 			continue
 		}
 
-		ok, _, err = IsTrue(f.Buf, 0)
+		ok, _, err = IsTrue(w[wreset:], 0)
 		//	log.Printf("select istrue %v %v <- %q", ok, err, f.Buf)
 		if err != nil {
 			return w, i, state, err
@@ -56,6 +72,8 @@ func (f *Select) Next(w, r []byte, st int, state State) (_ []byte, i int, _ Stat
 			break
 		}
 	}
+
+	w = w[:wreset]
 
 	if ok {
 		w = append(w, raw...)

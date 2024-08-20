@@ -43,6 +43,8 @@ func (f *Index) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State
 		if err != nil {
 			return w[:wreset], i, nil, pe(err, i)
 		}
+
+		return w, i, nil, nil
 	}
 
 	var stateok *indexState

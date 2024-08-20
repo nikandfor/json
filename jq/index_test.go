@@ -20,12 +20,7 @@ func TestIndex(tb *testing.T) {
 		assert.Equal(tb, j == 0, state == nil)
 
 		w, i, state, err = f.Next(w[:0], r, i, state)
-		if !assert.NoError(tb, err) {
-			pref := r[:i]
-			suff := r[i:]
-
-			tb.Logf("%s|%s", pref, suff)
-		}
+		assertBytesErr(tb, r, i, err)
 
 		assert.Equal(tb, exp, string(w))
 
@@ -35,15 +30,20 @@ func TestIndex(tb *testing.T) {
 	}
 
 	w, i, state, err = f.Next(w[:0], r, i, state)
-	if !assert.NoError(tb, err) {
-		pref := r[:i]
-		suff := r[i:]
-
-		tb.Logf("%s|%s", pref, suff)
-	}
+	assertBytesErr(tb, r, i, err)
 
 	assert.Nil(tb, state)
 	assert.Equal(tb, len(r), i)
+}
+
+func TestIndexEmpty(tb *testing.T) {
+	r := []byte(`{"results":[],"key":"b"}`)
+	f := NewIndex()
+
+	w, i, err := NextAll(f, nil, r, 0, nil)
+	assertBytesErr(tb, r, i, err)
+	assert.Equal(tb, len(r), i)
+	assert.Equal(tb, r, w)
 }
 
 func TestIndexIterEmpty(tb *testing.T) {
@@ -63,4 +63,15 @@ func TestIndexIterEmpty(tb *testing.T) {
 	assert.NoError(tb, err)
 	assert.Nil(tb, state)
 	assert.Len(tb, w, 0)
+}
+
+func assertBytesErr(tb *testing.T, r []byte, i int, err error) {
+	if assert.NoError(tb, err) {
+		return
+	}
+
+	pref := r[:i]
+	suff := r[i:]
+
+	tb.Logf("%s|%s", pref, suff)
 }
