@@ -33,6 +33,11 @@ func keyIndexNext(w, r []byte, st int, f any) (_ []byte, i int, _ State, err err
 		return w, i, nil, err
 	}
 
+	i, err = d.Break(r, i, 1)
+	if err != nil {
+		return w, i, nil, err
+	}
+
 	w = append(w, raw...)
 
 	return w, i, nil, nil
