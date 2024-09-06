@@ -1,6 +1,8 @@
 package jq
 
 import (
+	"bytes"
+
 	"nikand.dev/go/json"
 )
 
@@ -13,6 +15,12 @@ type (
 		Filter Filter
 		Buf    []byte
 		Values bool
+	}
+
+	Equal struct {
+		L, R Filter
+		Not  bool
+		Buf  []byte
 	}
 )
 
@@ -81,6 +89,9 @@ func (f *Select) Next(w, r []byte, st int, state State) (_ []byte, i int, _ Stat
 
 	return w, i, nil, nil
 }
+
+func NewMap(f Filter) *Map       { return &Map{Filter: f} }
+func NewMapValues(f Filter) *Map { return &Map{Filter: f, Values: true} }
 
 func (f *Map) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
 	var p json.Decoder
@@ -166,6 +177,33 @@ func (f *Map) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, 
 	}
 
 	w = append(w, restp+2)
+
+	return w, i, nil, nil
+}
+
+func NewEqual(l, r Filter) *Equal    { return &Equal{L: l, R: r} }
+func NewNotEqual(l, r Filter) *Equal { return &Equal{L: l, R: r, Not: true} }
+
+func (f *Equal) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
+	f.Buf, i, _, err = f.L.Next(f.Buf[:0], r, st, nil)
+	if err != nil {
+		return w, st, nil, err
+	}
+
+	roff := len(f.Buf)
+
+	f.Buf, _, _, err = f.R.Next(f.Buf, r, st, nil)
+	if err != nil {
+		return w, st, nil, err
+	}
+
+	ok := bytes.Equal(f.Buf[:roff], f.Buf[roff:])
+
+	if ok == !f.Not {
+		w = append(w, "true"...)
+	} else {
+		w = append(w, "false"...)
+	}
 
 	return w, i, nil, nil
 }
