@@ -33,6 +33,7 @@ func TestQuery(tb *testing.T) {
 	assertBytesErr(tb, r, i, err)
 
 	assert.Nil(tb, state)
+	assert.Empty(tb, w)
 	assert.Equal(tb, len(r), i)
 }
 

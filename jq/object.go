@@ -50,7 +50,7 @@ func (f *Object) Next(w, r []byte, st int, state State) ([]byte, int, State, err
 	return w, i, state, nil
 }
 
-func (f *Object) next(w, r []byte, st int, state State, first bool) (_ []byte, i int, _ State, err error) {
+func (f *Object) next(w, r []byte, st int, state State, first bool) (_ []byte, i int, _ State, err error) { //nolint:gocognit
 	var d json.Decoder
 	var substate any
 	var comma bool
@@ -121,7 +121,7 @@ back:
 				stack[j].n = substate
 			}
 
-			if stack != nil && stack[j].n == nil && stack[j].s != nil {
+			if stack != nil && stack[j].n == nil && stack[j].s != nil { //nolint:gocritic
 				stack[j].i = 0
 				stack[j].s = nil
 				//	log.Printf("exhausted key %v  %+v", kf.Key, stack[j])

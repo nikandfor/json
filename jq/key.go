@@ -8,29 +8,14 @@ type (
 )
 
 func (f Key) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var d json.Decoder
-
-	st = d.SkipSpaces(r, st)
-	if st == len(r) {
-		return w, st, nil, nil
-	}
-
-	i, err = d.Seek(r, st, string(f))
-	if err != nil {
-		return w, i, nil, err
-	}
-
-	raw, i, err := d.Raw(r, i)
-	if err != nil {
-		return w, i, nil, err
-	}
-
-	w = append(w, raw...)
-
-	return w, i, nil, nil
+	return keyIndexNext(w, r, st, string(f))
 }
 
 func (f Index) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
+	return keyIndexNext(w, r, st, int(f))
+}
+
+func keyIndexNext(w, r []byte, st int, f any) (_ []byte, i int, _ State, err error) {
 	var d json.Decoder
 
 	st = d.SkipSpaces(r, st)
@@ -38,7 +23,7 @@ func (f Index) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State,
 		return w, st, nil, nil
 	}
 
-	i, err = d.Seek(r, st, int(f))
+	i, err = d.Seek(r, st, f)
 	if err != nil {
 		return w, i, nil, err
 	}

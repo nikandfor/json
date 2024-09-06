@@ -88,5 +88,6 @@ func TestCommaIter(t *testing.T) {
 	w, i, state, err = f.Next(w[:0], r, i, state)
 	assert.NoError(t, err)
 	assert.Nil(t, state)
-	assert.Equal(t, []byte{}, w)
+	assert.Equal(t, len(r), i)
+	assert.Empty(t, w)
 }

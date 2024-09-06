@@ -60,7 +60,7 @@ func (f *Query) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State
 
 	if stateok == nil {
 		i, err := d.Seek(r, i, f.Filters...)
-		if err == json.ErrNoSuchKey {
+		if err == json.ErrNoSuchKey { //nolint: errorlint
 			w = append(w, `null`...)
 
 			return w, i, nil, nil
@@ -96,7 +96,7 @@ func (f *Query) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State
 	return w, i, stateok, nil
 }
 
-func (f *Query) next(w, r []byte, st int, stack []indexSub, first bool) (_ []byte, i int, ok bool, err error) {
+func (f *Query) next(w, r []byte, st int, stack []indexSub, first bool) (_ []byte, i int, ok bool, err error) { //nolint:gocognit
 	var d json.Decoder
 
 	i = st
