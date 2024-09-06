@@ -59,7 +59,7 @@ func TestMapSelectEqual(t *testing.T) {
 	data := `[{"a":"b"},{"a":"c"},{"a":"b"}]`
 
 	f := NewMap(NewSelect(NewNotEqual(
-		NewIndex("a"),
+		NewQuery("a"),
 		Literal(`"c"`),
 	)))
 

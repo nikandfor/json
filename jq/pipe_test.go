@@ -6,13 +6,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPipeIndex(t *testing.T) {
+func TestPipeQuery(t *testing.T) {
 	data := `{"a":"b","c":4,"d":["e",null,true,false,{"f":3.4}]}`
 
 	f := NewPipe(
-		NewIndex("d"),
-		NewIndex(4),
-		NewIndex("f"),
+		NewQuery("d"),
+		NewQuery(4),
+		NewQuery("f"),
 	)
 
 	b, i, state, err := f.Next(nil, []byte(data), 0, nil)
@@ -59,7 +59,7 @@ func TestPipeComma(t *testing.T) {
 	assert.Nil(t, state)
 }
 
-func BenchmarkPipeIndex(b *testing.B) {
+func BenchmarkPipeQuery(b *testing.B) {
 	b.ReportAllocs()
 
 	data := []byte(`{"a":"b","c":4,"d":["e",null,true,false,{"f":3.4}]}`)
@@ -70,9 +70,9 @@ func BenchmarkPipeIndex(b *testing.B) {
 	var buf []byte
 
 	f := NewPipe(
-		NewIndex("d"),
-		NewIndex(4),
-		NewIndex("f"),
+		NewQuery("d"),
+		NewQuery(4),
+		NewQuery("f"),
 	)
 
 	for i := 0; i < b.N; i++ {

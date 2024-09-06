@@ -20,27 +20,27 @@ func TestSimple(t *testing.T) {
 	assert.Len(t, data, i)
 	assert.Equal(t, data, string(b))
 
-	b, i, _, err = NewIndex("a").Next(nil, []byte(data), 0, nil)
+	b, i, _, err = NewQuery("a").Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
 	assert.Len(t, data, i)
 	assert.Equal(t, `"b"`, string(b))
 
-	b, i, _, err = NewIndex("c").Next(nil, []byte(data), 0, nil)
+	b, i, _, err = NewQuery("c").Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
 	assert.Len(t, data, i)
 	assert.Equal(t, `4`, string(b))
 
-	b, i, _, err = NewIndex("non").Next(nil, []byte(data), 0, nil)
+	b, i, _, err = NewQuery("non").Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
 	assert.Len(t, data, i)
 	assert.Equal(t, `null`, string(b))
 
-	b, i, _, err = NewIndex("d", 2).Next(nil, []byte(data), 0, nil)
+	b, i, _, err = NewQuery("d", 2).Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
 	assert.Len(t, data, i)
 	assert.Equal(t, `true`, string(b))
 
-	b, i, _, err = NewIndex("d", 4, "f").Next(nil, []byte(data), 0, nil)
+	b, i, _, err = NewQuery("d", 4, "f").Next(nil, []byte(data), 0, nil)
 	assert.NoError(t, err)
 	assert.Len(t, data, i)
 	assert.Equal(t, `3.4`, string(b))

@@ -10,9 +10,9 @@ func TestComma(t *testing.T) {
 	data := `{"a":"b","c":4,"d":["e",null,true,false,{"f":3.4}]}`
 
 	f := NewComma(
-		NewIndex("a"),
-		NewIndex("c"),
-		NewIndex("d", 0),
+		NewQuery("a"),
+		NewQuery("c"),
+		NewQuery("d", 0),
 	)
 
 	var state State
@@ -38,9 +38,9 @@ func TestCommaPipe(t *testing.T) {
 	data := `{"a":"b","c":4,"d":["e",null,true,false,{"f":3.4}]}`
 
 	f := NewComma(
-		NewPipe(NewIndex("a")),
-		NewPipe(NewIndex("c")),
-		NewPipe(NewIndex("d"), NewIndex(0)),
+		NewPipe(NewQuery("a")),
+		NewPipe(NewQuery("c")),
+		NewPipe(NewQuery("d"), NewQuery(0)),
 	)
 
 	b, i, state, err := f.Next(nil, []byte(data), 0, nil)
@@ -67,8 +67,8 @@ func TestCommaIter(t *testing.T) {
 
 	//	f := NewArray(
 	f := NewComma(
-		NewIndex("a", Iter{}),
-		NewIndex("b", Iter{}),
+		NewQuery("a", Iter{}),
+		NewQuery("b", Iter{}),
 	//	),
 	)
 

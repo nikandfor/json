@@ -7,10 +7,10 @@ import (
 	"nikand.dev/go/json/jq"
 )
 
-func ExampleIndex() {
+func ExampleQuery() {
 	data := []byte(`{"key0":"skip it", "key1": {"next_key": ["array", null, {"obj":"val"}, "trailing element"]}}  "next"`)
 
-	f := jq.NewIndex("key1", "next_key", 2) // string keys and int array indexes are supported
+	f := jq.NewQuery("key1", "next_key", 2) // string keys and int array indexes are supported
 
 	var res []byte // reusable buffer
 	var i int      // start index
@@ -37,14 +37,14 @@ func ExampleBase64d() {
 	data := []byte(`{"key1":"eyJrZXkyIjoie1wia2V5M1wiOlwidmFsdWVcIn0ifQ=="}`)
 
 	f := jq.NewPipe(
-		jq.NewIndex("key1"),
+		jq.Key("key1"),
 		&jq.Base64d{
 			Encoding: base64.StdEncoding,
 		},
 		&jq.JSONDecoder{},
-		jq.NewIndex("key2"),
+		jq.Key("key2"),
 		&jq.JSONDecoder{},
-		jq.NewIndex("key3"),
+		jq.Key("key3"),
 	)
 
 	res, _, _, err := f.Next(nil, data, 0, nil)

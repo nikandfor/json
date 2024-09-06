@@ -7,9 +7,9 @@ import (
 )
 
 type (
-	// Index returns given Object key value or Array element at the index.
+	// Query returns given Object key value or Array element at the index.
 	// Supported index types: string (object key), int (array index), Iter (iterate over all values of Object or Array).
-	Index struct {
+	Query struct {
 		Filters []any
 		pool    []*indexState
 	}
@@ -21,13 +21,13 @@ type (
 	indexSub State
 )
 
-var ErrUnsupportedIndexFilter = errors.New("unsupported index filter")
+var ErrUnsupportedQueryFilter = errors.New("unsupported query filter")
 
-func NewIndex(filters ...any) *Index {
-	return &Index{Filters: filters}
+func NewQuery(filters ...any) *Query {
+	return &Query{Filters: filters}
 }
 
-func (f *Index) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
+func (f *Query) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
 	var d json.Decoder
 
 	st = d.SkipSpaces(r, st)
@@ -96,7 +96,7 @@ func (f *Index) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State
 	return w, i, stateok, nil
 }
 
-func (f *Index) next(w, r []byte, st int, stack []indexSub, first bool) (_ []byte, i int, ok bool, err error) {
+func (f *Query) next(w, r []byte, st int, stack []indexSub, first bool) (_ []byte, i int, ok bool, err error) {
 	var d json.Decoder
 
 	i = st
@@ -196,7 +196,7 @@ back:
 	}
 }
 
-func (f *Index) state() (ss *indexState) {
+func (f *Query) state() (ss *indexState) {
 	need := false
 
 loop:

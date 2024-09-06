@@ -6,10 +6,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIndex(tb *testing.T) {
+func TestQuery(tb *testing.T) {
 	r := []byte(`{"a": [{"b":[1, "2"]}, {"b":[3]}, {"b": {"c": 4, "d": "5"}}]}`)
 
-	f := NewIndex("a", Iter{}, "b", Iter{})
+	f := NewQuery("a", Iter{}, "b", Iter{})
 
 	var w []byte
 	var err error
@@ -36,9 +36,9 @@ func TestIndex(tb *testing.T) {
 	assert.Equal(tb, len(r), i)
 }
 
-func TestIndexEmpty(tb *testing.T) {
+func TestQueryEmpty(tb *testing.T) {
 	r := []byte(`{"results":[],"key":"b"}`)
-	f := NewIndex()
+	f := NewQuery()
 
 	w, i, err := NextAll(f, nil, r, 0, nil)
 	assertBytesErr(tb, r, i, err)
@@ -46,18 +46,18 @@ func TestIndexEmpty(tb *testing.T) {
 	assert.Equal(tb, r, w)
 }
 
-func TestIndexIterEmpty(tb *testing.T) {
+func TestQueryIterEmpty(tb *testing.T) {
 	var w []byte
 	r := []byte(`{"a":[],"b":{}}`)
 
-	f := NewIndex("a", Iter{})
+	f := NewQuery("a", Iter{})
 
 	w, _, state, err := f.Next(w[:0], r, 0, nil)
 	assert.NoError(tb, err)
 	assert.Nil(tb, state)
 	assert.Len(tb, w, 0)
 
-	f = NewIndex("b", Iter{})
+	f = NewQuery("b", Iter{})
 
 	w, _, state, err = f.Next(w[:0], r, 0, nil)
 	assert.NoError(tb, err)

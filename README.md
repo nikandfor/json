@@ -101,7 +101,7 @@ The code is from [examples](./jq/examples_test.go).
 
 data := []byte(`{"key0":"skip it", "key1": {"next_key": ["array", null, {"obj":"val"}, "trailing element"]}}  "next"`)
 
-f := jq.Index{"key1", "next_key", 2} // string keys and int array indexes are supported
+f := jq.Query{"key1", "next_key", 2} // string keys and int array indexes are supported
 
 var res []byte // reusable buffer
 var i int      // start index
@@ -131,14 +131,14 @@ Yes, I've seen such cases and this is how this library came to life.
 data := []byte(`{"key1":"eyJrZXkyIjoie1wia2V5M1wiOlwidmFsdWVcIn0ifQ=="}`)
 
 f := jq.NewPipe(
-	jq.Index{"key1"},
+	jq.Key("key1"),
 	&jq.Base64d{
 		Encoding: base64.StdEncoding,
 	},
 	&jq.JSONDecoder{},
-	jq.Index{"key2"},
+	jq.Key("key2"),
 	&jq.JSONDecoder{},
-	jq.Index{"key3"},
+	jq.Key("key3"),
 )
 
 res, _, _, err := f.Next(nil, data, 0, nil)

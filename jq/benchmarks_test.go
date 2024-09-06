@@ -7,7 +7,7 @@ import (
 	"nikand.dev/go/json/benchmarks_data"
 )
 
-func BenchmarkIndex(b *testing.B) {
+func BenchmarkQuery(b *testing.B) {
 	for _, tc := range []struct {
 		Name   string
 		Data   []byte
@@ -17,19 +17,19 @@ func BenchmarkIndex(b *testing.B) {
 		{
 			Name:   "Small",
 			Data:   benchmarks_data.SmallFixture,
-			Filter: NewIndex("uuid"),
+			Filter: NewQuery("uuid"),
 			Result: []byte(`"de305d54-75b4-431b-adb2-eb6b9e546014"`),
 		},
 		{
 			Name:   "Medium",
 			Data:   benchmarks_data.MediumFixture,
-			Filter: NewIndex("person", "gravatar", "avatars", 0, "url"),
+			Filter: NewQuery("person", "gravatar", "avatars", 0, "url"),
 			Result: []byte(`"http://1.gravatar.com/avatar/f7c8edd577d13b8930d5522f28123510"`),
 		},
 		{
 			Name:   "Large",
 			Data:   benchmarks_data.LargeFixture,
-			Filter: NewIndex("topics", "topics", 28, "posters", 0, "user_id"),
+			Filter: NewQuery("topics", "topics", 28, "posters", 0, "user_id"),
 			Result: []byte(`52`),
 		},
 	} {

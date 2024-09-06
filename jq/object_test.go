@@ -16,16 +16,16 @@ func TestObject(tb *testing.T) {
 		Key: ObjectKey{Key: "create", Filter: Literal(`"new"`)},
 		Exp: `{"create":"new"}`,
 	}, {
-		Key: ObjectKey{Key: "null", Filter: NewIndex("e")},
+		Key: ObjectKey{Key: "null", Filter: NewQuery("e")},
 		Exp: `{"null":null}`,
 	}, {
 		Key: ObjectKey{Key: "dot", Filter: Dot{}},
 		Exp: `{"dot":` + string(r) + `}`,
 	}, {
-		Key: ObjectKey{Key: "index.a", Filter: NewIndex("a")},
+		Key: ObjectKey{Key: "index.a", Filter: NewQuery("a")},
 		Exp: `{"index.a":1}`,
 	}, {
-		Key: ObjectKey{Key: "index.b.c.1", Filter: NewIndex("b", "c", 1)},
+		Key: ObjectKey{Key: "index.b.c.1", Filter: NewQuery("b", "c", 1)},
 		Exp: `{"index.b.c.1":4}`,
 	}} {
 		f := Object{
@@ -76,8 +76,8 @@ func TestObjectMulti(tb *testing.T) {
 	tb.Run("two", func(tb *testing.T) {
 		r := []byte(`{"a":[1,2,"3"],"b":[4,null]}`)
 		f := Object{Keys: []ObjectKey{
-			{Key: "a", Filter: NewIndex("a", Iter{})},
-			{Key: "b", Filter: NewIndex("b", Iter{})},
+			{Key: "a", Filter: NewQuery("a", Iter{})},
+			{Key: "b", Filter: NewQuery("b", Iter{})},
 		}}
 
 		var w []byte
@@ -111,9 +111,9 @@ func TestObjectMulti(tb *testing.T) {
 	tb.Run("three", func(tb *testing.T) {
 		r := []byte(`{"a":[1,2,"3"],"d":true,"b":[4,null]}`)
 		f := Object{Keys: []ObjectKey{
-			{Key: "a", Filter: NewIndex("a", Iter{})},
-			{Key: "d", Filter: NewIndex("d")},
-			{Key: "b", Filter: NewIndex("b", Iter{})},
+			{Key: "a", Filter: NewQuery("a", Iter{})},
+			{Key: "d", Filter: NewQuery("d")},
+			{Key: "b", Filter: NewQuery("b", Iter{})},
 		}}
 
 		var w []byte
