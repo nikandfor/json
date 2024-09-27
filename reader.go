@@ -3,7 +3,8 @@ package json
 import (
 	"errors"
 	"io"
-	"unicode/utf8"
+
+	"nikand.dev/go/skip"
 )
 
 type (
@@ -131,10 +132,10 @@ again:
 			r.i++
 			continue
 		case '"':
-			err = r.skipString()
+			_, err = r.skipString()
 		case 'n', 't', 'f':
 			r.i, err = d.skipLit(r.b, r.i)
-			if err == ErrEndOfBuffer { //nolint:errorlint
+			if err == ErrShortBuffer { //nolint:errorlint
 				err = nil
 				break again
 			}
@@ -184,7 +185,7 @@ func (r *Reader) Key() ([]byte, error) {
 	l := r.Lock()
 	defer r.Unlock()
 
-	if err := r.skipString(); err != nil {
+	if _, err := r.skipString(); err != nil {
 		return nil, err
 	}
 
@@ -206,13 +207,7 @@ func (r *Reader) DecodeString(buf []byte) (s []byte, err error) {
 		return buf, ErrType
 	}
 
-	if buf == nil {
-		buf = []byte{}
-	}
-
-	s, _, err = r.decodeString(buf)
-
-	return
+	return r.decodeString(buf)
 }
 
 // DecodedStringLength reads and decodes the next string but only return the result length.
@@ -226,9 +221,7 @@ func (r *Reader) DecodedStringLength() (n int, err error) {
 		return 0, ErrType
 	}
 
-	_, n, err = r.decodeString(nil)
-
-	return
+	return r.skipString()
 }
 
 // Enter enters an Array or an Object. typ is checked to match with the actual container type.
@@ -365,165 +358,46 @@ func (r *Reader) Rewind() {
 	r.i = r.lock[len(r.lock)-1]
 }
 
-func (r *Reader) skipString() (err error) {
-	b := r.b
-	i := r.i + 1 // opening "
+func (r *Reader) skipString() (l int, err error) {
+	var lp int
+	s := skip.Quo
 
-again:
-	for err == nil && i < len(b) {
-		switch b[i] {
-		case '"':
-			r.i = i + 1
-			return nil
-		case '\\':
-			if i+1 >= len(b) {
-				break again
+	for {
+		if r.i >= len(r.b) {
+			if err = r.more(); err != nil {
+				return l, err
 			}
+		}
 
-			size := 0
-
-			switch b[i+1] {
-			case '"', '\\', '/', 'n', 'r', 't', 'b', 'f':
-			case 'x':
-				size = 2
-			case 'u':
-				size = 4
-			case 'U':
-				size = 8
-			default:
-				r.i = i
-				return ErrBadString
-			}
-
-			if i+1+1+size > len(b) {
-				break again
-			}
-
-			i += 1 + 1 + size
-		case '\n', '\r', '\b':
-			r.i = i
-			return ErrBadString
-		default:
-			if b[i] < utf8.RuneSelf {
-				i++
-				break
-			}
-
-			if !utf8.FullRune(b[i:]) {
-				break again
-			}
-
-			_, size := utf8.DecodeRune(b[i:])
-			//	if r == utf8.RuneError && size == 1 {
-			//		return i, ErrBadRune
-			//	}
-
-			i += size
+		s, lp, r.i = skip.String(r.b, r.i, s)
+		l += lp
+		if !s.Err() {
+			return l, nil
+		}
+		if s.Err() && !s.Is(skip.ErrBuffer) {
+			return l, s
 		}
 	}
-	r.b = b
-	r.i = i
-	if err != nil {
-		return
-	}
-
-	err = r.more()
-
-	goto again
 }
 
-func (r *Reader) decodeString(w []byte) (_ []byte, n int, err error) { //nolint:gocognit
-	r.i += 1 // opening "
-	done := r.i
+func (r *Reader) decodeString(w []byte) (_ []byte, err error) { //nolint:gocognit
+	s := skip.Quo
 
-	add := func(w []byte, s ...byte) []byte {
-		n += len(s)
-
-		if w == nil {
-			return nil
+	for {
+		if r.i >= len(r.b) {
+			if err = r.more(); err != nil {
+				return w, err
+			}
 		}
 
-		return append(w, s...)
-	}
-
-again:
-	for err == nil && r.i < len(r.b) {
-		switch r.b[r.i] {
-		case '"':
-			w = add(w, r.b[done:r.i]...)
-			r.i++
-			return w, n, nil
-		case '\\':
-			w = add(w, r.b[done:r.i]...)
-
-			if r.i+1 == len(r.b) {
-				break again
-			}
-
-			r.i++
-
-			switch r.b[r.i] {
-			case '\\', '"', '/':
-				w = add(w, r.b[r.i])
-			case 'n':
-				w = add(w, '\n')
-			case 'r':
-				w = add(w, '\r')
-			case 't':
-				w = add(w, '\t')
-			case 'b':
-				w = add(w, '\b')
-			case 'f':
-				w = add(w, '\f')
-			case 'x', 'u', 'U':
-				w, r.i, err = decodeRune(w, r.b, r.i)
-				if err == ErrEndOfBuffer { //nolint:errorlint
-					break again
-				}
-				if err != nil {
-					return w, n, err
-				}
-
-				r.i--
-			default:
-				return w, n, ErrBadString
-			}
-
-			r.i++
-			done = r.i
-		case '\n', '\r', '\b':
-			return w, n, ErrBadString
-		default:
-			if r.b[r.i] < utf8.RuneSelf {
-				r.i++
-				break
-			}
-
-			if !utf8.FullRune(r.b[r.i:]) {
-				break again
-			}
-
-			rr, size := utf8.DecodeRune(r.b[r.i:])
-			if rr == utf8.RuneError && size == 1 {
-				w = add(w, r.b[done:r.i]...)
-				w = utf8.AppendRune(w, utf8.RuneError)
-
-				r.i += size
-				done = r.i
-
-				break
-			}
-
-			r.i += size
+		s, w, r.i = skip.DecodeString(r.b, r.i, s, w)
+		if !s.Err() {
+			return w, nil
+		}
+		if s.Err() && !s.Is(skip.ErrBuffer) {
+			return w, s
 		}
 	}
-	if err != nil {
-		return w, n, err
-	}
-
-	err = r.more()
-
-	goto again
 }
 
 func (r *Reader) more() error {

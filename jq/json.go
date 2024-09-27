@@ -34,7 +34,7 @@ func (f *JSONDecoder) Next(w, r []byte, st int, state State) (_ []byte, i int, _
 
 	for j := p.SkipSpaces(f.Buf, 0); j < len(f.Buf); j = p.SkipSpaces(f.Buf, j) {
 		raw, j, err = p.Raw(f.Buf, j)
-		if errors.Is(err, json.ErrEndOfBuffer) {
+		if errors.Is(err, json.ErrShortBuffer) {
 			break
 		}
 		if err != nil {
