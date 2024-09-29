@@ -41,7 +41,7 @@ func (f Length) Next(w, r []byte, st int, state State) ([]byte, int, State, erro
 	case json.Array, json.Object:
 		n, i, err = p.Length(r, i)
 	case json.String:
-		n, i, err = p.DecodedStringLength(r, i)
+		_, n, i, err = p.DecodedStringLength(r, i)
 	default:
 		return w, i, state, pe(json.ErrType, i)
 	}

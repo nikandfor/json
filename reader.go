@@ -132,7 +132,7 @@ again:
 			r.i++
 			continue
 		case '"':
-			_, err = r.skipString()
+			_, _, err = r.skipString()
 		case 'n', 't', 'f':
 			r.i, err = d.skipLit(r.b, r.i)
 			if err == ErrShortBuffer { //nolint:errorlint
@@ -185,7 +185,7 @@ func (r *Reader) Key() ([]byte, error) {
 	l := r.Lock()
 	defer r.Unlock()
 
-	if _, err := r.skipString(); err != nil {
+	if _, _, err := r.skipString(); err != nil {
 		return nil, err
 	}
 
@@ -212,13 +212,13 @@ func (r *Reader) DecodeString(buf []byte) (s []byte, err error) {
 
 // DecodedStringLength reads and decodes the next string but only return the result length.
 // It doesn't allocate while DecodeString does.
-func (r *Reader) DecodedStringLength() (n int, err error) {
+func (r *Reader) DecodedStringLength() (bs, rs int, err error) {
 	tp, err := r.Type()
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	if tp != String {
-		return 0, ErrType
+		return 0, 0, ErrType
 	}
 
 	return r.skipString()
@@ -358,24 +358,25 @@ func (r *Reader) Rewind() {
 	r.i = r.lock[len(r.lock)-1]
 }
 
-func (r *Reader) skipString() (l int, err error) {
-	var lp int
+func (r *Reader) skipString() (bs, rs int, err error) {
+	var bs0, rs0 int
 	s := skip.Quo
 
 	for {
 		if r.i >= len(r.b) {
 			if err = r.more(); err != nil {
-				return l, err
+				return bs, rs, err
 			}
 		}
 
-		s, lp, r.i = skip.String(r.b, r.i, s)
-		l += lp
+		s, bs0, rs0, r.i = skip.String(r.b, r.i, s)
+		bs += bs0
+		rs += rs0
 		if !s.Err() {
-			return l, nil
+			return bs, rs, nil
 		}
 		if s.Err() && !s.Is(skip.ErrBuffer) {
-			return l, s
+			return bs, rs, s
 		}
 	}
 }
@@ -390,7 +391,7 @@ func (r *Reader) decodeString(w []byte) (_ []byte, err error) { //nolint:gocogni
 			}
 		}
 
-		s, w, r.i = skip.DecodeString(r.b, r.i, s, w)
+		s, w, _, r.i = skip.DecodeString(r.b, r.i, s, w)
 		if !s.Err() {
 			return w, nil
 		}

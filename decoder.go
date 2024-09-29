@@ -186,7 +186,7 @@ func (d *Decoder) DecodeString(b []byte, st int, buf []byte) (s []byte, i int, e
 		return buf, i, ErrType
 	}
 
-	ss, w, i := skip.DecodeString(b, i, skip.Quo|skip.ErrRune, buf)
+	ss, w, _, i := skip.DecodeString(b, i, skip.Quo|skip.ErrRune, buf)
 	if ss.Is(skip.ErrBuffer) {
 		return w, st, ErrShortBuffer
 	}
@@ -199,25 +199,25 @@ func (d *Decoder) DecodeString(b []byte, st int, buf []byte) (s []byte, i int, e
 
 // DecodedStringLength reads and decodes the next string but only return the result length.
 // It doesn't allocate while DecodeString does.
-func (d *Decoder) DecodedStringLength(b []byte, st int) (l, i int, err error) {
+func (d *Decoder) DecodedStringLength(b []byte, st int) (bs, rs, i int, err error) {
 	tp, i, err := d.Type(b, st)
 	if err != nil {
 		return
 	}
 
 	if tp != String {
-		return 0, i, ErrType
+		return 0, 0, i, ErrType
 	}
 
-	ss, l, i := skip.String(b, i, skip.Quo|skip.ErrRune)
+	ss, bs, rs, i := skip.String(b, i, skip.Quo|skip.ErrRune)
 	if ss.Is(skip.ErrBuffer) {
-		return l, st, ErrShortBuffer
+		return bs, rs, st, ErrShortBuffer
 	}
 	if ss.Err() {
-		return l, i, ss
+		return bs, rs, i, ss
 	}
 
-	return l, i, nil
+	return bs, rs, i, nil
 }
 
 // Enter enters an Array or an Object. typ is checked to match with the actual container type.
@@ -331,7 +331,7 @@ func (d *Decoder) SkipSpaces(b []byte, i int) int {
 }
 
 func (d *Decoder) skipString(b []byte, st int) (i int, err error) {
-	ss, _, i := skip.String(b, st, skip.Quo)
+	ss, _, _, i := skip.String(b, st, skip.Quo)
 	if ss.Is(skip.ErrBuffer) {
 		return st, ErrShortBuffer
 	}
