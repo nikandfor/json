@@ -69,22 +69,17 @@ type (
 //
 // NextAll reads only the first value from the input and processes it
 // while ApplyToAll does that for each input value until end of buffer reached.
-func ApplyToAll(f Filter, w, r []byte, st int, sep []byte) ([]byte, error) {
+func ApplyToAll(f Filter, w, r, sep []byte) ([]byte, error) {
 	var err error
 
-	st = json.SkipSpaces(r, st)
-	if st == len(r) {
-		return w, nil
-	}
+	wend := len(w)
 
-	wst := len(w)
-
-	for i := st; i < len(r); i = json.SkipSpaces(r, i) {
-		if wst != len(w) {
+	for i := json.SkipSpaces(r, 0); i < len(r); i = json.SkipSpaces(r, i) {
+		if wend != len(w) {
 			w = append(w, sep...)
 		}
 
-		wst = len(w)
+		wend = len(w)
 
 		w, i, err = NextAll(f, w, r, i, sep)
 		if err != nil {

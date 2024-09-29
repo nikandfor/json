@@ -343,7 +343,7 @@ func (d *Decoder) skipString(b []byte, st int) (i int, err error) {
 }
 
 func (d *Decoder) skipNum(b []byte, st int) (i int, err error) {
-	n, i := skip.Number(b, st)
+	n, i := skip.Number(b, st, 0)
 	if !n.Ok() {
 		return i, ErrBadNumber
 	}

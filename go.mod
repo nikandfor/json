@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/stretchr/testify v1.8.4
-	nikand.dev/go/skip v0.0.0-20240927165805-d66c019f95a2
+	nikand.dev/go/skip v0.0.0-20240929132743-a6452f318447
 )
 
 require (

@@ -30,11 +30,15 @@ func TestDecoderString(t *testing.T) {
 
 	for j, data := range []string{
 		`""`, `"a"`, `"a\"b\nc\tde\"f\\g"`,
-		//	`"\xab\xac\xf3"`,
+		//	"\"a\u0016b\"",
 		`"\u00ab\u00ac\u00f3"`,
 		`"\u0100\u017e"`,
-		//	`"\U00e4b896\U00e7958c"`,
 	} {
+		var q string
+
+		err := json.Unmarshal([]byte(data), &q)
+		assert.NoError(t, err)
+
 		i, err := d.Skip([]byte(data), 0)
 		if !assert.NoError(t, err) || !assert.Equal(t, len(data), i) {
 			t.Logf("pos: %d (%[1]x)  data: %d %q", i, j, data)
@@ -47,10 +51,6 @@ func TestDecoderString(t *testing.T) {
 			continue
 		}
 
-		var q string
-
-		err = json.Unmarshal([]byte(data), &q)
-		assert.NoError(t, err)
 		assert.Equal(t, q, string(s))
 
 		if false {
