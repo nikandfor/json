@@ -24,5 +24,5 @@ gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c/go.mod h1:JHkPIbrfpd72SG/EV
 gopkg.in/errgo.v2 v2.1.0/go.mod h1:hNsd1EY+bozCKY1Ytp96fpM3vjJbqLJn88ws8XvfDNI=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
-nikand.dev/go/skip v0.0.0-20240929151604-20052f07912a h1:TqBlyEQ54n+knDEl5DMpB2GOSm6zeKix0SE0ADLO9u4=
-nikand.dev/go/skip v0.0.0-20240929151604-20052f07912a/go.mod h1:sxT9iqxrhIQGtoTQWbhSy7yhd5mmtenoHpG0buF6p1w=
+nikand.dev/go/skip v0.0.0-20241007224432-f66534f51d79 h1:DIXRpTyuUdENNRGKhdHK3jLJX5z6tGS3//S1zEC65js=
+nikand.dev/go/skip v0.0.0-20241007224432-f66534f51d79/go.mod h1:sxT9iqxrhIQGtoTQWbhSy7yhd5mmtenoHpG0buF6p1w=
