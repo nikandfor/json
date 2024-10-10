@@ -19,35 +19,18 @@ type (
 
 // Value types returned by Decoder.
 const (
-	None   = 0 // never returned in successful case
-	Null   = 'n'
-	Bool   = 'b'
-	String = 's'
-	Array  = '['
-	Object = '{'
-	Number = 'N'
+	None    = 0 // never returned in successful case
+	Null    = 'n'
+	Bool    = 'b'
+	String  = 's'
+	Array   = '['
+	Object  = '{'
+	Number  = '1'
+	Comment = '/'
 )
 
-var ( // bitsets
-	whitespaces uint64
-	decimals    uint64
-	hexdecimals uint64 // -64 offset
-)
-
-func init() {
-	for _, b := range []byte{'\n', '\r', '\t', ' '} {
-		whitespaces |= 1 << b
-	}
-
-	for b := '0'; b <= '9'; b++ {
-		decimals |= 1 << b
-	}
-
-	for b := 'a'; b <= 'z'; b++ {
-		hexdecimals |= 1 << b
-		hexdecimals |= 1 << (b - 'a' + 'A')
-	}
-}
+// bitsets
+var whitespaces uint64 = 1<<'\n' | 1<<'\r' | 1<<'\t' | 1<<' '
 
 // Decoder errors. Plus Str errors from skip module.
 var (
@@ -67,6 +50,12 @@ func (d *Decoder) Type(b []byte, st int) (tp byte, i int, err error) {
 
 		switch b[i] {
 		case ',', ':':
+			continue
+		case '/':
+			i, err = d.skipComment(b, i)
+			if err != nil {
+				return None, i, err
+			}
 			continue
 		case 't', 'f':
 			return Bool, i, nil
@@ -125,6 +114,12 @@ func (d *Decoder) Break(b []byte, st, depth int) (i int, err error) {
 		switch b[i] {
 		case ',', ':':
 			i++
+			continue
+		case '/':
+			i, err = d.skipComment(b, i)
+			if err != nil {
+				return i, err
+			}
 			continue
 		case '"':
 			i, err = d.skipString(b, i)
@@ -378,6 +373,49 @@ func (d *Decoder) skipVal(b []byte, st int, val string) (i int, err error) {
 	}
 
 	return st, ErrSyntax
+}
+
+func (d *Decoder) skipComment(b []byte, st int) (i int, err error) {
+	i = st
+
+	if i+1 >= len(b) {
+		return st, ErrShortBuffer
+	}
+
+	if b[i] != '/' {
+		return st, ErrSyntax
+	}
+	i++
+
+	switch b[i] {
+	case '/':
+		for i < len(b) && b[i] != '\n' {
+			i++
+		}
+
+		return i, nil
+	case '*':
+		//
+	default:
+		return st, ErrSyntax
+	}
+
+	for {
+		for i < len(b) && b[i] != '*' {
+			i++
+		}
+		if i+1 >= len(b) {
+			return st, ErrShortBuffer
+		}
+		i++
+
+		if b[i] == '/' {
+			i++
+			break
+		}
+	}
+
+	return i, nil
 }
 
 // SkipSpaces skips whitespaces.

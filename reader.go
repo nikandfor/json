@@ -59,6 +59,12 @@ again:
 		case ',', ':':
 			r.i++
 			continue
+		case '/':
+			err = r.skipComment()
+			if err != nil {
+				return None, err
+			}
+			continue
 		case 't', 'f':
 			return Bool, nil
 		case '"':
@@ -130,6 +136,12 @@ again:
 		switch r.b[r.i] {
 		case ',', ':':
 			r.i++
+			continue
+		case '/':
+			err = r.skipComment()
+			if err != nil {
+				return err
+			}
 			continue
 		case '"':
 			_, _, err = r.skipString()
@@ -397,6 +409,70 @@ func (r *Reader) decodeString(w []byte) (_ []byte, err error) { //nolint:gocogni
 		}
 		if s.Err() && !s.Is(skip.ErrBuffer) {
 			return w, s
+		}
+	}
+}
+
+func (r *Reader) skipComment() (err error) {
+	state := byte(0)
+
+more:
+	for {
+		if r.i >= len(r.b) {
+			if err = r.more(); err != nil {
+				return err
+			}
+		}
+
+		if state == 0 {
+			if r.i+1 >= len(r.b) {
+				continue more
+			}
+
+			if r.b[r.i] != '/' {
+				return ErrSyntax
+			}
+
+			state = r.b[r.i+1]
+
+			if state != '/' && state != '*' {
+				return ErrSyntax
+			}
+
+			r.i += 2
+
+			continue more
+		}
+
+		if state == '/' {
+			for r.i < len(r.b) && r.b[r.i] != '\n' {
+				r.i++
+			}
+			if r.i == len(r.b) {
+				continue more
+			}
+
+			r.i++
+
+			return
+		}
+
+		// state == '*'
+
+		for {
+			for r.i < len(r.b) && r.b[r.i] != '*' {
+				r.i++
+			}
+			if r.i+1 >= len(r.b) {
+				continue more
+			}
+			r.i++
+
+			if r.b[r.i] == '/' {
+				r.i++
+
+				return
+			}
 		}
 	}
 }
