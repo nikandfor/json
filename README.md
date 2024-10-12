@@ -82,6 +82,12 @@ for i := d.SkipSpaces(data, 0); i < len(data); i = d.SkipSpaces(data, i) { // ea
 
 ## jq usage
 
+> **Deprecated in favour of (nikand.dev/go/jq)[https://pkg.go.dev/nikand.dev/go/jq].**
+>
+> The advantage of this implementation is that filters are stateless so they can be used by multiple goroutines at once.
+> The rest are disadvantages: more complicated code -> less reliable,
+> supports only json, less efficient, fewer filters implemented.
+
 jq package is a set of Filters that take data from one buffer, process it, and append result to another buffer.
 
 Also there is a state taken and returned.
