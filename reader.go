@@ -376,7 +376,7 @@ func (r *Reader) skipString() (bs, rs int, err error) {
 
 	for {
 		if r.i >= len(r.b) {
-			if err = r.more(); err != nil {
+			if err := r.more(); err != nil {
 				return bs, rs, err
 			}
 		}
@@ -393,12 +393,12 @@ func (r *Reader) skipString() (bs, rs int, err error) {
 	}
 }
 
-func (r *Reader) decodeString(w []byte) (_ []byte, err error) { //nolint:gocognit
+func (r *Reader) decodeString(w []byte) (_ []byte, err error) {
 	s := skip.Quo
 
 	for {
 		if r.i >= len(r.b) {
-			if err = r.more(); err != nil {
+			if err := r.more(); err != nil {
 				return w, err
 			}
 		}
@@ -419,7 +419,7 @@ func (r *Reader) skipComment() (err error) {
 more:
 	for {
 		if r.i >= len(r.b) {
-			if err = r.more(); err != nil {
+			if err := r.more(); err != nil {
 				return err
 			}
 		}

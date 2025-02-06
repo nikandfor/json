@@ -53,6 +53,7 @@ linters-settings:
           - $gostd
           - github.com/stretchr/testify
           - nikand.dev/go/json
+          - nikand.dev/go/skip
           - tlog.app/go/errors
           - tlog.app/go/loc
           - tlog.app/go/tlog
@@ -93,15 +94,16 @@ linters:
     - goerr113
     - golint
     - gomnd
-    - mnd
     - ifshort
     - ireturn
+    - mnd
     - nakedret
     - nlreturn
     - nonamedreturns
     - nosnakecase
     - paralleltest
     - prealloc
+    - recvcheck
     - testifylint
     - testpackage
     - thelper
