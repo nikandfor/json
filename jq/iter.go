@@ -16,7 +16,7 @@ func (f Iter) Next(w, r []byte, st int, state State) ([]byte, int, State, error)
 
 	var err error
 	i := st
-	tp, _ := state.(byte)
+	tp, _ := state.(json.Type)
 
 	if state == nil {
 		tp, i, err = p.Type(r, i)

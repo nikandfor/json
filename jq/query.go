@@ -151,7 +151,7 @@ back:
 				panic(ff)
 			}
 
-			var tp byte
+			var tp json.Type
 
 			if stack[fi] == nil {
 				tp, i, err = d.Type(r, i)
@@ -166,7 +166,7 @@ back:
 
 				stack[fi] = tp
 			} else {
-				tp = stack[fi].(byte)
+				tp = stack[fi].(json.Type)
 			}
 
 			ok, i, err = d.More(r, i, tp)

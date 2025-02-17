@@ -113,13 +113,13 @@ func (f *Map) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, 
 
 	var key []byte
 
-	restp := byte(json.Array)
+	restp := json.Array
 
 	if tp == json.Object && f.Values {
 		restp = json.Object
 	}
 
-	w = append(w, restp)
+	w = append(w, byte(restp))
 	wkey := len(w)
 
 	for p.ForMore(r, &i, tp, &err) {
@@ -176,7 +176,7 @@ func (f *Map) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, 
 		return w, i, state, err
 	}
 
-	w = append(w, restp+2)
+	w = append(w, byte(restp)+2)
 
 	return w, i, nil, nil
 }

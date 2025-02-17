@@ -47,7 +47,7 @@ func (r *Reader) Offset() int64 {
 
 // Type finds the beginning of the next value and detects its type.
 // It doesn't parse the value so it can't detect if it's incorrect.
-func (r *Reader) Type() (tp byte, err error) {
+func (r *Reader) Type() (tp Type, err error) {
 again:
 	for r.i < len(r.b) {
 		if isWhitespace(r.b[r.i]) {
@@ -69,8 +69,8 @@ again:
 			return Bool, nil
 		case '"':
 			return String, nil
-		case Null, Array, Object:
-			return r.b[r.i], nil
+		case byte(Null), byte(Array), byte(Object):
+			return Type(r.b[r.i]), nil
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 			'+', '-', '.',
 			'N',      // NaN
@@ -239,7 +239,7 @@ func (r *Reader) DecodedStringLength() (bs, rs int, err error) {
 // Enter enters an Array or an Object. typ is checked to match with the actual container type.
 // Use More or, more convenient form, ForMore to iterate over container.
 // See examples to better understand usage pattern.
-func (r *Reader) Enter(typ byte) (err error) {
+func (r *Reader) Enter(typ Type) (err error) {
 	tp, err := r.Type()
 	if err != nil {
 		return
@@ -255,7 +255,7 @@ func (r *Reader) Enter(typ byte) (err error) {
 }
 
 // More iterates over an Array or an Object elements entered by the Enter method.
-func (r *Reader) More(typ byte) (more bool, err error) {
+func (r *Reader) More(typ Type) (more bool, err error) {
 again:
 	for r.i < len(r.b) {
 		if isWhitespace(r.b[r.i]) || r.b[r.i] == ',' {
@@ -274,7 +274,7 @@ again:
 		goto again
 	}
 
-	if r.b[r.i] == typ+2 {
+	if r.b[r.i] == byte(typ)+2 {
 		r.i++
 		return false, nil
 	}
@@ -292,7 +292,7 @@ again:
 }
 
 // ForMore is a convenient wrapper for More which makes iterating code shorter and simpler.
-func (r *Reader) ForMore(typ byte, errp *error) bool { //nolint:gocritic
+func (r *Reader) ForMore(typ Type, errp *error) bool { //nolint:gocritic
 	more, err := r.More(typ)
 	if err != nil {
 		*errp = err

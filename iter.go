@@ -4,7 +4,7 @@ package json
 // k is always nil while iterating Array.
 // k is decoded as Iterator.Key, which means it doesn't decode escape sequences.
 // It reads array or object to the end unless f returned an error.
-func (d *Iterator) IterFunc(b []byte, st int, tp byte, f func(k, v []byte) error) (i int, err error) {
+func (d *Iterator) IterFunc(b []byte, st int, tp Type, f func(k, v []byte) error) (i int, err error) {
 	var k, v []byte
 
 	i, err = d.Enter(b, st, tp)
@@ -40,7 +40,7 @@ func (d *Iterator) IterFunc(b []byte, st int, tp byte, f func(k, v []byte) error
 // IterFunc iterates over array or object calling f for each element.
 // k is nil while iterating Array.
 // Refer Iterator.IterFunc for more details.
-func (r *Reader) IterFunc(tp byte, f func(k, v []byte) error) (err error) {
+func (r *Reader) IterFunc(tp Type, f func(k, v []byte) error) (err error) {
 	var k, v []byte
 
 	err = r.Enter(tp)

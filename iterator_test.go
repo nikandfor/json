@@ -72,13 +72,13 @@ cases:
 	} {
 		b := []byte(data)
 
-		i, err := d.Enter(b, 0, data[0])
+		i, err := d.Enter(b, 0, Type(data[0]))
 		if !assert.NoError(t, err) {
 			t.Logf("pos: %d (%[1]x)  data: %q", i, data)
 			continue
 		}
 
-		for d.ForMore(b, &i, data[0], &err) {
+		for d.ForMore(b, &i, Type(data[0]), &err) {
 			if data[0] == '{' {
 				_, i, err = d.Key(b, i)
 				if !assert.NoError(t, err) {

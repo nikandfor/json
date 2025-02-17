@@ -15,18 +15,20 @@ type (
 	// Most of the methods take buffer with json and start position
 	// and return a value, end position and possible error.
 	Iterator struct{}
+
+	Type byte
 )
 
 // Value types returned by Iterator.
 const (
-	None    = 0 // never returned in successful case
-	Null    = 'n'
-	Bool    = 'b'
-	String  = 's'
-	Array   = '['
-	Object  = '{'
-	Number  = '1'
-	Comment = '/'
+	None    Type = 0 // never returned in successful case
+	Null    Type = 'n'
+	Bool    Type = 'b'
+	String  Type = 's'
+	Array   Type = '['
+	Object  Type = '{'
+	Number  Type = '1'
+	Comment Type = '/'
 )
 
 // bitsets
@@ -42,7 +44,7 @@ var (
 
 // Type finds the beginning of the next value and detects its type.
 // It doesn't parse the value so it can't detect if it's incorrect.
-func (d *Iterator) Type(b []byte, st int) (tp byte, i int, err error) {
+func (d *Iterator) Type(b []byte, st int) (tp Type, i int, err error) {
 	for i = st; i < len(b); i++ {
 		if isWhitespace(b[i]) {
 			continue
@@ -61,8 +63,8 @@ func (d *Iterator) Type(b []byte, st int) (tp byte, i int, err error) {
 			return Bool, i, nil
 		case '"':
 			return String, i, nil
-		case Null, Array, Object:
-			return b[i], i, nil
+		case byte(Null), byte(Array), byte(Object):
+			return Type(b[i]), i, nil
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 			'+', '-', '.',
 			'N',      // NaN
@@ -218,7 +220,7 @@ func (d *Iterator) DecodedStringLength(b []byte, st int) (bs, rs, i int, err err
 // Enter enters an Array or an Object. typ is checked to match with the actual container type.
 // Use More or, more convenient form, ForMore to iterate over container.
 // See examples to better understand usage pattern.
-func (d *Iterator) Enter(b []byte, st int, typ byte) (i int, err error) {
+func (d *Iterator) Enter(b []byte, st int, typ Type) (i int, err error) {
 	tp, i, err := d.Type(b, st)
 	if err != nil {
 		return
@@ -234,7 +236,7 @@ func (d *Iterator) Enter(b []byte, st int, typ byte) (i int, err error) {
 }
 
 // More iterates over an Array or an Object elements entered by the Enter method.
-func (d *Iterator) More(b []byte, st int, typ byte) (more bool, i int, err error) {
+func (d *Iterator) More(b []byte, st int, typ Type) (more bool, i int, err error) {
 	for i = st; i < len(b); i++ {
 		if isWhitespace(b[i]) || b[i] == ',' {
 			continue
@@ -247,7 +249,7 @@ func (d *Iterator) More(b []byte, st int, typ byte) (more bool, i int, err error
 		return false, i, ErrShortBuffer
 	}
 
-	if b[i] == typ+2 {
+	if b[i] == byte(typ)+2 {
 		i++
 		return false, i, nil
 	}
@@ -265,7 +267,7 @@ func (d *Iterator) More(b []byte, st int, typ byte) (more bool, i int, err error
 }
 
 // ForMore is a convenient wrapper for More which makes iterating code shorter and simpler.
-func (d *Iterator) ForMore(b []byte, i *int, typ byte, errp *error) bool { //nolint:gocritic
+func (d *Iterator) ForMore(b []byte, i *int, typ Type, errp *error) bool { //nolint:gocritic
 	more, j, err := d.More(b, *i, typ)
 	*i = j
 
