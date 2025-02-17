@@ -27,7 +27,7 @@ type (
 func NewSelect(f Filter) *Select { return &Select{Filter: f} }
 
 func (f *Select) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var p json.Decoder
+	var p json.Iterator
 
 	wreset := len(w)
 
@@ -94,7 +94,7 @@ func NewMap(f Filter) *Map       { return &Map{Filter: f} }
 func NewMapValues(f Filter) *Map { return &Map{Filter: f, Values: true} }
 
 func (f *Map) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var p json.Decoder
+	var p json.Iterator
 
 	ff := f.Filter
 	if ff == nil {
@@ -209,7 +209,7 @@ func (f *Equal) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State
 }
 
 func IsTrue(val []byte, st int) (bool, int, error) {
-	var p json.Decoder
+	var p json.Iterator
 
 	st = p.SkipSpaces(val, st)
 	if st == len(val) {

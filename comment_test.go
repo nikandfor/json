@@ -19,7 +19,7 @@ func TestDecodeComment(tb *testing.T) {
 /*final*/
 `)
 
-	var d Decoder
+	var d Iterator
 
 	i, err := d.Skip(data, 0)
 	if err != nil {

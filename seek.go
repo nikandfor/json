@@ -11,7 +11,7 @@ var (
 // Seek seeks to the beginning of the value at the path – list of object keys and array indexes.
 // If you parse multiple object and you only need one value from each,
 // it's good to use Break(len(path)) to move to the beginning of the next object.
-func (d *Decoder) Seek(b []byte, st int, path ...interface{}) (i int, err error) {
+func (d *Iterator) Seek(b []byte, st int, path ...interface{}) (i int, err error) {
 	i = st
 
 	for _, p := range path {
@@ -30,7 +30,7 @@ func (d *Decoder) Seek(b []byte, st int, path ...interface{}) (i int, err error)
 	return i, nil
 }
 
-func (d *Decoder) seekObj(b []byte, st int, key string) (i int, err error) {
+func (d *Iterator) seekObj(b []byte, st int, key string) (i int, err error) {
 	i, err = d.Enter(b, st, Object)
 	if err != nil {
 		return
@@ -58,7 +58,7 @@ func (d *Decoder) seekObj(b []byte, st int, key string) (i int, err error) {
 	return i, ErrNoSuchKey
 }
 
-func (d *Decoder) seekArr(b []byte, st, idx int) (i int, err error) {
+func (d *Iterator) seekArr(b []byte, st, idx int) (i int, err error) {
 	if idx < 0 {
 		l, i, err := d.Length(b, st)
 		if err != nil {

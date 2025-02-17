@@ -1,11 +1,10 @@
 package json
 
-// IterFunc is a little helper on top of Enter and ForMore methonds.
-// It iterates over object or array and calls f for each value.
-// If it iterates over array k will be nil.
-// If it iterates over object k is decoded using Key which doesn't decode escape sequences.
-// It reads object or array to the end unless f returned an error.
-func (d *Decoder) IterFunc(b []byte, st int, tp byte, f func(k, v []byte) error) (i int, err error) {
+// IterFunc iterates over array or object calling f for each element.
+// k is always nil while iterating Array.
+// k is decoded as Iterator.Key, which means it doesn't decode escape sequences.
+// It reads array or object to the end unless f returned an error.
+func (d *Iterator) IterFunc(b []byte, st int, tp byte, f func(k, v []byte) error) (i int, err error) {
 	var k, v []byte
 
 	i, err = d.Enter(b, st, tp)
@@ -38,8 +37,9 @@ func (d *Decoder) IterFunc(b []byte, st int, tp byte, f func(k, v []byte) error)
 	return i, nil
 }
 
-// IterFunc is a little helper on top of Enter and ForMore methonds.
-// See Decoder.IterFunc for more details.
+// IterFunc iterates over array or object calling f for each element.
+// k is nil while iterating Array.
+// Refer Iterator.IterFunc for more details.
 func (r *Reader) IterFunc(tp byte, f func(k, v []byte) error) (err error) {
 	var k, v []byte
 

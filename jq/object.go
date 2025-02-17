@@ -33,7 +33,7 @@ func NewObject(keys ...ObjectKey) *Object {
 }
 
 func (f *Object) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
-	var d json.Decoder
+	var d json.Iterator
 	var err error
 	var i int
 
@@ -51,7 +51,7 @@ func (f *Object) Next(w, r []byte, st int, state State) ([]byte, int, State, err
 }
 
 func (f *Object) next(w, r []byte, st int, state State, first bool) (_ []byte, i int, _ State, err error) { //nolint:gocognit
-	var d json.Decoder
+	var d json.Iterator
 	var substate any
 	var comma bool
 	var stack []objectSub

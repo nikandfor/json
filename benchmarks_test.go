@@ -6,8 +6,8 @@ import (
 	"nikand.dev/go/json/benchmarks_data"
 )
 
-func BenchmarkDecoderSkip(b *testing.B) {
-	var d Decoder
+func BenchmarkIteratorSkip(b *testing.B) {
+	var d Iterator
 
 	for _, tc := range []struct {
 		Name string

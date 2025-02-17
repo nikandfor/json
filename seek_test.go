@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDecoderSeek(tb *testing.T) {
-	var d Decoder
+func TestIteratorSeek(tb *testing.T) {
+	var d Iterator
 
 	for _, tc := range []struct {
 		In   string

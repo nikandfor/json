@@ -8,8 +8,8 @@ import (
 	"nikand.dev/go/json/benchmarks_data"
 )
 
-func ExampleDecoder() {
-	var d json.Decoder
+func ExampleIterator() {
+	var d json.Iterator
 	data := []byte(`{"key": "value", "another": 1234}`)
 
 	i := 0 // initial position
@@ -54,9 +54,9 @@ func ExampleDecoder() {
 	// another: 1234
 }
 
-func ExampleDecoder_multipleValues() {
+func ExampleIterator_multipleValues() {
 	var err error // to not to shadow i in a loop
-	var d json.Decoder
+	var d json.Iterator
 	data := []byte(`"a", 2 3
 ["array"]
 `)
@@ -83,9 +83,9 @@ func ExampleDecoder_multipleValues() {
 	// value: ["array"]
 }
 
-func ExampleDecoder_Seek_seekIter() {
+func ExampleIterator_Seek_seekIter() {
 	err := func(b []byte) error {
-		var d json.Decoder
+		var d json.Iterator
 
 		i, err := d.Seek(b, 0, "topics", "topics")
 		if err != nil {

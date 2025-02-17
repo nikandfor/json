@@ -124,7 +124,7 @@ func (r *Reader) Raw() ([]byte, error) {
 // It's intended for exiting out of arrays and objects when their content is not needed anymore
 // (all the needed indexes or keys are already parsed) and we want to parse the next array or object.
 func (r *Reader) Break(depth int) (err error) {
-	var d Decoder
+	var d Iterator
 
 again:
 	for err == nil && r.i < len(r.b) {

@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDecoder(t *testing.T) {
-	var d Decoder
+func TestIterator(t *testing.T) {
+	var d Iterator
 
 	for _, data := range []string{
 		"null", "true", "false",
@@ -25,8 +25,8 @@ func TestDecoder(t *testing.T) {
 	}
 }
 
-func TestDecoderString(t *testing.T) {
-	var d Decoder
+func TestIteratorString(t *testing.T) {
+	var d Iterator
 
 	for j, data := range []string{
 		`""`, `"a"`, `"a\"b\nc\tde\"f\\g"`,
@@ -62,8 +62,8 @@ func TestDecoderString(t *testing.T) {
 	}
 }
 
-func TestDecoderEnterMore(t *testing.T) {
-	var d Decoder
+func TestIteratorEnterMore(t *testing.T) {
+	var d Iterator
 
 cases:
 	for _, data := range []string{

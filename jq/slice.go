@@ -23,7 +23,7 @@ type (
 )
 
 func (f Length) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
-	var p json.Decoder
+	var p json.Iterator
 
 	i := p.SkipSpaces(r, st)
 	if st == len(r) {
@@ -55,7 +55,7 @@ func (f Length) Next(w, r []byte, st int, state State) ([]byte, int, State, erro
 }
 
 func (f *Slice) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var p json.Decoder
+	var p json.Iterator
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
@@ -112,7 +112,7 @@ func (f *Slice) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State
 }
 
 func (f *Slice) applyPart(w, r []byte, st, left, right int, comma bool) ([]byte, error) {
-	var p json.Decoder
+	var p json.Iterator
 	var raw []byte
 
 	i, err := p.Enter(r, st, json.Array)
@@ -144,7 +144,7 @@ func (f *Slice) applyPart(w, r []byte, st, left, right int, comma bool) ([]byte,
 }
 
 func (f *Slice) applyString(w, r []byte, st int) (_ []byte, i int, err error) {
-	var p json.Decoder
+	var p json.Iterator
 
 	f.Buf, i, err = p.DecodeString(r, st, f.Buf[:0])
 	if err != nil {
@@ -216,7 +216,7 @@ func (f *Slice) leftRight(n int) (l, r int) {
 func NewArray(of Filter) *Array { return &Array{Filter: of} }
 
 func (f *Array) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var p json.Decoder
+	var p json.Iterator
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {

@@ -10,11 +10,11 @@
 Yet another json library.
 It's created to process unstructured json in a convenient and efficient way.
 
-There is also some set of [jq](https://jqlang.github.io/jq/manual/) filters implemented on top of `json.Decoder`.
+There is also some set of [jq](https://jqlang.github.io/jq/manual/) filters implemented on top of `json.Iterator`.
 
 ## json usage
 
-`Decoder` is stateless.
+`Iterator` is stateless.
 Most of the methods take source buffer and index where to start parsing and return a result and index where they stopped parsing.
 
 None of methods make a copy or allocate except these which take destination buffer in arguments.
@@ -24,7 +24,7 @@ The code is from [examples](./examples_test.go).
 ```go
 // Parsing single object.
 
-var d json.Decoder
+var d json.Iterator
 data := []byte(`{"key": "value", "another": 1234}`)
 
 i := 0 // initial position
@@ -67,7 +67,7 @@ if err != nil {
 // Parsing jsonl: newline (or space, or comma) delimited values.
 
 var err error // to not to shadow i in a loop
-var d json.Decoder
+var d json.Iterator
 data := []byte(`"a", 2 3
 ["array"]
 `)

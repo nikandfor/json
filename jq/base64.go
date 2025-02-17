@@ -33,7 +33,7 @@ func (f *Base64d) Next(w, r []byte, st int, _ State) (_ []byte, i int, _ State, 
 }
 
 func base64Apply(w, r []byte, st int, e *base64.Encoding, enc bool, buf []byte) (res, buf1 []byte, i int, err error) {
-	var p json.Decoder
+	var p json.Iterator
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {

@@ -16,7 +16,7 @@ func (f Index) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State,
 }
 
 func keyIndexNext(w, r []byte, st int, f any) (_ []byte, i int, _ State, err error) {
-	var d json.Decoder
+	var d json.Iterator
 
 	st = d.SkipSpaces(r, st)
 	if st == len(r) {

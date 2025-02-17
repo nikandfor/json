@@ -28,7 +28,7 @@ func NewQuery(filters ...any) *Query {
 }
 
 func (f *Query) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var d json.Decoder
+	var d json.Iterator
 
 	st = d.SkipSpaces(r, st)
 	if st == len(r) {
@@ -97,7 +97,7 @@ func (f *Query) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State
 }
 
 func (f *Query) next(w, r []byte, st int, stack []indexSub, first bool) (_ []byte, i int, ok bool, err error) { //nolint:gocognit
-	var d json.Decoder
+	var d json.Iterator
 
 	i = st
 	fi := len(stack) - 1

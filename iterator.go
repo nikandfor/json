@@ -8,16 +8,16 @@ import (
 )
 
 type (
-	// Decoder is a group of methods to parse JSON.
-	// Decoder is stateless.
+	// Iterator is a group of methods to parse JSON.
+	// Iterator is stateless.
 	// All the needed state is passed though arguments and return values.
 	//
 	// Most of the methods take buffer with json and start position
 	// and return a value, end position and possible error.
-	Decoder struct{}
+	Iterator struct{}
 )
 
-// Value types returned by Decoder.
+// Value types returned by Iterator.
 const (
 	None    = 0 // never returned in successful case
 	Null    = 'n'
@@ -32,7 +32,7 @@ const (
 // bitsets
 var whitespaces uint64 = 1<<'\n' | 1<<'\r' | 1<<'\t' | 1<<' '
 
-// Decoder errors. Plus Str errors from skip module.
+// Iterator errors. Plus Str errors from skip module.
 var (
 	ErrBadNumber   = errors.New("bad number")
 	ErrShortBuffer = io.ErrShortBuffer
@@ -42,7 +42,7 @@ var (
 
 // Type finds the beginning of the next value and detects its type.
 // It doesn't parse the value so it can't detect if it's incorrect.
-func (d *Decoder) Type(b []byte, st int) (tp byte, i int, err error) {
+func (d *Iterator) Type(b []byte, st int) (tp byte, i int, err error) {
 	for i = st; i < len(b); i++ {
 		if isWhitespace(b[i]) {
 			continue
@@ -77,12 +77,12 @@ func (d *Decoder) Type(b []byte, st int) (tp byte, i int, err error) {
 }
 
 // Skip skips the next value.
-func (d *Decoder) Skip(b []byte, st int) (i int, err error) {
+func (d *Iterator) Skip(b []byte, st int) (i int, err error) {
 	return d.Break(b, st, 0)
 }
 
 // Raw skips the next value and returns subslice with the value trimming whitespaces.
-func (d *Decoder) Raw(b []byte, st int) (v []byte, i int, err error) {
+func (d *Iterator) Raw(b []byte, st int) (v []byte, i int, err error) {
 	_, st, err = d.Type(b, st)
 	if err != nil {
 		return nil, st, err
@@ -102,7 +102,7 @@ func (d *Decoder) Raw(b []byte, st int) (v []byte, i int, err error) {
 //
 // It's intended for exiting out of arrays and objects when their content is not needed anymore
 // (all the needed indexes or keys are already parsed) and we want to parse the next array or object.
-func (d *Decoder) Break(b []byte, st, depth int) (i int, err error) {
+func (d *Iterator) Break(b []byte, st, depth int) (i int, err error) {
 	i = st
 
 	for i < len(b) {
@@ -151,7 +151,7 @@ func (d *Decoder) Break(b []byte, st, depth int) (i int, err error) {
 // So escape sequences (\n, \uXXXX) are not decoded. They are returned as is.
 // This is intended for object keys as they usually contain alpha-numeric symbols only.
 // This is faster and does not require additional buffer for decoding.
-func (d *Decoder) Key(b []byte, st int) (k []byte, i int, err error) {
+func (d *Iterator) Key(b []byte, st int) (k []byte, i int, err error) {
 	tp, i, err := d.Type(b, st)
 	if err != nil {
 		return
@@ -171,7 +171,7 @@ func (d *Decoder) Key(b []byte, st int) (k []byte, i int, err error) {
 
 // DecodeString reads the next string, decodes escape sequences (\n, \uXXXX),
 // and appends the result to the buf.
-func (d *Decoder) DecodeString(b []byte, st int, buf []byte) (s []byte, i int, err error) {
+func (d *Iterator) DecodeString(b []byte, st int, buf []byte) (s []byte, i int, err error) {
 	tp, i, err := d.Type(b, st)
 	if err != nil {
 		return buf, i, err
@@ -194,7 +194,7 @@ func (d *Decoder) DecodeString(b []byte, st int, buf []byte) (s []byte, i int, e
 
 // DecodedStringLength reads and decodes the next string but only return the result length.
 // It doesn't allocate while DecodeString does.
-func (d *Decoder) DecodedStringLength(b []byte, st int) (bs, rs, i int, err error) {
+func (d *Iterator) DecodedStringLength(b []byte, st int) (bs, rs, i int, err error) {
 	tp, i, err := d.Type(b, st)
 	if err != nil {
 		return
@@ -218,7 +218,7 @@ func (d *Decoder) DecodedStringLength(b []byte, st int) (bs, rs, i int, err erro
 // Enter enters an Array or an Object. typ is checked to match with the actual container type.
 // Use More or, more convenient form, ForMore to iterate over container.
 // See examples to better understand usage pattern.
-func (d *Decoder) Enter(b []byte, st int, typ byte) (i int, err error) {
+func (d *Iterator) Enter(b []byte, st int, typ byte) (i int, err error) {
 	tp, i, err := d.Type(b, st)
 	if err != nil {
 		return
@@ -234,7 +234,7 @@ func (d *Decoder) Enter(b []byte, st int, typ byte) (i int, err error) {
 }
 
 // More iterates over an Array or an Object elements entered by the Enter method.
-func (d *Decoder) More(b []byte, st int, typ byte) (more bool, i int, err error) {
+func (d *Iterator) More(b []byte, st int, typ byte) (more bool, i int, err error) {
 	for i = st; i < len(b); i++ {
 		if isWhitespace(b[i]) || b[i] == ',' {
 			continue
@@ -265,7 +265,7 @@ func (d *Decoder) More(b []byte, st int, typ byte) (more bool, i int, err error)
 }
 
 // ForMore is a convenient wrapper for More which makes iterating code shorter and simpler.
-func (d *Decoder) ForMore(b []byte, i *int, typ byte, errp *error) bool { //nolint:gocritic
+func (d *Iterator) ForMore(b []byte, i *int, typ byte, errp *error) bool { //nolint:gocritic
 	more, j, err := d.More(b, *i, typ)
 	*i = j
 
@@ -277,7 +277,7 @@ func (d *Decoder) ForMore(b []byte, i *int, typ byte, errp *error) bool { //noli
 }
 
 // Length calculates number of elements in Array or Object.
-func (d *Decoder) Length(b []byte, st int) (n, i int, err error) {
+func (d *Iterator) Length(b []byte, st int) (n, i int, err error) {
 	tp, i, err := d.Type(b, st)
 	if err != nil {
 		return 0, i, err
@@ -317,7 +317,7 @@ func (d *Decoder) Length(b []byte, st int) (n, i int, err error) {
 }
 
 // SkipSpaces skips whitespaces.
-func (d *Decoder) SkipSpaces(b []byte, i int) int {
+func (d *Iterator) SkipSpaces(b []byte, i int) int {
 	for i < len(b) && isWhitespace(b[i]) {
 		i++
 	}
@@ -325,7 +325,7 @@ func (d *Decoder) SkipSpaces(b []byte, i int) int {
 	return i
 }
 
-func (d *Decoder) skipString(b []byte, st int) (i int, err error) {
+func (d *Iterator) skipString(b []byte, st int) (i int, err error) {
 	ss, _, _, i := skip.String(b, st, skip.Quo)
 	if ss.Is(skip.ErrBuffer) {
 		return st, ErrShortBuffer
@@ -337,7 +337,7 @@ func (d *Decoder) skipString(b []byte, st int) (i int, err error) {
 	return i, nil
 }
 
-func (d *Decoder) skipNum(b []byte, st int) (i int, err error) {
+func (d *Iterator) skipNum(b []byte, st int) (i int, err error) {
 	n, i := skip.Number(b, st, 0)
 	if !n.Ok() {
 		return i, ErrBadNumber
@@ -346,7 +346,7 @@ func (d *Decoder) skipNum(b []byte, st int) (i int, err error) {
 	return i, nil
 }
 
-func (d *Decoder) skipLit(b []byte, st int) (i int, err error) {
+func (d *Iterator) skipLit(b []byte, st int) (i int, err error) {
 	var lit string
 
 	switch b[st] {
@@ -361,7 +361,7 @@ func (d *Decoder) skipLit(b []byte, st int) (i int, err error) {
 	return d.skipVal(b, st, lit)
 }
 
-func (d *Decoder) skipVal(b []byte, st int, val string) (i int, err error) {
+func (d *Iterator) skipVal(b []byte, st int, val string) (i int, err error) {
 	end := st + len(val)
 
 	if end <= len(b) && string(b[st:end]) == val {
@@ -375,7 +375,7 @@ func (d *Decoder) skipVal(b []byte, st int, val string) (i int, err error) {
 	return st, ErrSyntax
 }
 
-func (d *Decoder) skipComment(b []byte, st int) (i int, err error) {
+func (d *Iterator) skipComment(b []byte, st int) (i int, err error) {
 	i = st
 
 	if i+1 >= len(b) {
@@ -420,7 +420,7 @@ func (d *Decoder) skipComment(b []byte, st int) (i int, err error) {
 
 // SkipSpaces skips whitespaces.
 func SkipSpaces(b []byte, i int) int {
-	return (&Decoder{}).SkipSpaces(b, i)
+	return skip.Spaces(b, i)
 }
 
 func isWhitespace(b byte) bool {

@@ -57,7 +57,7 @@ type (
 
 	Dumper func(w, r []byte, st, end int)
 
-	// ParseError contains error and position returned by json.Decoder.
+	// ParseError contains error and position returned by json.Iterator.
 	ParseError struct {
 		Err error
 		Pos int
@@ -119,7 +119,7 @@ func NextAll(f Filter, w, r []byte, st int, sep []byte) ([]byte, int, error) {
 }
 
 func (f Dot) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
-	var p json.Decoder
+	var p json.Iterator
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
@@ -137,7 +137,7 @@ func (f Dot) Next(w, r []byte, st int, state State) ([]byte, int, State, error) 
 }
 
 func (f Empty) Next(w, r []byte, st int, _ State) (_ []byte, i int, _ State, err error) {
-	var p json.Decoder
+	var p json.Iterator
 
 	i, err = p.Skip(r, st)
 
@@ -145,7 +145,7 @@ func (f Empty) Next(w, r []byte, st int, _ State) (_ []byte, i int, _ State, err
 }
 
 func (f Literal) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var p json.Decoder
+	var p json.Iterator
 
 	i, err = p.Skip(r, st)
 	if err != nil {
@@ -158,7 +158,7 @@ func (f Literal) Next(w, r []byte, st int, state State) (_ []byte, i int, _ Stat
 }
 
 func (f First) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
-	var p json.Decoder
+	var p json.Iterator
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
@@ -192,7 +192,7 @@ func (f Dumper) Next(w, r []byte, st int, state State) ([]byte, int, State, erro
 		return w, st, nil, nil
 	}
 
-	i, err := (&json.Decoder{}).Skip(r, st)
+	i, err := (&json.Iterator{}).Skip(r, st)
 	if err != nil {
 		return w, st, state, err
 	}
