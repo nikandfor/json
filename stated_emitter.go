@@ -6,10 +6,10 @@ import (
 )
 
 type (
-	StatedEncoder struct {
+	StatedEmitter struct {
 		Buf []byte
 
-		Encoder
+		Emitter
 
 		state encState
 		stack encStack
@@ -28,11 +28,11 @@ const (
 	_
 )
 
-func NewStatedEncoder(b []byte) *StatedEncoder {
-	return &StatedEncoder{Buf: b}
+func NewStatedEmitter(b []byte) *StatedEmitter {
+	return &StatedEmitter{Buf: b}
 }
 
-func (e *StatedEncoder) Reset() *StatedEncoder {
+func (e *StatedEmitter) Reset() *StatedEmitter {
 	e.Buf = e.Buf[:0]
 	e.state = 0
 	e.stack = 0
@@ -41,25 +41,25 @@ func (e *StatedEncoder) Reset() *StatedEncoder {
 	return e
 }
 
-func (e *StatedEncoder) Result() []byte { return e.Buf }
+func (e *StatedEmitter) Result() []byte { return e.Buf }
 
-func (e *StatedEncoder) KeyString(k, v string) *StatedEncoder {
+func (e *StatedEmitter) KeyString(k, v string) *StatedEmitter {
 	return e.Key(k).String(v)
 }
 
-func (e *StatedEncoder) KeyStringBytes(k string, v []byte) *StatedEncoder {
+func (e *StatedEmitter) KeyStringBytes(k string, v []byte) *StatedEmitter {
 	return e.Key(k).StringBytes(v)
 }
 
-func (e *StatedEncoder) KeyInt(k string, v int) *StatedEncoder {
+func (e *StatedEmitter) KeyInt(k string, v int) *StatedEmitter {
 	return e.Key(k).Int(v)
 }
 
-func (e *StatedEncoder) KeyInt64(k string, v int64) *StatedEncoder {
+func (e *StatedEmitter) KeyInt64(k string, v int64) *StatedEmitter {
 	return e.Key(k).Int64(v)
 }
 
-func (e *StatedEncoder) ObjStart() *StatedEncoder {
+func (e *StatedEmitter) ObjStart() *StatedEmitter {
 	if e.depth > 62 {
 		panic("too deep")
 	}
@@ -77,7 +77,7 @@ func (e *StatedEncoder) ObjStart() *StatedEncoder {
 	return e
 }
 
-func (e *StatedEncoder) ObjEnd() *StatedEncoder {
+func (e *StatedEmitter) ObjEnd() *StatedEmitter {
 	e.depth--
 	e.stack.UnsetBit(e.depth)
 
@@ -87,7 +87,7 @@ func (e *StatedEncoder) ObjEnd() *StatedEncoder {
 	return e
 }
 
-func (e *StatedEncoder) ArrStart() *StatedEncoder {
+func (e *StatedEmitter) ArrStart() *StatedEmitter {
 	e.comma()
 
 	e.Buf = append(e.Buf, '[')
@@ -98,7 +98,7 @@ func (e *StatedEncoder) ArrStart() *StatedEncoder {
 	return e
 }
 
-func (e *StatedEncoder) ArrEnd() *StatedEncoder {
+func (e *StatedEmitter) ArrEnd() *StatedEmitter {
 	e.depth--
 
 	e.Buf = append(e.Buf, ']')
@@ -107,25 +107,25 @@ func (e *StatedEncoder) ArrEnd() *StatedEncoder {
 	return e
 }
 
-func (e *StatedEncoder) Key(s string) *StatedEncoder {
+func (e *StatedEmitter) Key(s string) *StatedEmitter {
 	e.comma()
 
-	e.Buf = e.Encoder.AppendKey(e.Buf, s2b(s))
+	e.Buf = e.Emitter.AppendKey(e.Buf, s2b(s))
 	e.colon(true)
 
 	return e
 }
 
-func (e *StatedEncoder) NextIsKey() *StatedEncoder {
+func (e *StatedEmitter) NextIsKey() *StatedEmitter {
 	e.state.Set(encKey)
 
 	return e
 }
 
-func (e *StatedEncoder) String(s string) *StatedEncoder {
+func (e *StatedEmitter) String(s string) *StatedEmitter {
 	e.comma()
 
-	e.Buf = e.Encoder.AppendString(e.Buf, s2b(s))
+	e.Buf = e.Emitter.AppendString(e.Buf, s2b(s))
 	e.setcomma()
 
 	e.colon(false)
@@ -133,10 +133,10 @@ func (e *StatedEncoder) String(s string) *StatedEncoder {
 	return e
 }
 
-func (e *StatedEncoder) StringBytes(s []byte) *StatedEncoder {
+func (e *StatedEmitter) StringBytes(s []byte) *StatedEmitter {
 	e.comma()
 
-	e.Buf = e.Encoder.AppendString(e.Buf, s)
+	e.Buf = e.Emitter.AppendString(e.Buf, s)
 	e.setcomma()
 
 	e.colon(false)
@@ -144,7 +144,7 @@ func (e *StatedEncoder) StringBytes(s []byte) *StatedEncoder {
 	return e
 }
 
-func (e *StatedEncoder) Int(v int) *StatedEncoder {
+func (e *StatedEmitter) Int(v int) *StatedEmitter {
 	e.comma()
 
 	e.Buf = strconv.AppendInt(e.Buf, int64(v), 10)
@@ -153,7 +153,7 @@ func (e *StatedEncoder) Int(v int) *StatedEncoder {
 	return e
 }
 
-func (e *StatedEncoder) Int64(v int64) *StatedEncoder {
+func (e *StatedEmitter) Int64(v int64) *StatedEmitter {
 	e.comma()
 
 	e.Buf = strconv.AppendInt(e.Buf, v, 10)
@@ -162,13 +162,13 @@ func (e *StatedEncoder) Int64(v int64) *StatedEncoder {
 	return e
 }
 
-func (e *StatedEncoder) Newline() *StatedEncoder {
+func (e *StatedEmitter) Newline() *StatedEmitter {
 	e.newline()
 
 	return e
 }
 
-func (e *StatedEncoder) setcomma() {
+func (e *StatedEmitter) setcomma() {
 	e.state.Unset(encComma)
 
 	if e.depth != 0 {
@@ -176,7 +176,7 @@ func (e *StatedEncoder) setcomma() {
 	}
 }
 
-func (e *StatedEncoder) comma() {
+func (e *StatedEmitter) comma() {
 	if e.depth == 0 {
 		e.newline()
 		e.state.Unset(encNewline)
@@ -192,7 +192,7 @@ func (e *StatedEncoder) comma() {
 	e.state.Set(encNewline)
 }
 
-func (e *StatedEncoder) colon(force bool) {
+func (e *StatedEmitter) colon(force bool) {
 	if force || e.state.Is(encKey) {
 		e.Buf = append(e.Buf, ':')
 	}
@@ -200,7 +200,7 @@ func (e *StatedEncoder) colon(force bool) {
 	e.state.Unset(encKey)
 }
 
-func (e *StatedEncoder) newline() {
+func (e *StatedEmitter) newline() {
 	if e.state.Is(encNewline) {
 		e.Buf = append(e.Buf, '\n')
 	}

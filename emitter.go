@@ -5,7 +5,7 @@ import (
 )
 
 type (
-	Encoder struct{}
+	Emitter struct{}
 )
 
 const hex = "0123456789abcdef"
@@ -24,7 +24,7 @@ func init() {
 	}
 }
 
-func (e *Encoder) AppendKey(w, s []byte) []byte {
+func (e *Emitter) AppendKey(w, s []byte) []byte {
 	w = append(w, '"')
 	w = append(w, s...)
 	w = append(w, '"')
@@ -33,7 +33,7 @@ func (e *Encoder) AppendKey(w, s []byte) []byte {
 }
 
 // EncodeString encodes string in a JSON compatible way.
-func (e *Encoder) AppendString(w, s []byte) []byte {
+func (e *Emitter) AppendString(w, s []byte) []byte {
 	w = append(w, '"')
 	w = e.AppendStringContent(w, s)
 	w = append(w, '"')
@@ -45,7 +45,7 @@ func (e *Encoder) AppendString(w, s []byte) []byte {
 // It can be used to generate the string from multiple parts.
 // Yet if a symbol designated to be escaped is split between parts
 // it encodes each part of the symbol separately.
-func (e *Encoder) AppendStringContent(w, s []byte) []byte {
+func (e *Emitter) AppendStringContent(w, s []byte) []byte {
 	done := 0
 
 	for i := 0; i < len(s); {

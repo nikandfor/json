@@ -71,7 +71,7 @@ func base64Apply(w, r []byte, st int, e *base64.Encoding, enc bool, buf []byte) 
 			return w, s, i, err
 		}
 
-		w = (&json.Encoder{}).AppendString(w, s[ssize:ssize+n])
+		w = (&json.Emitter{}).AppendString(w, s[ssize:ssize+n])
 	}
 
 	return w, s, i, nil

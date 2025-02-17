@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func TestStatedEncoder(tb *testing.T) {
-	e := NewStatedEncoder(nil)
+func TestStatedEmitter(tb *testing.T) {
+	e := NewStatedEmitter(nil)
 
 	e.ObjStart()
 
@@ -39,8 +39,8 @@ func TestStatedEncoder(tb *testing.T) {
 	}
 }
 
-func TestStatedEncoderMulti(tb *testing.T) {
-	e := NewStatedEncoder(nil)
+func TestStatedEmitterMulti(tb *testing.T) {
+	e := NewStatedEmitter(nil)
 
 	e.ObjStart().KeyInt("a", 1).ObjEnd()
 	e.ObjStart().KeyInt("a", 2).ObjEnd()

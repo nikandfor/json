@@ -58,7 +58,7 @@ func FuzzStringEncodeDecode(f *testing.F) {
 	f.Add([]byte("\x13"))
 	f.Add([]byte("\xf8"))
 
-	var g json.Encoder
+	var g json.Emitter
 	var p json.Iterator
 
 	//	g.ASCII = true
