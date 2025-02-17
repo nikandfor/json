@@ -1,4 +1,4 @@
-package json
+package json2
 
 // IterFunc iterates over array or object calling f for each element.
 // k is always nil while iterating Array.

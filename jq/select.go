@@ -3,7 +3,7 @@ package jq
 import (
 	"bytes"
 
-	"nikand.dev/go/json"
+	"nikand.dev/go/json2"
 )
 
 type (
@@ -27,7 +27,7 @@ type (
 func NewSelect(f Filter) *Select { return &Select{Filter: f} }
 
 func (f *Select) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var p json.Iterator
+	var p json2.Iterator
 
 	wreset := len(w)
 
@@ -94,7 +94,7 @@ func NewMap(f Filter) *Map       { return &Map{Filter: f} }
 func NewMapValues(f Filter) *Map { return &Map{Filter: f, Values: true} }
 
 func (f *Map) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var p json.Iterator
+	var p json2.Iterator
 
 	ff := f.Filter
 	if ff == nil {
@@ -113,10 +113,10 @@ func (f *Map) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, 
 
 	var key []byte
 
-	restp := json.Array
+	restp := json2.Array
 
-	if tp == json.Object && f.Values {
-		restp = json.Object
+	if tp == json2.Object && f.Values {
+		restp = json2.Object
 	}
 
 	w = append(w, byte(restp))
@@ -129,14 +129,14 @@ func (f *Map) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, 
 
 		wkey = len(w)
 
-		if tp == json.Object {
+		if tp == json2.Object {
 			key, i, err = p.Key(r, i)
 			if err != nil {
 				return w, i, state, err
 			}
 		}
 
-		if tp == json.Object && f.Values {
+		if tp == json2.Object && f.Values {
 			w = append(w, key...)
 			w = append(w, ':')
 		}
@@ -209,7 +209,7 @@ func (f *Equal) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State
 }
 
 func IsTrue(val []byte, st int) (bool, int, error) {
-	var p json.Iterator
+	var p json2.Iterator
 
 	st = p.SkipSpaces(val, st)
 	if st == len(val) {
@@ -227,11 +227,11 @@ func IsTrue(val []byte, st int) (bool, int, error) {
 	}
 
 	switch tp {
-	case json.Number, json.String, json.Array, json.Object:
+	case json2.Number, json2.String, json2.Array, json2.Object:
 		return true, i, nil
-	case json.Null:
+	case json2.Null:
 		return false, i, nil
-	case json.Bool:
+	case json2.Bool:
 		return string(raw) == "true", i, nil
 	default:
 		panic(tp)

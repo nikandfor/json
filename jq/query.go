@@ -3,7 +3,7 @@ package jq
 import (
 	"errors"
 
-	"nikand.dev/go/json"
+	"nikand.dev/go/json2"
 )
 
 type (
@@ -28,7 +28,7 @@ func NewQuery(filters ...any) *Query {
 }
 
 func (f *Query) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var d json.Iterator
+	var d json2.Iterator
 
 	st = d.SkipSpaces(r, st)
 	if st == len(r) {
@@ -60,7 +60,7 @@ func (f *Query) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State
 
 	if stateok == nil {
 		i, err := d.Seek(r, i, f.Filters...)
-		if err == json.ErrNoSuchKey { //nolint: errorlint
+		if err == json2.ErrNoSuchKey { //nolint: errorlint
 			w = append(w, `null`...)
 
 			return w, i, nil, nil
@@ -97,7 +97,7 @@ func (f *Query) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State
 }
 
 func (f *Query) next(w, r []byte, st int, stack []indexSub, first bool) (_ []byte, i int, ok bool, err error) { //nolint:gocognit
-	var d json.Iterator
+	var d json2.Iterator
 
 	i = st
 	fi := len(stack) - 1
@@ -151,7 +151,7 @@ back:
 				panic(ff)
 			}
 
-			var tp json.Type
+			var tp json2.Type
 
 			if stack[fi] == nil {
 				tp, i, err = d.Type(r, i)
@@ -166,7 +166,7 @@ back:
 
 				stack[fi] = tp
 			} else {
-				tp = stack[fi].(json.Type)
+				tp = stack[fi].(json2.Type)
 			}
 
 			ok, i, err = d.More(r, i, tp)
@@ -179,7 +179,7 @@ back:
 				continue back
 			}
 
-			if tp == json.Object {
+			if tp == json2.Object {
 				i, err = d.Skip(r, i) // skip key
 				if err != nil {
 					return w, i, false, pe(err, i)

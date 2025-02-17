@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"nikand.dev/go/json/benchmarks_data"
+	"nikand.dev/go/json2/benchmarks_data"
 )
 
 func BenchmarkQuery(b *testing.B) {

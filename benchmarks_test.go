@@ -1,9 +1,9 @@
-package json
+package json2
 
 import (
 	"testing"
 
-	"nikand.dev/go/json/benchmarks_data"
+	"nikand.dev/go/json2/benchmarks_data"
 )
 
 func BenchmarkIteratorSkip(b *testing.B) {

@@ -8,8 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	json2 "nikand.dev/go/json"
-	"nikand.dev/go/json/benchmarks_data"
+	json2 "nikand.dev/go/json2"
+	"nikand.dev/go/json2/benchmarks_data"
 )
 
 type (

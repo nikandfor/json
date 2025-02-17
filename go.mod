@@ -1,4 +1,4 @@
-module nikand.dev/go/json
+module nikand.dev/go/json2
 
 go 1.20
 

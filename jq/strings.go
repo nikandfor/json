@@ -1,6 +1,6 @@
 package jq
 
-import "nikand.dev/go/json"
+import "nikand.dev/go/json2"
 
 type (
 	Cat struct {
@@ -9,7 +9,7 @@ type (
 )
 
 func (f Cat) Next(w, r []byte, st int, _ State) (_ []byte, i int, _ State, err error) {
-	var p json.Iterator
+	var p json2.Iterator
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {

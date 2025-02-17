@@ -1,7 +1,7 @@
 package jq
 
 import (
-	"nikand.dev/go/json"
+	"nikand.dev/go/json2"
 )
 
 type (
@@ -25,7 +25,7 @@ func NewComma(fs ...Filter) *Comma {
 }
 
 func (f *Comma) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	st = json.SkipSpaces(r, st)
+	st = json2.SkipSpaces(r, st)
 	if st == len(r) {
 		return w, st, nil, nil
 	}

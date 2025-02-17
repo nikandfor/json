@@ -4,7 +4,7 @@ import (
 	stdjson "encoding/json"
 	"testing"
 
-	"nikand.dev/go/json"
+	"nikand.dev/go/json2"
 )
 
 func FuzzSkip(f *testing.F) {
@@ -28,7 +28,7 @@ func FuzzSkip(f *testing.F) {
 	f.Add([]byte(`{}`))
 	f.Add([]byte(`{"a":"b","c":4}`))
 
-	var p json.Iterator
+	var p json2.Iterator
 
 	f.Fuzz(func(t *testing.T, b []byte) {
 		if !stdjson.Valid(b) {
@@ -58,8 +58,8 @@ func FuzzStringEncodeDecode(f *testing.F) {
 	f.Add([]byte("\x13"))
 	f.Add([]byte("\xf8"))
 
-	var g json.Emitter
-	var p json.Iterator
+	var g json2.Emitter
+	var p json2.Iterator
 
 	//	g.ASCII = true
 
@@ -136,11 +136,11 @@ func FuzzStringDecode(f *testing.F) {
 	f.Add([]byte(`"\ufffd"`))
 	f.Add([]byte(`"\u2028"`))
 
-	var p json.Iterator
+	var p json2.Iterator
 
 	f.Fuzz(func(t *testing.T, data []byte) {
 		tp, i, err := p.Type(data, 0)
-		if err != nil || tp != json.String {
+		if err != nil || tp != json2.String {
 			t.SkipNow()
 		}
 

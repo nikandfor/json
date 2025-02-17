@@ -3,7 +3,7 @@ package jq
 import (
 	"encoding/base64"
 
-	"nikand.dev/go/json"
+	"nikand.dev/go/json2"
 )
 
 type (
@@ -33,7 +33,7 @@ func (f *Base64d) Next(w, r []byte, st int, _ State) (_ []byte, i int, _ State, 
 }
 
 func base64Apply(w, r []byte, st int, e *base64.Encoding, enc bool, buf []byte) (res, buf1 []byte, i int, err error) {
-	var p json.Iterator
+	var p json2.Iterator
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
@@ -71,7 +71,7 @@ func base64Apply(w, r []byte, st int, e *base64.Encoding, enc bool, buf []byte) 
 			return w, s, i, err
 		}
 
-		w = (&json.Emitter{}).AppendString(w, s[ssize:ssize+n])
+		w = (&json2.Emitter{}).AppendString(w, s[ssize:ssize+n])
 	}
 
 	return w, s, i, nil

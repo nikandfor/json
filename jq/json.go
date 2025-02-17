@@ -3,7 +3,7 @@ package jq
 import (
 	"errors"
 
-	"nikand.dev/go/json"
+	"nikand.dev/go/json2"
 )
 
 type (
@@ -16,7 +16,7 @@ type (
 )
 
 func (f *JSONDecoder) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var p json.Iterator
+	var p json2.Iterator
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
@@ -34,7 +34,7 @@ func (f *JSONDecoder) Next(w, r []byte, st int, state State) (_ []byte, i int, _
 
 	for j := p.SkipSpaces(f.Buf, 0); j < len(f.Buf); j = p.SkipSpaces(f.Buf, j) {
 		raw, j, err = p.Raw(f.Buf, j)
-		if errors.Is(err, json.ErrShortBuffer) {
+		if errors.Is(err, json2.ErrShortBuffer) {
 			break
 		}
 		if err != nil {

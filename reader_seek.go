@@ -1,4 +1,4 @@
-package json
+package json2
 
 // Seek seeks to the beginning of the value at the path – list of object keys and array indexes.
 // If you parse multiple object and you only need one value from each,

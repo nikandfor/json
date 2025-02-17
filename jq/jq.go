@@ -3,7 +3,7 @@ package jq
 import (
 	"fmt"
 
-	"nikand.dev/go/json"
+	"nikand.dev/go/json2"
 )
 
 type (
@@ -57,7 +57,7 @@ type (
 
 	Dumper func(w, r []byte, st, end int)
 
-	// ParseError contains error and position returned by json.Iterator.
+	// ParseError contains error and position returned by json2.Iterator.
 	ParseError struct {
 		Err error
 		Pos int
@@ -74,7 +74,7 @@ func ApplyToAll(f Filter, w, r, sep []byte) ([]byte, error) {
 
 	wend := len(w)
 
-	for i := json.SkipSpaces(r, 0); i < len(r); i = json.SkipSpaces(r, i) {
+	for i := json2.SkipSpaces(r, 0); i < len(r); i = json2.SkipSpaces(r, i) {
 		if wend != len(w) {
 			w = append(w, sep...)
 		}
@@ -119,7 +119,7 @@ func NextAll(f Filter, w, r []byte, st int, sep []byte) ([]byte, int, error) {
 }
 
 func (f Dot) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
-	var p json.Iterator
+	var p json2.Iterator
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
@@ -137,7 +137,7 @@ func (f Dot) Next(w, r []byte, st int, state State) ([]byte, int, State, error) 
 }
 
 func (f Empty) Next(w, r []byte, st int, _ State) (_ []byte, i int, _ State, err error) {
-	var p json.Iterator
+	var p json2.Iterator
 
 	i, err = p.Skip(r, st)
 
@@ -145,7 +145,7 @@ func (f Empty) Next(w, r []byte, st int, _ State) (_ []byte, i int, _ State, err
 }
 
 func (f Literal) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var p json.Iterator
+	var p json2.Iterator
 
 	i, err = p.Skip(r, st)
 	if err != nil {
@@ -158,7 +158,7 @@ func (f Literal) Next(w, r []byte, st int, state State) (_ []byte, i int, _ Stat
 }
 
 func (f First) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
-	var p json.Iterator
+	var p json2.Iterator
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
@@ -187,12 +187,12 @@ func (f Func) Next(w, r []byte, st int, state State) ([]byte, int, State, error)
 }
 
 func (f Dumper) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
-	st = json.SkipSpaces(r, st)
+	st = json2.SkipSpaces(r, st)
 	if st == len(r) {
 		return w, st, nil, nil
 	}
 
-	i, err := (&json.Iterator{}).Skip(r, st)
+	i, err := (&json2.Iterator{}).Skip(r, st)
 	if err != nil {
 		return w, st, state, err
 	}

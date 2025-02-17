@@ -1,12 +1,12 @@
-module nikand.dev/go/json/json3
+module nikand.dev/go/json2/json3
 
 go 1.21
 
-replace nikand.dev/go/json => ../
+replace nikand.dev/go/json2 => ../
 
 require (
 	github.com/stretchr/testify v1.9.0
-	nikand.dev/go/json v0.7.0
+	nikand.dev/go/json2 v0.7.0
 )
 
 require (

@@ -1,18 +1,18 @@
-[![Documentation](https://pkg.go.dev/badge/nikand.dev/go/json)](https://pkg.go.dev/nikand.dev/go/json?tab=doc)
-[![Go workflow](https://github.com/nikandfor/json/actions/workflows/go.yml/badge.svg)](https://github.com/nikandfor/json/actions/workflows/go.yml)
-[![CircleCI](https://circleci.com/gh/nikandfor/json.svg?style=svg)](https://circleci.com/gh/nikandfor/json)
-[![codecov](https://codecov.io/gh/nikandfor/json/branch/master/graph/badge.svg)](https://codecov.io/gh/nikandfor/json)
-[![Go Report Card](https://goreportcard.com/badge/nikand.dev/go/json)](https://goreportcard.com/report/nikand.dev/go/json)
-![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/nikandfor/json?sort=semver)
+[![Documentation](https://pkg.go.dev/badge/nikand.dev/go/json2)](https://pkg.go.dev/nikand.dev/go/json2?tab=doc)
+[![Go workflow](https://github.com/nikandfor/json2/actions/workflows/go.yml/badge.svg)](https://github.com/nikandfor/json2/actions/workflows/go.yml)
+[![CircleCI](https://circleci.com/gh/nikandfor/json2.svg?style=svg)](https://circleci.com/gh/nikandfor/json2)
+[![codecov](https://codecov.io/gh/nikandfor/json2/branch/master/graph/badge.svg)](https://codecov.io/gh/nikandfor/json2)
+[![Go Report Card](https://goreportcard.com/badge/nikand.dev/go/json2)](https://goreportcard.com/report/nikand.dev/go/json2)
+![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/nikandfor/json2?sort=semver)
 
-# json
+# json2
 
 Yet another json library.
 It's created to process unstructured json in a convenient and efficient way.
 
-There is also some set of [jq](https://jqlang.github.io/jq/manual/) filters implemented on top of `json.Iterator`.
+There is also some set of [jq](https://jqlang.github.io/jq/manual/) filters implemented on top of `json2.Iterator`.
 
-## json usage
+## json2 usage
 
 `Iterator` is stateless.
 Most of the methods take source buffer and index where to start parsing and return a result and index where they stopped parsing.
@@ -24,11 +24,11 @@ The code is from [examples](./examples_test.go).
 ```go
 // Parsing single object.
 
-var d json.Iterator
+var d json2.Iterator
 data := []byte(`{"key": "value", "another": 1234}`)
 
 i := 0 // initial position
-i, err := d.Enter(data, i, json.Object)
+i, err := d.Enter(data, i, json2.Object)
 if err != nil {
 	// not an object
 }
@@ -38,7 +38,7 @@ var key []byte // to not to shadow i and err in a loop
 // extracted values
 var value, another []byte
 
-for d.ForMore(data, &i, json.Object, &err) {
+for d.ForMore(data, &i, json2.Object, &err) {
 	key, i, err = d.Key(data, i) // key decodes a string but don't decode '\n', '\"', '\xXX' and others
 	if err != nil {
 		// ...
@@ -67,7 +67,7 @@ if err != nil {
 // Parsing jsonl: newline (or space, or comma) delimited values.
 
 var err error // to not to shadow i in a loop
-var d json.Iterator
+var d json2.Iterator
 data := []byte(`"a", 2 3
 ["array"]
 `)

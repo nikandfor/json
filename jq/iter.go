@@ -1,13 +1,13 @@
 package jq
 
-import "nikand.dev/go/json"
+import "nikand.dev/go/json2"
 
 type (
 	Iter struct{}
 )
 
 func (f Iter) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
-	var p json.Iterator
+	var p json2.Iterator
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
@@ -16,7 +16,7 @@ func (f Iter) Next(w, r []byte, st int, state State) ([]byte, int, State, error)
 
 	var err error
 	i := st
-	tp, _ := state.(json.Type)
+	tp, _ := state.(json2.Type)
 
 	if state == nil {
 		tp, i, err = p.Type(r, i)
@@ -24,8 +24,8 @@ func (f Iter) Next(w, r []byte, st int, state State) ([]byte, int, State, error)
 			return w, i, state, pe(err, i)
 		}
 
-		if tp != json.Array && tp != json.Object {
-			return w, i, state, pe(json.ErrType, i)
+		if tp != json2.Array && tp != json2.Object {
+			return w, i, state, pe(json2.ErrType, i)
 		}
 
 		i, err = p.Enter(r, i, tp)
@@ -39,7 +39,7 @@ func (f Iter) Next(w, r []byte, st int, state State) ([]byte, int, State, error)
 	var raw []byte
 
 	for p.ForMore(r, &i, tp, &err) {
-		if tp == json.Object {
+		if tp == json2.Object {
 			i, err = p.Skip(r, i)
 			if err != nil {
 				return w, i, state, err

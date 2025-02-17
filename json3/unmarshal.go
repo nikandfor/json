@@ -9,7 +9,7 @@ import (
 	"sync"
 	"unsafe"
 
-	"nikand.dev/go/json"
+	"nikand.dev/go/json2"
 )
 
 type (

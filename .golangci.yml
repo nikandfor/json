@@ -52,7 +52,7 @@ linters-settings:
         allow:
           - $gostd
           - github.com/stretchr/testify
-          - nikand.dev/go/json
+          - nikand.dev/go/json2
           - nikand.dev/go/skip
           - tlog.app/go/errors
           - tlog.app/go/loc
@@ -61,7 +61,7 @@ linters-settings:
   lll:
     line-length: 170
   goimports:
-    local-prefixes: nikand.dev/go/json
+    local-prefixes: nikand.dev/go/json2
   prealloc:
     simple: true
     for-loops: true

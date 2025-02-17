@@ -1,19 +1,19 @@
-package json_test
+package json2_test
 
 import (
 	"fmt"
 	"strconv"
 
-	"nikand.dev/go/json"
-	"nikand.dev/go/json/benchmarks_data"
+	"nikand.dev/go/json2"
+	"nikand.dev/go/json2/benchmarks_data"
 )
 
 func ExampleIterator() {
-	var d json.Iterator
+	var d json2.Iterator
 	data := []byte(`{"key": "value", "another": 1234}`)
 
 	i := 0 // initial position
-	i, err := d.Enter(data, i, json.Object)
+	i, err := d.Enter(data, i, json2.Object)
 	if err != nil {
 		// not an object
 	}
@@ -23,7 +23,7 @@ func ExampleIterator() {
 	// extracted values
 	var value, another []byte
 
-	for d.ForMore(data, &i, json.Object, &err) {
+	for d.ForMore(data, &i, json2.Object, &err) {
 		key, i, err = d.Key(data, i) // key decodes a string but don't decode '\n', '\"', '\xXX' and others
 		if err != nil {
 			// ...
@@ -56,7 +56,7 @@ func ExampleIterator() {
 
 func ExampleIterator_multipleValues() {
 	var err error // to not to shadow i in a loop
-	var d json.Iterator
+	var d json2.Iterator
 	data := []byte(`"a", 2 3
 ["array"]
 `)
@@ -85,20 +85,20 @@ func ExampleIterator_multipleValues() {
 
 func ExampleIterator_Seek_seekIter() {
 	err := func(b []byte) error {
-		var d json.Iterator
+		var d json2.Iterator
 
 		i, err := d.Seek(b, 0, "topics", "topics")
 		if err != nil {
 			return fmt.Errorf("seek topics: %w", err)
 		}
 
-		i, err = d.Enter(b, i, json.Array)
+		i, err = d.Enter(b, i, json2.Array)
 
-		for err == nil && d.ForMore(b, &i, json.Array, &err) {
+		for err == nil && d.ForMore(b, &i, json2.Array, &err) {
 			var id int
 			var title []byte
 
-			i, err = d.IterFunc(b, i, json.Object, func(k, v []byte) error {
+			i, err = d.IterFunc(b, i, json2.Object, func(k, v []byte) error {
 				switch string(k) {
 				case "id":
 					x, err := strconv.ParseInt(string(v), 10, 64)

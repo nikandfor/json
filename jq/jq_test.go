@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"nikand.dev/go/json"
+	"nikand.dev/go/json2"
 )
 
 type (
@@ -72,7 +72,7 @@ func BenchmarkNextAll(b *testing.B) {
 }
 
 func (f TestFilter) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var p json.Iterator
+	var p json2.Iterator
 
 	i, err = p.Skip(r, st)
 	if err != nil {

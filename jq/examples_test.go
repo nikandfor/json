@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"nikand.dev/go/json/jq"
+	"nikand.dev/go/json2/jq"
 )
 
 func ExampleQuery() {

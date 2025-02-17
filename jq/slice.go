@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"unicode/utf8"
 
-	"nikand.dev/go/json"
+	"nikand.dev/go/json2"
 )
 
 type (
@@ -23,7 +23,7 @@ type (
 )
 
 func (f Length) Next(w, r []byte, st int, state State) ([]byte, int, State, error) {
-	var p json.Iterator
+	var p json2.Iterator
 
 	i := p.SkipSpaces(r, st)
 	if st == len(r) {
@@ -38,12 +38,12 @@ func (f Length) Next(w, r []byte, st int, state State) ([]byte, int, State, erro
 	var n int
 
 	switch tp {
-	case json.Array, json.Object:
+	case json2.Array, json2.Object:
 		n, i, err = p.Length(r, i)
-	case json.String:
+	case json2.String:
 		_, n, i, err = p.DecodedStringLength(r, i)
 	default:
-		return w, i, state, pe(json.ErrType, i)
+		return w, i, state, pe(json2.ErrType, i)
 	}
 	if err != nil {
 		return w, i, state, pe(err, i)
@@ -55,7 +55,7 @@ func (f Length) Next(w, r []byte, st int, state State) ([]byte, int, State, erro
 }
 
 func (f *Slice) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var p json.Iterator
+	var p json2.Iterator
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
@@ -68,12 +68,12 @@ func (f *Slice) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State
 	}
 
 	switch tp {
-	case json.String:
+	case json2.String:
 		w, i, err = f.applyString(w, r, st)
 		return w, i, nil, err
-	case json.Array:
+	case json2.Array:
 	default:
-		return w, i, state, pe(json.ErrType, i)
+		return w, i, state, pe(json2.ErrType, i)
 	}
 
 	n, i, err := p.Length(r, st)
@@ -112,15 +112,15 @@ func (f *Slice) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State
 }
 
 func (f *Slice) applyPart(w, r []byte, st, left, right int, comma bool) ([]byte, error) {
-	var p json.Iterator
+	var p json2.Iterator
 	var raw []byte
 
-	i, err := p.Enter(r, st, json.Array)
+	i, err := p.Enter(r, st, json2.Array)
 	if err != nil {
 		return w, pe(err, i)
 	}
 
-	for n := 0; n < right && p.ForMore(r, &i, json.Array, &err); n++ {
+	for n := 0; n < right && p.ForMore(r, &i, json2.Array, &err); n++ {
 		raw, i, err = p.Raw(r, i)
 		if err != nil {
 			return w, pe(err, i)
@@ -144,7 +144,7 @@ func (f *Slice) applyPart(w, r []byte, st, left, right int, comma bool) ([]byte,
 }
 
 func (f *Slice) applyString(w, r []byte, st int) (_ []byte, i int, err error) {
-	var p json.Iterator
+	var p json2.Iterator
 
 	f.Buf, i, err = p.DecodeString(r, st, f.Buf[:0])
 	if err != nil {
@@ -216,7 +216,7 @@ func (f *Slice) leftRight(n int) (l, r int) {
 func NewArray(of Filter) *Array { return &Array{Filter: of} }
 
 func (f *Array) Next(w, r []byte, st int, state State) (_ []byte, i int, _ State, err error) {
-	var p json.Iterator
+	var p json2.Iterator
 
 	st = p.SkipSpaces(r, st)
 	if st == len(r) {
