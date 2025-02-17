@@ -413,10 +413,9 @@ func (r *Reader) decodeString(w []byte) (_ []byte, err error) {
 	}
 }
 
-func (r *Reader) skipComment() (err error) {
+func (r *Reader) skipComment() (err error) { //nolint:gocognit
 	state := byte(0)
 
-more:
 	for {
 		if r.i >= len(r.b) {
 			if err := r.more(); err != nil {
@@ -426,7 +425,7 @@ more:
 
 		if state == 0 {
 			if r.i+1 >= len(r.b) {
-				continue more
+				continue
 			}
 
 			if r.b[r.i] != '/' {
@@ -441,7 +440,7 @@ more:
 
 			r.i += 2
 
-			continue more
+			continue
 		}
 
 		if state == '/' {
@@ -449,7 +448,7 @@ more:
 				r.i++
 			}
 			if r.i == len(r.b) {
-				continue more
+				continue
 			}
 
 			r.i++
@@ -464,7 +463,7 @@ more:
 				r.i++
 			}
 			if r.i+1 >= len(r.b) {
-				continue more
+				break
 			}
 			r.i++
 

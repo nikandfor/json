@@ -31,7 +31,6 @@ const (
 	Comment Type = '/'
 )
 
-// bitsets
 var whitespaces uint64 = 1<<'\n' | 1<<'\r' | 1<<'\t' | 1<<' '
 
 // Iterator errors. Plus Str errors from skip module.

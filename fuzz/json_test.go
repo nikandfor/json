@@ -139,7 +139,7 @@ func FuzzStringDecode(f *testing.F) {
 	var p json2.Iterator
 
 	f.Fuzz(func(t *testing.T, data []byte) {
-		tp, i, err := p.Type(data, 0)
+		tp, _, err := p.Type(data, 0)
 		if err != nil || tp != json2.String {
 			t.SkipNow()
 		}
