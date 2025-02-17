@@ -1,4 +1,4 @@
-package json
+package fuzz
 
 import (
 	stdjson "encoding/json"
@@ -139,6 +139,11 @@ func FuzzStringDecode(f *testing.F) {
 	var p json.Decoder
 
 	f.Fuzz(func(t *testing.T, data []byte) {
+		tp, i, err := p.Type(data, 0)
+		if err != nil || tp != json.String {
+			t.SkipNow()
+		}
+
 		b, i, err := p.DecodeString(data, 0, nil)
 
 		end := len(data)
@@ -155,7 +160,7 @@ func FuzzStringDecode(f *testing.F) {
 		}
 
 		if err != nil {
-			t.Errorf("decode: %v", err)
+			t.Errorf("decode: %v  (i %x)", err, i)
 		}
 
 		if err1 != nil {

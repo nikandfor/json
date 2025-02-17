@@ -181,7 +181,7 @@ func (d *Decoder) DecodeString(b []byte, st int, buf []byte) (s []byte, i int, e
 		return buf, i, ErrType
 	}
 
-	ss, w, _, i := skip.DecodeString(b, i, skip.Quo|skip.ErrRune, buf)
+	ss, w, _, i := skip.DecodeString(b, i, skip.Quo|skip.ErrRune|skip.ErrEscape, buf)
 	if ss.Is(skip.ErrBuffer) {
 		return w, st, ErrShortBuffer
 	}
